@@ -8,11 +8,11 @@ class ModEx {
 
     public:
         std::string input;
+        std::string purge;
         std::string out;
         std::vector<std::string> runs;
 
-
-        ModEx(std::string input_, std::string out_, std::vector<std::string> runs_) : input(input_), out(out_), runs(runs_) {}
+        ModEx(std::string input_, std::string purge_, std::string out_, std::vector<std::string> runs_) : input(input_), purge(purge_), out(out_), runs(runs_) {}
         ModEx() = default;
         
         bool run();
