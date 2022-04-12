@@ -168,7 +168,7 @@ include_directories(
 # find_package(h5cpp REQUIRED)
 
 
-set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp)
+set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp include/period.hpp)
 
 add_executable(modulation_excitation src/main.cpp ${SOURCES})
 # target_link_libraries(modulation_excitation ${LINK_LIBS})

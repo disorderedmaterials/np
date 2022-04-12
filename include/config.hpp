@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include "period.hpp"
+#include "pulse.hpp"
 
 enum ExtrapolationMode {FORWARDS, BACKWARDS, BI_DIRECTIONAL, NONE};
 
@@ -14,9 +16,12 @@ class Config {
         std::vector<std::string> runs; //abspath to runs.
         ExtrapolationMode extrapolationMode;
         bool useDefinedPulses = false;
-        std::vector<std::pair<std::string, std::pair<double, double>>> pulses;
+        std::vector<Pulse> definedPulses;
         double pulsesBegin;
-        
+        Period period;
+
+        Config(std::string path);
+        Config() = default;
 
 };
 
