@@ -61,25 +61,27 @@ Config::Config(std::string path) {
             periodOffset = atof(item.c_str());
             std::getline(ss, item, ' ');
             duration = atof(item.c_str());
-            pulses.push_back(Pulse(label, periodOffset, duration));
+            pulses.push_back(Pulse(label, periodOffset, duration, true));
         }
 
         period = Period(periodDuration, pulses);
-
     } else {
         useDefinedPulses = true;
         std::getline(ifs, line);
         nPulses = atoi(line.c_str());
-        std::getline(ifs, line);
-        std::stringstream ss(line);
-        std::string label;
-        double periodOffset, duration;
-        std::string item;
-        std::getline(ss, label, ' ');
-        std::getline(ss, item, ' ');
-        periodOffset = atof(item.c_str());
-        std::getline(ss, item, ' ');
-        duration = atof(item.c_str());
-        definedPulses.push_back(Pulse(label, periodOffset, duration));
+        for (int i=0; i<nPulses; ++i) {
+            std::getline(ifs, line);
+            std::stringstream ss(line);
+            std::string label;
+            double pulseStart, pulseEnd;
+            std::string item;
+            std::getline(ss, label, ' ');
+            std::getline(ss, item, ' ');
+            pulseStart = atof(item.c_str());
+            std::getline(ss, item, ' ');
+            pulseEnd = atof(item.c_str());
+            definedPulses.push_back(Pulse(label, pulseStart, pulseEnd, false));
+        }
+
     }
 }

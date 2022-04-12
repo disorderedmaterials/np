@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <set>
 
 int main(int argc, char** argv) {
 
@@ -15,7 +16,29 @@ int main(int argc, char** argv) {
     Config config(argv[1]);
     ModEx modex(config);
 
-    if (!config.useDefinedPulses) {
+    if (config.useDefinedPulses) {
+        modex.epochPulses(config.definedPulses);
+        std::set<std::string> labels;
+        std::vector<std::pair<double, double>> pulses;
+        std::map<std::string, std::vector<std::pair<double, double>>> runPulses;
+        for (const auto &p : config.definedPulses) {
+            labels.insert(p.label);
+        }
+            
+        for (const auto &label : labels) {
+            for (const auto &p : config.definedPulses) {
+                if (p.label == label) {
+                    pulses.push_back(std::make_pair(p.pulseStart, p.pulseEnd));
+                }
+            }
+            modex.binPulsesToRuns(pulses, runPulses);
+            modex.run(runPulses, label);
+            pulses.clear();
+            runPulses.clear();
+        }
+    }
+
+    else {
         std::vector<std::pair<double, double>> pulses;
         std::map<std::string, std::vector<std::pair<double, double>>> runPulses;
         for (const auto &p : config.period.pulses) {
@@ -37,29 +60,5 @@ int main(int argc, char** argv) {
     }
 
     return 0;
-    // if (config.extrapolationMode == FORWARDS) {
-
-    // }
-
-    // Config config("input.txt");
-
-    // std::cout << config.gudrunInputFile << std::endl;
-    // std::cout << config.purgeInputFile << std::endl;
-    // for (auto r: config.runs)
-    //     std::cout << r << std::endl;
-    // std::cout << config.extrapolationMode << std::endl;
-    // std::cout << config.useDefinedPulses << std::endl;
-    // std::cout << config.pulsesBegin << std::endl;
-    // std::cout << config.period.duration << std::endl;
-    // for (auto p : config.period.pulses)
-    //     std::cout << p.label << " " << p.periodOffset << " " << p.duration << std::endl;
-    // return 0;
-    // std::vector<std::string> runs = {"data/NIMROD00069862.nxs"};
-    // ModEx m("azobenzene.txt", "purge_det.dat", "testout", runs);
-    // std::map<std::string, std::vector<std::pair<double, double>>> pulses;
-    // m.extrapolatePulseTimes(
-    //     runs[0], 12129., false, true, 980., 300., pulses
-    // );
-    // m.run(pulses);
 
 }

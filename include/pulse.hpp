@@ -9,8 +9,20 @@ class Pulse {
         std::string label;
         double periodOffset;
         double duration;
-        Pulse(std::string label_, double periodOffset_, double duration_) : label(label_), periodOffset(periodOffset_), duration(duration_) {}
+        double pulseStart;
+        double pulseEnd;
+        Pulse(std::string label_, double periodOffset_, double duration_, bool isDefinition) {
+            label = label_;
+            if (isDefinition) {
+                periodOffset = periodOffset_;
+                duration = duration_;
+            } else {
+                pulseStart = periodOffset_;
+                pulseEnd = duration_;
+            }
+        };
         Pulse() = default;
+
 };
 
 #endif

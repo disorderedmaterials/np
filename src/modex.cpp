@@ -62,6 +62,28 @@ bool ModEx::run(std::string run, std::vector<std::pair<double, double>> pulses) 
     return true;
 }
 
+bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
+
+    // Assume runs are ordered.
+    const std::string firstRun = runs[0];
+    // Load the first run.
+    Nexus firstRunNXS(firstRun);
+    firstRunNXS.loadBasicData();
+
+    // Apply offset.
+
+    const int expStart = firstRunNXS.startSinceEpoch;
+
+    for (int i=0; i<pulses.size(); ++i) {
+        pulses[i].pulseStart+= expStart;
+        pulses[i].pulseEnd+= expStart;
+    }
+
+    return true;
+
+}
+
+
 bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, double periodOffset, double duration, std::vector<std::pair<double, double>> &pulses) {
 
     // Assume runs are ordered.
@@ -126,6 +148,9 @@ bool ModEx::binPulsesToRuns(std::vector<std::pair<double, double>> &pulses, std:
                 runPulses[runs[j]].push_back(std::make_pair(pulses[i].first-runNXS->startSinceEpoch,pulses[i].second-runNXS->startSinceEpoch));
                 delete runNXS;
                 break;
+            }
+            else {
+                std::cout << pulses[i].first << " " << pulses[i].second << " " << runNXS->startSinceEpoch << " " << runNXS->endSinceEpoch << std::endl;
             }
             delete runNXS;
         }
