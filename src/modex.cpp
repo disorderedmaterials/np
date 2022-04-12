@@ -3,6 +3,13 @@
 #include <algorithm>
 #include <iostream>
 
+std::string extractRunName(std::string &path, std::string &run) {
+    std::size_t preext = path.rfind('.');
+    std::size_t leaf = path.rfind('/');
+
+    return path.substr(leaf+1, preext);
+}
+
 bool ModEx::run() {
     // for (auto const run: runs) {
     //     Nexus nxs = Nexus(run, run.substr(run.find_last_of("/\\") + 1));
@@ -11,20 +18,36 @@ bool ModEx::run() {
 }
 
 bool ModEx::run(std::map<std::string, std::vector<std::pair<double, double>>> &runPulses) {
-
+    std::cout << "ModEx begin." << std::endl;
     // Perform a purge.
-    system(std::string("purge " + purge).c_str());
+    std::cout << "Performing a singular purge.." << std::endl;
+    system(std::string("./purge_det " + purge).c_str());
+    std::cout << "Purge complete." << std::endl;
     // Iterate through [run, pulse] pairs.
+
+    int n=0;
+    int m = 0;
+    for (const auto runPair : runPulses)
+        n+=runPair.second.size();
+
+    std::cout << "There are " << n << "pulses across " << runPulses.size() << " to run on" << std::endl;
+
     for (const auto runPair : runPulses) {
         std::string run = runPair.first;
         std::vector<std::pair<double, double>> pulses = runPair.second;
 
         // Iterate through pulses.
         for (auto p : pulses) {
+            std::cout << "Progress: " << (m/n)*100 << "%" << std::endl;
             // Output path = test/{runName}.nxs
-            std::string nxsPath = "test/" + run.substr(run.find_last_of("/\\") + 1);
+            std::size_t sep = run.rfind('/');
+            std::size_t dot = run.rfind('.');
+            std::string baseName = run.substr(sep+1, dot-sep-1);
+            std::cout << baseName << std::endl;
             // Allocate a new Nexus objecs on the heap.
-            Nexus *nxs = new Nexus(run, nxsPath);
+            Nexus *nxs = new Nexus(run, "test/" + baseName + ".nxs");
+            // Load basic data.
+            nxs->loadBasicData();
             // Load event mode data.
             nxs->loadEventModeData();
             // Create histogram using the pulse as boundaries.
@@ -32,13 +55,18 @@ bool ModEx::run(std::map<std::string, std::vector<std::pair<double, double>>> &r
             // Write the histogram.
             nxs->writeCountsHistogram();
             // Call gudrun_dcs.
-            system(std::string("gudrun_dcs " + input).c_str());
+            system(std::string("mkdir modex_intermediate && chdir modex_intermediate && ../gudrun_dcs ../" + input).c_str());
             // Move the mint01 file to the output directory.
-            std::string output = std::string(out + "/" + std::to_string(p.first) + ".mint01");
-            rename(nxsPath.c_str(), output.c_str());
+            std::string output = out + "/" + baseName + ".mint01";
+            std::string target = "modex_intermediate/" + baseName + ".mint01";
+            std::cout << target << "----> " << output << std::endl;
+            system(std::string("mv " + target + " " + output).c_str());
+            system("rm -rf modex_intermediate");
             delete nxs;
+            ++m;
         }
     }
+    return true;
 }
 
 bool ModEx::run(std::string run, std::vector<std::pair<double, double>> pulses) {
@@ -68,23 +96,28 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     double pulse = 0;
     pulses.push_back(std::make_pair(startPulse, startPulse+step));
 
+    std::cout << "Performing extrapolation.." << std::endl;
+
     // Extrapolate backwardsa.
     if (backwards) {
+        std::cout << "Extrapolating backwards.." << std::endl;
         pulse = startPulse - step;
-        std::cout << startPulse << " " << step << std::endl;
         while (pulse > expStart) {
             pulses.push_back(std::make_pair(pulse, pulse+duration));
             pulse-=step;
         }
+        std::cout  << "Finished extrapolating backwards.." << std::endl;
     }
 
     // Extrapolate forwards.
     if (forwards) {
+        std::cout << "Extrapolating forwards" << std::endl;
         pulse = startPulse + step;
         while (pulse < expEnd) {
             pulses.push_back(std::make_pair(pulse, pulse+duration));
             pulse+=step;
         }
+        std::cout << "FInished extrapolating forwards.." << std::endl;
     }
 
     // Sort pulses by their start time.
@@ -113,5 +146,6 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
             delete runNXS;
         }
     }
+    std::cout << "Extrapolation and run binning finished." << std::endl;
     return true;
 }
