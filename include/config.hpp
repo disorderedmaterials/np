@@ -13,11 +13,12 @@ class Config {
     public:
         std::string gudrunInputFile; //input file for gudrun.
         std::string purgeInputFile; //input file for purge.
+        std::string outputDir; //where to output data
         std::vector<std::string> runs; //abspath to runs.
         ExtrapolationMode extrapolationMode;
         bool useDefinedPulses = false;
         std::vector<Pulse> definedPulses;
-        double pulsesBegin;
+        double periodBegin;
         Period period;
 
         Config(std::string path);
