@@ -32,7 +32,6 @@ bool Nexus::loadBasicData() {
 
     // First get spectra
 
-    std::cout << "Getting spectra info.." << std::endl;
     H5::DataSet spectra_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "spectrum_index", spectra_);
     H5::DataSpace spectraSpace = spectra_.getSpace();
@@ -43,11 +42,9 @@ bool Nexus::loadBasicData() {
     // data.spectra = new int[(long int) spectraDims[0]];
     spectra.resize(spectraDims[0]);
     H5Dread(spectra_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra.data());
-    std::cout << "Got spectra info!" << std::endl;
 
     // Now get rawframes
 
-    std::cout << "Getting frame info.." << std::endl;
     H5::DataSet rawFrames_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "raw_frames", rawFrames_);
     H5::DataSpace rawFramesSpace = rawFrames_.getSpace();
@@ -57,14 +54,12 @@ bool Nexus::loadBasicData() {
 
     rawFrames = new int[(long int) rawFramesDims[0]];
     H5Dread(rawFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFrames);
-    std::cout << "Got frame info!" << std::endl;
 
     // Start time
 
     hid_t memType = H5Tcopy(H5T_C_S1);
     H5Tset_size(memType, UCHAR_MAX);
 
-    std::cout << "Getting start time.." << std::endl;
     H5::DataSet startTime_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "start_time", startTime_);
 
@@ -84,11 +79,8 @@ bool Nexus::loadBasicData() {
 
     startSinceEpoch = (int) mktime(&stime);
 
-    std::cout << "Got start time!" << " " << startSinceEpoch << std::endl;
-
     // End time
 
-    std::cout << "Getting end time.." << std::endl;
     H5::DataSet endTime_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "end_time", endTime_);
 
@@ -107,8 +99,6 @@ bool Nexus::loadBasicData() {
 
     endSinceEpoch = (int) mktime(&etime);
 
-    std::cout << "Got end time!" << " " << endSinceEpoch << std::endl;
-
     file.close();
 
     return true;
@@ -121,7 +111,6 @@ bool Nexus::loadEventModeData() {
 
     // Now get event indices, this is where stuff gets dangerous
 
-    std::cout << "Getting event indices info.." << std::endl;
     H5::DataSet eventIndices_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_id", eventIndices_);
     H5::DataSpace eventIndicesSpace = eventIndices_.getSpace();
@@ -131,12 +120,10 @@ bool Nexus::loadEventModeData() {
 
     eventIndices.resize(eventIndicesDims[0]);
     H5Dread(eventIndices_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventIndices.data());
-    std::cout << "Got event indices info!" << std::endl;
 
 
     // Now get events
 
-    std::cout << "Getting event info.." << std::endl;
     H5::DataSet events_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_offset", events_);
     H5::DataSpace eventsSpace = events_.getSpace();
@@ -146,11 +133,9 @@ bool Nexus::loadEventModeData() {
 
     events.resize(eventsDims[0]);
     H5Dread(events_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, events.data());
-    std::cout << "Got event info!" << std::endl;
 
     // Frame indices
 
-    std::cout << "Getting frame indices info.." << std::endl;
     H5::DataSet frameIndices_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_index", frameIndices_);
     H5::DataSpace frameIndicesSpace = frameIndices_.getSpace();
@@ -160,11 +145,9 @@ bool Nexus::loadEventModeData() {
 
     frameIndices.resize(frameIndicesDims[0]);
     H5Dread(frameIndices_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameIndices.data());
-    std::cout << "Got frame indices info!" << std::endl;
 
     // Frame offsets
 
-    std::cout << "Getting frame offsets info.." << std::endl;
     H5::DataSet frameOffsets_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_zero", frameOffsets_);
     H5::DataSpace frameOffsetsSpace = frameOffsets_.getSpace();
@@ -174,11 +157,9 @@ bool Nexus::loadEventModeData() {
 
     frameOffsets.resize(frameOffsetsDims[0]);
     H5Dread(frameOffsets_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameOffsets.data());
-    std::cout << "Got frame offsets info!" << std::endl;
 
     // bins
 
-    std::cout << "Getting bins info.." << std::endl;
     H5::DataSet bins_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "monitor_1"}, "time_of_flight", bins_);
     H5::DataSpace binsSpace = bins_.getSpace();
@@ -206,7 +187,6 @@ bool Nexus::parseNexusFile() {
 
     // First get spectra
 
-    std::cout << "Getting spectra info.." << std::endl;
     H5::DataSet spectra_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "spectrum_index", spectra_);
     H5::DataSpace spectraSpace = spectra_.getSpace();
@@ -217,11 +197,9 @@ bool Nexus::parseNexusFile() {
     // data.spectra = new int[(long int) spectraDims[0]];
     spectra.resize(spectraDims[0]);
     H5Dread(spectra_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra.data());
-    std::cout << "Got spectra info!" << std::endl;
 
     // Now get rawframes
 
-    std::cout << "Getting frame info.." << std::endl;
     H5::DataSet rawFrames_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "raw_frames", rawFrames_);
     H5::DataSpace rawFramesSpace = rawFrames_.getSpace();
@@ -231,12 +209,10 @@ bool Nexus::parseNexusFile() {
 
     rawFrames = new int[(long int) rawFramesDims[0]];
     H5Dread(rawFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFrames);
-    std::cout << "Got frame info!" << std::endl;
 
 
     // Now get event indices, this is where stuff gets dangerous
 
-    std::cout << "Getting event indices info.." << std::endl;
     H5::DataSet eventIndices_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_id", eventIndices_);
     H5::DataSpace eventIndicesSpace = eventIndices_.getSpace();
@@ -246,12 +222,10 @@ bool Nexus::parseNexusFile() {
 
     eventIndices.resize(eventIndicesDims[0]);
     H5Dread(eventIndices_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventIndices.data());
-    std::cout << "Got event indices info!" << std::endl;
 
 
     // Now get events
 
-    std::cout << "Getting event info.." << std::endl;
     H5::DataSet events_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_offset", events_);
     H5::DataSpace eventsSpace = events_.getSpace();
@@ -261,11 +235,9 @@ bool Nexus::parseNexusFile() {
 
     events.resize(eventsDims[0]);
     H5Dread(events_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, events.data());
-    std::cout << "Got event info!" << std::endl;
 
     // Frame indices
 
-    std::cout << "Getting frame indices info.." << std::endl;
     H5::DataSet frameIndices_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_index", frameIndices_);
     H5::DataSpace frameIndicesSpace = frameIndices_.getSpace();
@@ -275,11 +247,9 @@ bool Nexus::parseNexusFile() {
 
     frameIndices.resize(frameIndicesDims[0]);
     H5Dread(frameIndices_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameIndices.data());
-    std::cout << "Got frame indices info!" << std::endl;
 
     // Frame offsets
 
-    std::cout << "Getting frame offsets info.." << std::endl;
     H5::DataSet frameOffsets_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_zero", frameOffsets_);
     H5::DataSpace frameOffsetsSpace = frameOffsets_.getSpace();
@@ -289,11 +259,9 @@ bool Nexus::parseNexusFile() {
 
     frameOffsets.resize(frameOffsetsDims[0]);
     H5Dread(frameOffsets_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameOffsets.data());
-    std::cout << "Got frame offsets info!" << std::endl;
 
     // bins
 
-    std::cout << "Getting bins info.." << std::endl;
     H5::DataSet bins_;
     Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "monitor_1"}, "time_of_flight", bins_);
     H5::DataSpace binsSpace = bins_.getSpace();
@@ -303,11 +271,6 @@ bool Nexus::parseNexusFile() {
 
     ranges.resize(binsDims[0]);
     H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges.data());
-    std::cout << "Got bins info!" << std::endl;
-
-    // for (int i=0; i<binBoundaries.size()-1; ++i) {
-    //     bins.push_back(std::make_pair(binBoundaries[i], binBoundaries[i+1]));
-    // }
 
     file.close();
 
@@ -315,73 +278,23 @@ bool Nexus::parseNexusFile() {
 }
 
 bool Nexus::createHistogram() {
-    // std::cout << "Setting up histogram.." << std::endl;
-    // for (auto spec: spectra) {
-    //     std::vector<unsigned int> spectraVec(bins.size(), 0);
-    //     histogram[spec] = spectraVec;
-    // }
-    // std::vector<unsigned int> spectraVec(bins.size(), 0);
-    // histogram[0] = spectraVec;
-    // std::cout << "Empty histogram created!" << std::endl;
-
-    // std::cout << "Starting to bin events." << std::endl;
-    // for (int i=0; i<events.size(); ++i) {
-    //     for (int j=0; j<bins.size(); ++j) {
-    //         if ((events[i] >= bins[j].first) && (events[i] < bins[j].second)) {
-    //             histogram[eventIndices[i]][j]++;
-    //             break;
-    //         }
-    //     }
-    // }
-    // std::cout << "Finished binning events." << std::endl;
     return true;
 }
 
 bool Nexus::createHistogram(std::vector<std::pair<double, double>> &bounds) {
-
-    // std::cout << "Setting up histogram.." << std::endl;
-    // for (auto spec: spectra) {
-    //     std::vector<unsigned int> spectraVec(bins.size(), 0);
-    //     histogram[spec] = spectraVec;
-    // }
-    // std::cout << "Empty histogram created!" << std::endl;
-
-    // std::cout << "Starting to bin events." << std::endl;
-    // for (int i=0; i<events.size(); ++i) {
-    //     bool match= false;
-    //     if (eventIndices[i] ==0 )
-    //         continue;
-    //     for (int j=0; j<bounds.size(); ++j) {
-    //         if ((events[i] >= bounds[j].first) && (events[i] < bounds[j].second)) {
-    //             match = true;
-    //             break;
-    //         }
-    //     }
-    //     if (!match) continue;
-    //     for (int j=0; j<bins.size(); ++j) {
-    //         if ((events[i] >= bins[j].first) && (events[i] < bins[j].second)) {
-    //             histogram[eventIndices[i]][j]++;
-    //             break;
-    //         }
-    //     }
-    // }
-    // std::cout << "Finished binning events." << std::endl;
     return true;
 
 }
 
 bool Nexus::createHistogram(std::pair<double, double> &bounds) {
 
-    std::cout << "Setting up histogram.." << std::endl;
     for (auto spec: spectra) {
         histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
         gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
     }
-    std::cout << "Empty histogram created!" << std::endl;
 
     double event;
     int idx;
-    std::cout << "Creating partitions" << std::endl;
     std::map<unsigned int, std::vector<double>> partitions;
     for (int i=0; i<events.size(); ++i) {
         event = events[i];
@@ -392,7 +305,6 @@ bool Nexus::createHistogram(std::pair<double, double> &bounds) {
             continue;
         partitions[idx].push_back(event);
     }
-    std::cout << "Starting to bin events." << std::endl;
 
     for (auto partition : partitions) {
         for (auto ev : partition.second) {
@@ -400,7 +312,6 @@ bool Nexus::createHistogram(std::pair<double, double> &bounds) {
         }
     }
 
-    std::cout << "Finished binning events." << std::endl;
     return true;
 }
 
