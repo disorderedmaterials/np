@@ -173,9 +173,11 @@ set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp)
 add_executable(modulation_excitation src/main.cpp ${SOURCES})
 # target_link_libraries(modulation_excitation ${LINK_LIBS})
 
+find_package(GSL REQUIRED)
+
 link_directories (${LIBRARY_OUTPUT_PATH})
   IF(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS})
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} GSL::gsl)
 ELSE(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl)
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl GSL::gsl)
 ENDIF(WIN32)

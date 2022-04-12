@@ -186,14 +186,13 @@ bool Nexus::loadEventModeData() {
     hsize_t* binsDims = new hsize_t[binsNDims];
     binsSpace.getSimpleExtentDims(binsDims);
 
-    std::vector<double> binBoundaries;
-    binBoundaries.resize(binsDims[0]);
-    H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, binBoundaries.data());
+    ranges.resize(binsDims[0]);
+    H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges.data());
     // std::cout << "Got bins info!" << std::endl;
 
-    for (int i=0; i<binBoundaries.size()-1; ++i) {
-        bins.push_back(std::make_pair(binBoundaries[i], binBoundaries[i+1]));
-    }
+    // for (int i=0; i<binBoundaries.size()-1; ++i) {
+    //     bins.push_back(std::make_pair(binBoundaries[i], binBoundaries[i+1]));
+    // }
 
     file.close();
 
@@ -302,14 +301,13 @@ bool Nexus::parseNexusFile() {
     hsize_t* binsDims = new hsize_t[binsNDims];
     binsSpace.getSimpleExtentDims(binsDims);
 
-    std::vector<double> binBoundaries;
-    binBoundaries.resize(binsDims[0]);
-    H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, binBoundaries.data());
-    // std::cout << "Got bins info!" << std::endl;
+    ranges.resize(binsDims[0]);
+    H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges.data());
+    std::cout << "Got bins info!" << std::endl;
 
-    for (int i=0; i<binBoundaries.size()-1; ++i) {
-        bins.push_back(std::make_pair(binBoundaries[i], binBoundaries[i+1]));
-    }
+    // for (int i=0; i<binBoundaries.size()-1; ++i) {
+    //     bins.push_back(std::make_pair(binBoundaries[i], binBoundaries[i+1]));
+    // }
 
     file.close();
 
@@ -317,102 +315,107 @@ bool Nexus::parseNexusFile() {
 }
 
 bool Nexus::createHistogram() {
-    std::cout << "Setting up histogram.." << std::endl;
-    for (auto spec: spectra) {
-        std::vector<unsigned int> spectraVec(bins.size(), 0);
-        histogram[spec] = spectraVec;
-    }
-    std::vector<unsigned int> spectraVec(bins.size(), 0);
-    histogram[0] = spectraVec;
-    std::cout << "Empty histogram created!" << std::endl;
+    // std::cout << "Setting up histogram.." << std::endl;
+    // for (auto spec: spectra) {
+    //     std::vector<unsigned int> spectraVec(bins.size(), 0);
+    //     histogram[spec] = spectraVec;
+    // }
+    // std::vector<unsigned int> spectraVec(bins.size(), 0);
+    // histogram[0] = spectraVec;
+    // std::cout << "Empty histogram created!" << std::endl;
 
-    std::cout << "Starting to bin events." << std::endl;
-    for (int i=0; i<events.size(); ++i) {
-        for (int j=0; j<bins.size(); ++j) {
-            if ((events[i] >= bins[j].first) && (events[i] < bins[j].second)) {
-                histogram[eventIndices[i]][j]++;
-                break;
-            }
-        }
-    }
-    std::cout << "Finished binning events." << std::endl;
+    // std::cout << "Starting to bin events." << std::endl;
+    // for (int i=0; i<events.size(); ++i) {
+    //     for (int j=0; j<bins.size(); ++j) {
+    //         if ((events[i] >= bins[j].first) && (events[i] < bins[j].second)) {
+    //             histogram[eventIndices[i]][j]++;
+    //             break;
+    //         }
+    //     }
+    // }
+    // std::cout << "Finished binning events." << std::endl;
     return true;
 }
 
-bool Nexus::createHistogram(std::vector<std::pair<double, double>> bounds) {
+bool Nexus::createHistogram(std::vector<std::pair<double, double>> &bounds) {
 
-    std::cout << "Setting up histogram.." << std::endl;
-    for (auto spec: spectra) {
-        std::vector<unsigned int> spectraVec(bins.size(), 0);
-        histogram[spec] = spectraVec;
-    }
-    std::vector<unsigned int> spectraVec(bins.size(), 0);
-    histogram[0] = spectraVec;
-    std::cout << "Empty histogram created!" << std::endl;
+    // std::cout << "Setting up histogram.." << std::endl;
+    // for (auto spec: spectra) {
+    //     std::vector<unsigned int> spectraVec(bins.size(), 0);
+    //     histogram[spec] = spectraVec;
+    // }
+    // std::cout << "Empty histogram created!" << std::endl;
 
-    std::cout << "Starting to bin events." << std::endl;
-    for (int i=0; i<events.size(); ++i) {
-        bool match= false;
-        for (int j=0; j<bounds.size(); ++j) {
-            if ((events[i] >= bounds[j].first) && (events[i] < bounds[j].second)) {
-                match = true;
-                break;
-            }
-        }
-        if (!match) continue;
-        for (int j=0; j<bins.size(); ++j) {
-            if ((events[i] >= bins[j].first) && (events[i] < bins[j].second)) {
-                histogram[eventIndices[i]][j]++;
-                break;
-            }
-        }
-    }
-    std::cout << "Finished binning events." << std::endl;
+    // std::cout << "Starting to bin events." << std::endl;
+    // for (int i=0; i<events.size(); ++i) {
+    //     bool match= false;
+    //     if (eventIndices[i] ==0 )
+    //         continue;
+    //     for (int j=0; j<bounds.size(); ++j) {
+    //         if ((events[i] >= bounds[j].first) && (events[i] < bounds[j].second)) {
+    //             match = true;
+    //             break;
+    //         }
+    //     }
+    //     if (!match) continue;
+    //     for (int j=0; j<bins.size(); ++j) {
+    //         if ((events[i] >= bins[j].first) && (events[i] < bins[j].second)) {
+    //             histogram[eventIndices[i]][j]++;
+    //             break;
+    //         }
+    //     }
+    // }
+    // std::cout << "Finished binning events." << std::endl;
     return true;
 
 }
 
-bool Nexus::createHistogram(std::pair<double, double> bounds) {
+bool Nexus::createHistogram(std::pair<double, double> &bounds) {
 
     std::cout << "Setting up histogram.." << std::endl;
     for (auto spec: spectra) {
-        std::vector<unsigned int> spectraVec(bins.size(), 0);
-        histogram[spec] = spectraVec;
+        histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
+        gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
     }
-    std::vector<unsigned int> spectraVec(bins.size(), 0);
-    histogram[0] = spectraVec;
     std::cout << "Empty histogram created!" << std::endl;
 
-    std::cout << "Starting to bin events." << std::endl;
+    double event;
+    int idx;
+    std::cout << "Creating partitions" << std::endl;
+    std::map<unsigned int, std::vector<double>> partitions;
     for (int i=0; i<events.size(); ++i) {
-        bool match= false;
-        if ((events[i] >= bounds.first) && (events[i] < bounds.second)) {
-            match = true;
-        }
-        if (!match) continue;
-        for (int j=0; j<bins.size(); ++j) {
-            if ((events[i] >= bins[j].first) && (events[i] < bins[j].second)) {
-                histogram[eventIndices[i]][j]++;
-                break;
-            }
+        event = events[i];
+        if (!((events[i]) >= bounds.first) && (events[i] < bounds.second))
+            continue;
+        idx = eventIndices[i];
+        if (!idx)
+            continue;
+        partitions[idx].push_back(event);
+    }
+    std::cout << "Starting to bin events." << std::endl;
+
+    for (auto partition : partitions) {
+        for (auto ev : partition.second) {
+            gsl_histogram_increment(histogram[partition.first], ev);
         }
     }
+
     std::cout << "Finished binning events." << std::endl;
     return true;
-
 }
 
 bool Nexus::writeCountsHistogram() {
 
     const int nSpec = spectra.size();
-    const int nBin = bins.size()-1;
+    const int nBin = ranges.size()-1;
 
     int* buf = new int[1*nSpec*nBin]; // HDF5 expects contiguous memory. This is a pain.
 
     for (int i=0; i<1; ++i)
         for (int j=0; j<nSpec; ++j)
             for (int k=0; k<nBin; ++k)
-                buf[(i*nSpec+j)*nBin+k] = histogram[spectra[j]][k]; //buf[i][j][k] = buf[(i*Y+j)*Z+k]
+                buf[(i*nSpec+j)*nBin+k] = gsl_histogram_get(histogram[spectra[j]], k);
+                // buf[(i*nSpec+j)*nBin+k] = histogram[spectra[j]][k]; //buf[i][j][k] = buf[(i*Y+j)*Z+k]
 
     Nexus::copy();
 

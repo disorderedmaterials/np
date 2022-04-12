@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <H5Cpp.h>
+#include <gsl/gsl_histogram.h>
 
 class Nexus {
 
@@ -27,15 +28,14 @@ class Nexus {
         std::vector<double> events;
         std::vector<int> frameIndices;
         std::vector<double> frameOffsets;
-        std::vector<std::pair<double, double>> bins;
-        std::map<unsigned int, std::vector<unsigned int>> histogram;
+        std::vector<double> ranges;
+        // std::vector<std::pair<double, double>> bins;
+        std::map<unsigned int, gsl_histogram*> histogram;
         std::map<unsigned int, std::vector<double>> partitions;
 
         bool parseNexusFile();
         bool loadBasicData();
         bool loadEventModeData();
-
-
 
         bool getLeafDataset(H5::H5File file, std::vector<H5std_string> terminals, H5std_string dataset, H5::DataSet &out);
         bool copy();
@@ -45,8 +45,8 @@ class Nexus {
         bool partitionEvents(std::vector<int> &spectra_);
 
         bool createHistogram();
-        bool createHistogram(std::vector<std::pair<double, double>> bounds);
-        bool createHistogram(std::pair<double, double> bounds);
+        bool createHistogram(std::vector<std::pair<double, double>> &bounds);
+        bool createHistogram(std::pair<double, double> &bounds);
 
         bool extractPulseTimes(int spectrum, std::vector<double> &pulses);
         bool extrapolatePulseTimes(double start, bool backwards, bool forwards, double step, double duration, std::vector<std::pair<double, double>> &pulses);
