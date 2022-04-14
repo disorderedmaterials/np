@@ -75,8 +75,8 @@ bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
     const int expStart = firstRunNXS.startSinceEpoch;
 
     for (int i=0; i<pulses.size(); ++i) {
-        pulses[i].pulseStart+= expStart;
-        pulses[i].pulseEnd+= expStart;
+        pulses[i].start+= expStart;
+        pulses[i].end+= expStart;
     }
 
     return true;

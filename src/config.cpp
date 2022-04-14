@@ -14,21 +14,28 @@ Config::Config(std::string path) {
     std::string line;
     std::ifstream ifs(path);
     std::getline(ifs, gudrunInputFile);
+    std::cout << "Gudrun input file: " << gudrunInputFile << std::endl;
     std::getline(ifs, purgeInputFile);
+    std::cout << "Purge file: " << purgeInputFile << std::endl;
     std::getline(ifs, outputDir);
+    std::cout << "Output dir: " << outputDir << std::endl;
 
     // Check if file exists, create if not.
     struct stat info;
     if (stat(outputDir.c_str(), &info) !=0) {
         mkdir(outputDir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        std::cout << "Created " << outputDir << std::endl;
     }
 
     std::getline(ifs, line);
     nRuns = atoi(line.c_str());
+    std::cout << "There are " << nRuns << " runs" << std::endl;
     for (int i=0; i<nRuns; ++i) {
         std::getline(ifs, line);
         runs.push_back(line);
+        std::cout << line << std::endl;
     }
+
 
     std::getline(ifs, line);
 
@@ -40,7 +47,7 @@ Config::Config(std::string path) {
         extrapolationMode = BI_DIRECTIONAL;
     else
         extrapolationMode = NONE;
-    
+    std::cout << "Extrapolate: " << extrapolationMode << std::endl;
     if (extrapolationMode != NONE) {
         std::getline(ifs, line);
         double periodDuration = atof(line.c_str());
@@ -48,7 +55,7 @@ Config::Config(std::string path) {
         periodBegin = atof(line.c_str());
         std::getline(ifs, line);
         nPulses = atoi(line.c_str());
-        std::vector<Pulse> pulses;
+        std::vector<PulseDefinition> pulses;
 
         for (int i=0; i<nPulses; ++i) {
             std::getline(ifs, line);
@@ -61,12 +68,11 @@ Config::Config(std::string path) {
             periodOffset = atof(item.c_str());
             std::getline(ss, item, ' ');
             duration = atof(item.c_str());
-            pulses.push_back(Pulse(label, periodOffset, duration, true));
+            pulses.push_back(PulseDefinition(label, periodOffset, duration));
         }
 
-        period = Period(periodDuration, pulses);
+        period = PeriodDefinition(periodDuration, pulses);
     } else {
-        useDefinedPulses = true;
         std::getline(ifs, line);
         nPulses = atoi(line.c_str());
         for (int i=0; i<nPulses; ++i) {
@@ -80,7 +86,7 @@ Config::Config(std::string path) {
             pulseStart = atof(item.c_str());
             std::getline(ss, item, ' ');
             pulseEnd = atof(item.c_str());
-            definedPulses.push_back(Pulse(label, pulseStart, pulseEnd, false));
+            pulses.push_back(Pulse(label, pulseStart, pulseEnd));
         }
 
     }

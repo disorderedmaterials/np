@@ -16,19 +16,19 @@ int main(int argc, char** argv) {
     Config config(argv[1]);
     ModEx modex(config);
 
-    if (config.useDefinedPulses) {
-        modex.epochPulses(config.definedPulses);
+    if (config.extrapolationMode == NONE) {
+        modex.epochPulses(config.pulses);
         std::set<std::string> labels;
         std::vector<std::pair<double, double>> pulses;
         std::map<std::string, std::vector<std::pair<double, double>>> runPulses;
-        for (const auto &p : config.definedPulses) {
+        for (const auto &p : config.pulses) {
             labels.insert(p.label);
         }
             
         for (const auto &label : labels) {
-            for (const auto &p : config.definedPulses) {
+            for (const auto &p : config.pulses) {
                 if (p.label == label) {
-                    pulses.push_back(std::make_pair(p.pulseStart, p.pulseEnd));
+                    pulses.push_back(std::make_pair(p.start, p.end));
                 }
             }
             modex.binPulsesToRuns(pulses, runPulses);
