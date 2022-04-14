@@ -14,46 +14,39 @@ bool ModEx::run() {
     return true;
 }
 
-bool ModEx::run(std::map<std::string, std::vector<Pulse>> &runPulses, std::string pulseLabel) {
+bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
     // Perform a purge.
     system(std::string("./purge_det " + purge + "> /dev/null").c_str());
-    // Iterate through [run, pulse] pairs.
 
-    int n=0;
-    int m = 0;
-    for (const auto runPair : runPulses)
-        n+=runPair.second.size();
+    // Iterate through pulses.
+    for (Pulse &pulse : pulses) {
 
-    for (const auto runPair : runPulses) {
-        std::string run = runPair.first;
-        std::vector<Pulse> pulses = runPair.second;
-
-        // Iterate through pulses.
-        for (auto p : pulses) {
-            // Output path = test/{runName}.nxs
-            std::size_t sep = run.rfind('/');
-            std::size_t dot = run.rfind('.');
-            std::string baseName = run.substr(sep+1, dot-sep-1);
-            // Allocate a new Nexus objecs on the heap.
-            Nexus *nxs = new Nexus(run, "test/" + baseName + ".nxs");
+        // Output path = test/{runName}.nxs
+        std::size_t sep = pulse.startRun.rfind('/');
+        std::size_t dot = pulse.startRun.rfind('.');
+        std::string baseName = pulse.startRun.substr(sep+1, dot-sep-1);
+        // Allocate a new Nexus objecs on the heap.
+        Nexus *nxs;
+        std::cout << pulse.startRun << " " << pulse.endRun << std::endl;
+        if (pulse.startRun == pulse.endRun) {
+            nxs = new Nexus(pulse.startRun, "test/" + baseName + ".nxs");
             // Load basic data.
             nxs->loadBasicData();
             // Load event mode data.
             nxs->loadEventModeData();
             // Create histogram using the pulse as boundaries.
-            nxs->createHistogram(p);
+            nxs->createHistogram(pulse);
             // Write the histogram.
             nxs->writeCountsHistogram();
-            // Call gudrun_dcs.
-            system(std::string("mkdir modex_intermediate && chdir modex_intermediate && ../gudrun_dcs ../" + input + " > /dev/null").c_str());
-            // Move the mint01 file to the output directory.
-            std::string output = out + "/" + std::to_string(p.start) + "-" + pulseLabel + ".mint01";
-            std::string target = "modex_intermediate/" + baseName + ".mint01";
-            system(std::string("mv " + target + " " + output).c_str());
-            system("rm -rf modex_intermediate");
-            delete nxs;
-            ++m;
         }
+        // Call gudrun_dcs.
+        system(std::string("mkdir modex_intermediate && chdir modex_intermediate && ../gudrun_dcs ../" + input + " > /dev/null").c_str());
+        // Move the mint01 file to the output directory.
+        std::string output = out + "/" + std::to_string(pulse.start-nxs->startSinceEpoch) + "-" + pulseLabel + ".mint01";
+        std::string target = "modex_intermediate/" + baseName + ".mint01";
+        system(std::string("mv " + target + " " + output).c_str());
+        system("rm -rf modex_intermediate");
+        delete nxs;
     }
     return true;
 }
@@ -133,20 +126,19 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     return true;
 }
 
-bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses, std::map<std::string, std::vector<Pulse>> &runPulses) {
+bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
 
     for (int i=0; i<pulses.size(); ++i) {
         for (int j=0; j<runs.size(); ++j) {
             Nexus *runNXS = new Nexus(runs[j]); // Heap allocation.
             runNXS->loadBasicData();
-            // Pulse start is between the start and end of the run.
-            if ((pulses[i].start>=runNXS->startSinceEpoch) && (pulses[i].end<=runNXS->endSinceEpoch)) {
-                // Add the pulse, making it relative to the start of that run.
-                runPulses[runs[j]].push_back(Pulse(pulses[i].label, pulses[i].start-runNXS->startSinceEpoch, pulses[i].end-runNXS->startSinceEpoch));                delete runNXS;
-                break;
+            // Find start and end run.
+            if ((pulses[i].start >= runNXS->startSinceEpoch) && (pulses[i].start<=runNXS->endSinceEpoch)) {
+                pulses[i].startRun = runs[j];
             }
-            else {
-                std::cout << pulses[i].start << " " << pulses[i].end << " " << runNXS->startSinceEpoch << " " << runNXS->endSinceEpoch << std::endl;
+            if ((pulses[i].end >= runNXS->startSinceEpoch) && (pulses[i].end<=runNXS->endSinceEpoch)) {
+                pulses[i].endRun = runs[j];
+                break;
             }
             delete runNXS;
         }

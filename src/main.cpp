@@ -21,7 +21,6 @@ int main(int argc, char** argv) {
         modex.epochPulses(config.pulses);
         std::set<std::string> labels;
         std::vector<Pulse> pulses;
-        std::map<std::string, std::vector<Pulse>> runPulses;
         for (const auto &p : config.pulses) {
             labels.insert(p.label);
         }
@@ -32,17 +31,15 @@ int main(int argc, char** argv) {
                     pulses.push_back(p);
                 }
             }
-            modex.binPulsesToRuns(pulses, runPulses);
-            modex.run(runPulses, label);
+            modex.binPulsesToRuns(pulses);
+            modex.run(pulses, label);
             pulses.clear();
-            runPulses.clear();
         }
     }
 
     else {
         // std::vector<std::pair<double, double>> pulses;
         std::vector<Pulse> pulses;
-        std::map<std::string, std::vector<Pulse>> runPulses;
         for (const auto &p : config.period.pulses) {
             modex.extrapolatePulseTimes(
                 modex.runs[0],
@@ -53,10 +50,9 @@ int main(int argc, char** argv) {
                 p,
                 pulses
             );
-            modex.binPulsesToRuns(pulses, runPulses);
-            modex.run(runPulses, p.label);
+            modex.binPulsesToRuns(pulses);
+            modex.run(pulses, p.label);
             pulses.clear();
-            runPulses.clear();
         }
     }
 
