@@ -315,6 +315,35 @@ bool Nexus::createHistogram(std::pair<double, double> &bounds) {
     return true;
 }
 
+bool Nexus::createHistogram(Pulse &pulse) {
+
+    for (auto spec: spectra) {
+        histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
+        gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
+    }
+
+    double event;
+    int idx;
+    std::map<unsigned int, std::vector<double>> partitions;
+    for (int i=0; i<events.size(); ++i) {
+        event = events[i];
+        if (!((events[i]) >= pulse.start) && (events[i] < pulse.end))
+            continue;
+        idx = eventIndices[i];
+        if (!idx)
+            continue;
+        partitions[idx].push_back(event);
+    }
+
+    for (auto partition : partitions) {
+        for (auto ev : partition.second) {
+            gsl_histogram_increment(histogram[partition.first], ev);
+        }
+    }
+
+    return true;
+}
+
 bool Nexus::writeCountsHistogram() {
 
     const int nSpec = spectra.size();

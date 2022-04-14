@@ -14,7 +14,7 @@ bool ModEx::run() {
     return true;
 }
 
-bool ModEx::run(std::map<std::string, std::vector<std::pair<double, double>>> &runPulses, std::string pulseLabel) {
+bool ModEx::run(std::map<std::string, std::vector<Pulse>> &runPulses, std::string pulseLabel) {
     // Perform a purge.
     system(std::string("./purge_det " + purge + "> /dev/null").c_str());
     // Iterate through [run, pulse] pairs.
@@ -26,7 +26,7 @@ bool ModEx::run(std::map<std::string, std::vector<std::pair<double, double>>> &r
 
     for (const auto runPair : runPulses) {
         std::string run = runPair.first;
-        std::vector<std::pair<double, double>> pulses = runPair.second;
+        std::vector<Pulse> pulses = runPair.second;
 
         // Iterate through pulses.
         for (auto p : pulses) {
@@ -47,7 +47,7 @@ bool ModEx::run(std::map<std::string, std::vector<std::pair<double, double>>> &r
             // Call gudrun_dcs.
             system(std::string("mkdir modex_intermediate && chdir modex_intermediate && ../gudrun_dcs ../" + input + " > /dev/null").c_str());
             // Move the mint01 file to the output directory.
-            std::string output = out + "/" + std::to_string(p.first) + "-" + pulseLabel + ".mint01";
+            std::string output = out + "/" + std::to_string(p.start) + "-" + pulseLabel + ".mint01";
             std::string target = "modex_intermediate/" + baseName + ".mint01";
             system(std::string("mv " + target + " " + output).c_str());
             system("rm -rf modex_intermediate");
@@ -55,10 +55,6 @@ bool ModEx::run(std::map<std::string, std::vector<std::pair<double, double>>> &r
             ++m;
         }
     }
-    return true;
-}
-
-bool ModEx::run(std::string run, std::vector<std::pair<double, double>> pulses) {
     return true;
 }
 
@@ -84,7 +80,7 @@ bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
 }
 
 
-bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, double periodOffset, double duration, std::vector<std::pair<double, double>> &pulses) {
+bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, PulseDefinition pulseDefinition, std::vector<Pulse> &pulses) {
 
     // Assume runs are ordered.
     const std::string firstRun = runs[0];
@@ -101,15 +97,16 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     // Determine start, end and first pulse times, since unix epoch.
     const int expStart = firstRunNXS.startSinceEpoch;
     const int expEnd = lastRunNXS.endSinceEpoch;
-    double startPulse = startRunNXS.startSinceEpoch + start + periodOffset;
+    double startPulse = startRunNXS.startSinceEpoch + start + pulseDefinition.periodOffset;
     double pulse = 0;
-    pulses.push_back(std::make_pair(startPulse, startPulse+duration));
+    // pulses.push_back(std::make_pair(startPulse, startPulse+pulseDefinition.duration));
+    pulses.push_back(Pulse(pulseDefinition.label, startPulse, startPulse+pulseDefinition.duration));
 
     // Extrapolate backwardsa.
     if (backwards) {
         pulse = startPulse - periodDuration;
         while (pulse > expStart) {
-            pulses.push_back(std::make_pair(pulse, pulse+duration));
+            pulses.push_back(Pulse(pulseDefinition.label, pulse, startPulse+pulseDefinition.duration));
             pulse-=periodDuration;
         }
     }
@@ -118,7 +115,7 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     if (forwards) {
         pulse = startPulse + periodDuration;
         while (pulse < expEnd) {
-            pulses.push_back(std::make_pair(pulse, pulse+duration));
+            pulses.push_back(Pulse(pulseDefinition.label, pulse, startPulse+pulseDefinition.duration));
             pulse+=periodDuration;
         }
     }
@@ -127,30 +124,29 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     std::sort(
         pulses.begin(), pulses.end(),
         [](
-            const std::pair<double, double> a,
-            const std::pair<double, double> b
+            const Pulse a,
+            const Pulse b
             ){
-                return a.first < b.first;
+                return a.start < b.end;
             }
     );
     return true;
 }
 
-bool ModEx::binPulsesToRuns(std::vector<std::pair<double, double>> &pulses, std::map<std::string, std::vector<std::pair<double, double>>> &runPulses) {
+bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses, std::map<std::string, std::vector<Pulse>> &runPulses) {
 
     for (int i=0; i<pulses.size(); ++i) {
         for (int j=0; j<runs.size(); ++j) {
             Nexus *runNXS = new Nexus(runs[j]); // Heap allocation.
             runNXS->loadBasicData();
             // Pulse start is between the start and end of the run.
-            if ((pulses[i].first>=runNXS->startSinceEpoch) && (pulses[i].second<=runNXS->endSinceEpoch)) {
+            if ((pulses[i].start>=runNXS->startSinceEpoch) && (pulses[i].end<=runNXS->endSinceEpoch)) {
                 // Add the pulse, making it relative to the start of that run.
-                runPulses[runs[j]].push_back(std::make_pair(pulses[i].first-runNXS->startSinceEpoch,pulses[i].second-runNXS->startSinceEpoch));
-                delete runNXS;
+                runPulses[runs[j]].push_back(Pulse(pulses[i].label, pulses[i].start-runNXS->startSinceEpoch, pulses[i].end-runNXS->startSinceEpoch));                delete runNXS;
                 break;
             }
             else {
-                std::cout << pulses[i].first << " " << pulses[i].second << " " << runNXS->startSinceEpoch << " " << runNXS->endSinceEpoch << std::endl;
+                std::cout << pulses[i].start << " " << pulses[i].end << " " << runNXS->startSinceEpoch << " " << runNXS->endSinceEpoch << std::endl;
             }
             delete runNXS;
         }

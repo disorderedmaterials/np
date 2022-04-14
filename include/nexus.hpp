@@ -7,6 +7,8 @@
 #include <H5Cpp.h>
 #include <gsl/gsl_histogram.h>
 
+#include "pulse.hpp"
+
 class Nexus {
 
     private:
@@ -47,6 +49,8 @@ class Nexus {
         bool createHistogram();
         bool createHistogram(std::vector<std::pair<double, double>> &bounds);
         bool createHistogram(std::pair<double, double> &bounds);
+
+        bool createHistogram(Pulse &pulse);
 
         bool extractPulseTimes(int spectrum, std::vector<double> &pulses);
         bool extrapolatePulseTimes(double start, bool backwards, bool forwards, double step, double duration, std::vector<std::pair<double, double>> &pulses);

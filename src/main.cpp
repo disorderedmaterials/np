@@ -14,13 +14,14 @@ int main(int argc, char** argv) {
         return -1;
     }
     Config config(argv[1]);
+    // return 1;
     ModEx modex(config);
 
     if (config.extrapolationMode == NONE) {
         modex.epochPulses(config.pulses);
         std::set<std::string> labels;
-        std::vector<std::pair<double, double>> pulses;
-        std::map<std::string, std::vector<std::pair<double, double>>> runPulses;
+        std::vector<Pulse> pulses;
+        std::map<std::string, std::vector<Pulse>> runPulses;
         for (const auto &p : config.pulses) {
             labels.insert(p.label);
         }
@@ -28,7 +29,7 @@ int main(int argc, char** argv) {
         for (const auto &label : labels) {
             for (const auto &p : config.pulses) {
                 if (p.label == label) {
-                    pulses.push_back(std::make_pair(p.start, p.end));
+                    pulses.push_back(p);
                 }
             }
             modex.binPulsesToRuns(pulses, runPulses);
@@ -39,8 +40,9 @@ int main(int argc, char** argv) {
     }
 
     else {
-        std::vector<std::pair<double, double>> pulses;
-        std::map<std::string, std::vector<std::pair<double, double>>> runPulses;
+        // std::vector<std::pair<double, double>> pulses;
+        std::vector<Pulse> pulses;
+        std::map<std::string, std::vector<Pulse>> runPulses;
         for (const auto &p : config.period.pulses) {
             modex.extrapolatePulseTimes(
                 modex.runs[0],
@@ -48,8 +50,7 @@ int main(int argc, char** argv) {
                 config.extrapolationMode == BACKWARDS || config.extrapolationMode == BI_DIRECTIONAL,
                 config.extrapolationMode == FORWARDS || config.extrapolationMode == BI_DIRECTIONAL,
                 config.period.duration,
-                p.periodOffset,
-                p.duration,
+                p,
                 pulses
             );
             modex.binPulsesToRuns(pulses, runPulses);
