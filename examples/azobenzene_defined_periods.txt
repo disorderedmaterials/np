@@ -1,0 +1,11 @@
+azobenzene.txt
+purge_det.dat
+testout
+1
+data/NIMROD00069862.nxs
+FORWARDS
+980.0
+12129.0
+2
+LED 0 300
+UV 490 300
