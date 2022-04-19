@@ -167,13 +167,17 @@ include_directories(
 
 set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp include/period.hpp)
 
-add_executable(modulation_excitation src/main.cpp ${SOURCES})
+add_executable(modulation_excitation src/modulation_excitation.cpp ${SOURCES})
+add_executable(partition_events src/partition_events.cpp ${SOURCES})
+
 
 find_package(GSL REQUIRED)
 
 link_directories (${LIBRARY_OUTPUT_PATH})
   IF(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} GSL::gsl)
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} GSL::gsl)
 ELSE(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl GSL::gsl)
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl GSL::gsl)
 ENDIF(WIN32)

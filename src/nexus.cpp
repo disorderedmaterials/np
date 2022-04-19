@@ -286,6 +286,35 @@ bool Nexus::createHistogram(std::vector<std::pair<double, double>> &bounds) {
 
 }
 
+
+bool Nexus::writePartitions() {
+
+    double event;
+    int idx;
+    std::map<unsigned int, std::vector<double>> partitions;
+    for (int i=0; i<events.size(); ++i) {
+        event = events[i];
+        idx = eventIndices[i];
+        if (!idx)
+            continue;
+        partitions[idx].push_back(event);
+    }
+
+    H5::H5File file("output.nxs", H5F_ACC_TRUNC);
+
+    for (auto pair : partitions) {
+        const int rank = 1;
+        hsize_t dims[1];
+        dims[0] = pair.second.size();
+
+        H5::DataSpace dataspace(rank, dims);
+
+        H5::DataSet dataset =  file.createDataSet(std::to_string(pair.first).c_str(), H5::PredType::NATIVE_FLOAT, dataspace);
+        dataset.write(pair.second.data(), H5::PredType::NATIVE_FLOAT);
+    }
+    return true;
+}
+
 bool Nexus::createHistogram(std::pair<double, double> &bounds) {
 
     for (auto spec: spectra) {

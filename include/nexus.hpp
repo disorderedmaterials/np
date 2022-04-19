@@ -42,6 +42,7 @@ class Nexus {
         bool getLeafDataset(H5::H5File file, std::vector<H5std_string> terminals, H5std_string dataset, H5::DataSet &out);
         bool copy();
         bool writeCountsHistogram();
+        bool writePartitions();
 
         bool partitionEvents();
         bool partitionEvents(std::vector<int> &spectra_);
