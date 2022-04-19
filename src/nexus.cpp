@@ -306,12 +306,13 @@ bool Nexus::writePartitions() {
         const int rank = 1;
         hsize_t dims[1];
         dims[0] = pair.second.size();
-
         H5::DataSpace dataspace(rank, dims);
-
-        H5::DataSet dataset =  file.createDataSet(std::to_string(pair.first).c_str(), H5::PredType::NATIVE_FLOAT, dataspace);
-        dataset.write(pair.second.data(), H5::PredType::NATIVE_FLOAT);
+        H5::DataSet dataset =  file.createDataSet(std::to_string(pair.first).c_str(), H5::PredType::NATIVE_DOUBLE, dataspace);
+        dataset.write(pair.second.data(), H5::PredType::NATIVE_DOUBLE);
     }
+
+    file.close();
+
     return true;
 }
 
