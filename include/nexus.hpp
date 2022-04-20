@@ -43,6 +43,7 @@ class Nexus {
         bool copy();
         bool writeCountsHistogram();
         bool writePartitions();
+        bool writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned int higherSpec);
 
         bool partitionEvents();
         bool partitionEvents(std::vector<int> &spectra_);
