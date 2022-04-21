@@ -7,11 +7,15 @@
 
 class ModEx {
 
+    private:
+        int currentPulse = 1;
     public:
         std::string input;
         std::string purge;
         std::string out;
         std::vector<std::string> runs;
+        double progress;
+        int totalPulses = 0;
 
         ModEx(std::string input_, std::string purge_, std::string out_, std::vector<std::string> runs_) : input(input_), purge(purge_), out(out_), runs(runs_) {}
         ModEx(Config cfg);

@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 
 ModEx::ModEx(Config cfg) {
     input = cfg.gudrunInputFile;
@@ -20,14 +21,13 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
 
     // Iterate through pulses.
     for (Pulse &pulse : pulses) {
-
+        
         // Output path = test/{runName}.nxs
         std::size_t sep = pulse.startRun.rfind('/');
         std::size_t dot = pulse.startRun.rfind('.');
         std::string baseName = pulse.startRun.substr(sep+1, dot-sep-1);
         // Allocate a new Nexus objecs on the heap.
         Nexus *nxs;
-        std::cout << pulse.startRun << " " << pulse.endRun << std::endl;
         if (pulse.startRun == pulse.endRun) {
             nxs = new Nexus(pulse.startRun, "test/" + baseName + ".nxs");
             // Load basic data.
@@ -40,13 +40,17 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
             nxs->writeCountsHistogram();
         }
         // Call gudrun_dcs.
-        system(std::string("mkdir modex_intermediate && chdir modex_intermediate && ../gudrun_dcs ../" + input + " > /dev/null").c_str());
+        system(std::string("mkdir modex_intermediate && cd modex_intermediate && ../gudrun_dcs ../" + input + "> /dev/null").c_str());
         // Move the mint01 file to the output directory.
         std::string output = out + "/" + std::to_string(pulse.start-nxs->startSinceEpoch) + "-" + pulseLabel + ".mint01";
         std::string target = "modex_intermediate/" + baseName + ".mint01";
         system(std::string("mv " + target + " " + output).c_str());
         system("rm -rf modex_intermediate");
         delete nxs;
+        std::cout << currentPulse << " " << totalPulses << std::endl;
+        progress = ((double) currentPulse / (double) totalPulses) * 100;
+        std::cout << "Progress: " << progress << "%" << std::endl;
+        ++currentPulse;
     }
     return true;
 }

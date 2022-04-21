@@ -18,13 +18,13 @@ int main(int argc, char** argv) {
     ModEx modex(config);
 
     if (config.extrapolationMode == NONE) {
+        modex.totalPulses = config.pulses.size();
         modex.epochPulses(config.pulses);
         std::set<std::string> labels;
         std::vector<Pulse> pulses;
         for (const auto &p : config.pulses) {
             labels.insert(p.label);
         }
-            
         for (const auto &label : labels) {
             for (const auto &p : config.pulses) {
                 if (p.label == label) {
@@ -38,9 +38,12 @@ int main(int argc, char** argv) {
     }
 
     else {
-        // std::vector<std::pair<double, double>> pulses;
-        std::vector<Pulse> pulses;
-        for (const auto &p : config.period.pulses) {
+
+        // Lookahead to count pulses.
+        std::map<std::string, std::vector<Pulse>> pulseMap;
+
+        for (auto &p: config.period.pulses) {
+            std::vector<Pulse> pulses;
             modex.extrapolatePulseTimes(
                 modex.runs[0],
                 config.periodBegin,
@@ -50,9 +53,14 @@ int main(int argc, char** argv) {
                 p,
                 pulses
             );
-            modex.binPulsesToRuns(pulses);
-            modex.run(pulses, p.label);
-            pulses.clear();
+            pulseMap[p.label] = pulses;
+            modex.totalPulses += pulses.size();
+        }
+        std::cout << modex.totalPulses << std::endl;
+        // Run on pulses
+        for (auto pair : pulseMap) {
+            modex.binPulsesToRuns(pair.second);
+            modex.run(pair.second, pair.first);
         }
     }
 
