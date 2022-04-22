@@ -135,6 +135,7 @@ set(CMAKE_CXX_STANDARD 11)
       add_dependencies(hdf5fortran HDF5 szip)
       add_dependencies(hdf5f90cstub HDF5 szip)
     endif(BUILD_SZIP)
+    include_directories(${CMAKE_BINARY_DIR}/3rdparty/include)
   else(BUILD_HDF)
     if(LOCAL_STATIC_HDF5)
       list(APPEND LINK_LIBS "${HDF5_DIR}/lib/libhdf5_fortran.a"
@@ -153,12 +154,6 @@ set(CMAKE_CXX_STANDARD 11)
       include_directories(${HDF5_INCLUDE_DIRS})
     endif(LOCAL_STATIC_HDF5)
   endif(BUILD_HDF)
-
-  # Set necessary include directories
-  if(BUILD_HDF)
-    include_directories(${CMAKE_BINARY_DIR}/3rdparty/include)
-  endif(BUILD_HDF)
-
 
 include_directories(
     ${CMAKE_BINARY_DIR}/src
