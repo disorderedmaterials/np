@@ -21,6 +21,7 @@ steps:
       cd build
       cmake ../ -G Ninja ${{ parameters.extraflags }} -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR}
       ls
+      ls 3rdparty
       ls 3rdparty/lib
       ninja
       cd ..
