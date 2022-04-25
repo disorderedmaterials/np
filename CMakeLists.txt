@@ -155,7 +155,7 @@ add_executable(partition_events src/partition_events.cpp ${SOURCES})
 find_package(GSL REQUIRED)
 
 link_directories (${LIBRARY_OUTPUT_PATH})
-  IF(WIN32)
+IF(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} GSL::gsl)
   target_link_libraries(partition_events PRIVATE ${LINK_LIBS} GSL::gsl)
 ELSE(WIN32)
