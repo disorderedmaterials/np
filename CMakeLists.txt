@@ -134,11 +134,6 @@ else(BUILD_HDF)
   endif(LOCAL_STATIC_HDF5)
 endif(BUILD_HDF)
 
-option(
-  LOCAL_STATIC_GSL
-  "Use local GSL installation (specified with GSL_DIR)"
-  OFF)
-if (LOCAL_STATIC_GSL)
 
 # Set necessary include directories
 if(BUILD_HDF)
