@@ -17,6 +17,7 @@ steps:
       unzip ${{ parameters.hdf5tag }}-linux.zip
     displayName: 'Download HDF5 Artifacts'
   - bash:
+      set -ex
       wget ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz
       tar -zxvf ${{ parameters.gsltag }}.tar.gz
       cd ${{ parameters.gsltag }}
