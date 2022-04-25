@@ -16,7 +16,7 @@ steps:
       wget https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-linux.zip
       unzip ${{ parameters.hdf5tag }}-linux.zip
     displayName: 'Download HDF5 Artifacts'
-  - bash:
+  - bash: |
       set -ex
       wget ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz
       tar -zxvf ${{ parameters.gsltag }}.tar.gz
