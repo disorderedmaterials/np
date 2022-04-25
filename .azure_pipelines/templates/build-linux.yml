@@ -21,6 +21,7 @@ steps:
       cd build
       cmake ../ -G Ninja ${{ parameters.extraflags }} -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR}
       ninja
+      ninja install
       cd ..
       mkdir dist
       mv build/modulation_excitation dist/

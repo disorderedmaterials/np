@@ -22,6 +22,7 @@ steps:
       cd build
       cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-9" -DLOCAL_STATIC_HDF5:bool=True -DHDF5_DIR:path=${HDF5_DIR} ${{ parameters.extraflags }}
       ninja
+      ninja install
       cd ..
       mkdir dist
       mv build/modulation_excitation dist/
