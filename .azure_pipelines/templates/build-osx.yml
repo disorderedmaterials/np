@@ -4,7 +4,7 @@ parameters:
   - name: extraflags
     default: ''
   - name: gsltag
-    default: gsl-latest
+    default: gsl-2.7.1
 
 steps:
   - bash: |
