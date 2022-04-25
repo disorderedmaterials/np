@@ -21,7 +21,7 @@ steps:
       wget ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz
       tar -zxvf ${{ parameters.gsltag }}.tar.gz
       cd ${{ parameters.gsltag }}
-      mdkir /tmp/gsl
+      mkdir /tmp/gsl
       ./configure --prefix=/tmp/gsl
       make
       make install
