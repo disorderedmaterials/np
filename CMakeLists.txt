@@ -134,6 +134,12 @@ else(BUILD_HDF)
   endif(LOCAL_STATIC_HDF5)
 endif(BUILD_HDF)
 
+option(
+  LOCAL_STATIC_GSL
+  "Use local GSL installation (specified with GSL_DIR)"
+  OFF)
+if (LOCAL_STATIC_GSL)
+
 # Set necessary include directories
 if(BUILD_HDF)
   include_directories(${CMAKE_BINARY_DIR}/3rdparty/include)
@@ -144,7 +150,7 @@ find_package(GSL REQUIRED)
 include_directories(
     ${CMAKE_BINARY_DIR}/src
     include
-    ${GSL_INCLUDE_DIR}
+    ${GSL_INCLUDE_DIRS}
 )
 
 set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp include/period.hpp)
@@ -155,9 +161,9 @@ add_executable(partition_events src/partition_events.cpp ${SOURCES})
 
 link_directories (${LIBRARY_OUTPUT_PATH})
 IF(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} GSL::gsl)
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} GSL::gsl)
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} ${GSL_LIBRARIES})
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} ${GSL_LIBRARIES})
 ELSE(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl GSL::gsl)
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl GSL::gsl)
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl ${GSL_LIBRARIES})
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl ${GSL_LIBRARIES})
 ENDIF(WIN32)
