@@ -3,6 +3,8 @@ parameters:
     default: hdf5-1_10_7
   - name: extraflags
     default: ''
+  - name: gsltag
+    default: gsl-1.7
 
 steps:
   - bash: |
@@ -17,10 +19,20 @@ steps:
     displayName: 'Download HDF5 Artifacts'
   - bash: |
       set -ex
+      wget ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz
+      tar -zxvf ${{ parameters.gsltag }}.tar.gz
+      cd ${{ parameters.gsltag }}
+      mkdir /tmp/gsl
+      ./configure --prefix=/tmp/gsl
+      make
+      make install
+    displayName: 'Download and build GNU GSL'
+  - bash: |
+      set -ex
       HDF5_DIR="$(pwd)/${{ parameters.hdf5tag }}"
       mkdir build
       cd build
-      cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-9" -DLOCAL_STATIC_HDF5:bool=True -DHDF5_DIR:path=${HDF5_DIR} ${{ parameters.extraflags }}
+      cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-9" -DLOCAL_STATIC_HDF5:bool=True -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR} ${{ parameters.extraflags }}
       ninja
       cd ..
       mkdir dist
