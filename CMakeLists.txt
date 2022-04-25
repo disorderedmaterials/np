@@ -10,6 +10,15 @@ enable_language(Fortran)
 set(CMAKE_MODULE_PATH "${HDF5_DIR}/share/cmake/;${CMAKE_MODULE_PATH}")
 
 option(
+  LOCAL_STATIC_GSL
+  "Use local GSL installation (specified with GSL_DIR)"
+  OFF)
+
+if(LOCAL_STATIC_GSL)
+  list(APPEND LINK_LIBS "${GSL_DIR}/lib/libgsl.a")
+endif(LOCAL_STATIC_GSL)
+
+option(
   LOCAL_STATIC_HDF5
   "Use local HDF5 installation (specified with HDF5_DIR) built with static ZLIB and SZIP support (so don't search for them)"
   OFF)
@@ -140,12 +149,9 @@ if(BUILD_HDF)
   include_directories(${CMAKE_BINARY_DIR}/3rdparty/include)
 endif(BUILD_HDF)
 
-find_package(GSL REQUIRED)
-
 include_directories(
     ${CMAKE_BINARY_DIR}/src
     include
-    ${GSL_INCLUDE_DIRS}
 )
 
 set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp include/period.hpp)
@@ -156,9 +162,9 @@ add_executable(partition_events src/partition_events.cpp ${SOURCES})
 
 link_directories (${LIBRARY_OUTPUT_PATH})
 IF(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} ${GSL_LIBRARIES})
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} ${GSL_LIBRARIES})
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS})
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS})
 ELSE(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl ${GSL_LIBRARIES})
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl ${GSL_LIBRARIES})
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl)
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl)
 ENDIF(WIN32)
