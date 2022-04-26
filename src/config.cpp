@@ -30,6 +30,7 @@ Config::Config(std::string path) {
     std::getline(ifs, line);
     nRuns = atoi(line.c_str());
     std::cout << "There are " << nRuns << " runs" << std::endl;
+    std::getline(ifs, dataFileDir);
     for (int i=0; i<nRuns; ++i) {
         std::getline(ifs, line);
         runs.push_back(line);

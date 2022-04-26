@@ -8,7 +8,9 @@ ModEx::ModEx(Config cfg) {
     input = cfg.gudrunInputFile;
     purge = cfg.purgeInputFile;
     out = cfg.outputDir;
+    dataDir = cfg.dataFileDir;
     runs = cfg.runs;
+    truncatePath = cfg.runs[0];
 }
 
 bool ModEx::run() {
@@ -22,14 +24,15 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
     // Iterate through pulses.
     for (Pulse &pulse : pulses) {
         
-        // Output path = test/{runName}.nxs
-        std::size_t sep = pulse.startRun.rfind('/');
-        std::size_t dot = pulse.startRun.rfind('.');
-        std::string baseName = pulse.startRun.substr(sep+1, dot-sep-1);
-        // Allocate a new Nexus objecs on the heap.
+        std::size_t dot = truncatePath.rfind('.');
+        std::string baseName = truncatePath.substr(0, dot);
+        std::cout << truncatePath << std::endl;
+        std::cout << baseName << std::endl;
         Nexus *nxs;
         if (pulse.startRun == pulse.endRun) {
-            nxs = new Nexus(pulse.startRun, "test/" + baseName + ".nxs");
+            // Allocate a new Nexus objecs on the heap.
+            std::cout << dataDir + "/" + baseName + ".nxs" << std::endl;
+            nxs = new Nexus(dataDir + "/" + pulse.startRun, dataDir + "/" + baseName + ".nxs");
             // Load basic data.
             nxs->loadBasicData();
             // Load event mode data.
@@ -39,6 +42,9 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
             // Write the histogram.
             nxs->writeCountsHistogram();
         }
+        else {
+            continue;
+        }
         // Call gudrun_dcs.
         system(std::string("mkdir modex_intermediate && cd modex_intermediate && ../gudrun_dcs ../" + input + "> /dev/null").c_str());
         // Move the mint01 file to the output directory.
@@ -46,6 +52,7 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
         std::string target = "modex_intermediate/" + baseName + ".mint01";
         system(std::string("mv " + target + " " + output).c_str());
         system("rm -rf modex_intermediate");
+        // system(("rm " + dataDir + "/" + baseName + ".nxs").c_str());
         delete nxs;
         std::cout << currentPulse << " " << totalPulses << std::endl;
         progress = ((double) currentPulse / (double) totalPulses) * 100;
@@ -60,7 +67,7 @@ bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
     // Assume runs are ordered.
     const std::string firstRun = runs[0];
     // Load the first run.
-    Nexus firstRunNXS(firstRun);
+    Nexus firstRunNXS(dataDir + "/" + firstRun);
     firstRunNXS.loadBasicData();
 
     // Apply offset.
@@ -84,13 +91,12 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     const std::string lastRun = runs[runs.size()-1];
 
     // Load the first, last and start runs.
-    Nexus firstRunNXS(firstRun);
+    Nexus firstRunNXS(dataDir + "/" + firstRun);
     firstRunNXS.loadBasicData();
-    Nexus lastRunNXS(lastRun);
+    Nexus lastRunNXS(dataDir + "/" + lastRun);
     lastRunNXS.loadBasicData();
-    Nexus startRunNXS(start_run);
+    Nexus startRunNXS(dataDir + "/" + start_run);
     startRunNXS.loadBasicData();
-
     // Determine start, end and first pulse times, since unix epoch.
     const int expStart = firstRunNXS.startSinceEpoch;
     const int expEnd = lastRunNXS.endSinceEpoch;
@@ -103,7 +109,7 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     if (backwards) {
         pulse = startPulse - periodDuration;
         while (pulse > expStart) {
-            pulses.push_back(Pulse(pulseDefinition.label, pulse, startPulse+pulseDefinition.duration));
+            pulses.push_back(Pulse(pulseDefinition.label, pulse, pulse+pulseDefinition.duration));
             pulse-=periodDuration;
         }
     }
@@ -112,7 +118,7 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     if (forwards) {
         pulse = startPulse + periodDuration;
         while (pulse < expEnd) {
-            pulses.push_back(Pulse(pulseDefinition.label, pulse, startPulse+pulseDefinition.duration));
+            pulses.push_back(Pulse(pulseDefinition.label, pulse, pulse+pulseDefinition.duration));
             pulse+=periodDuration;
         }
     }
@@ -134,7 +140,7 @@ bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
 
     for (int i=0; i<pulses.size(); ++i) {
         for (int j=0; j<runs.size(); ++j) {
-            Nexus *runNXS = new Nexus(runs[j]); // Heap allocation.
+            Nexus *runNXS = new Nexus(dataDir + "/" + runs[j]); // Heap allocation.
             runNXS->loadBasicData();
             // Find start and end run.
             if ((pulses[i].start >= runNXS->startSinceEpoch) && (pulses[i].start<=runNXS->endSinceEpoch)) {

@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <cstdio>
 
 int main(int argc, char** argv) {
 
@@ -16,6 +17,14 @@ int main(int argc, char** argv) {
     Config config(argv[1]);
     // return 1;
     ModEx modex(config);
+
+    // So we don't overwrite.
+    std::string firstRun = modex.dataDir + "/" + modex.truncatePath;
+    std::string newFirstRun = modex.dataDir + "/first_run.nxs";
+    Nexus nxs(firstRun, newFirstRun);
+    nxs.copy();
+    // rename(firstRun.c_str(), newFirstRun.c_str());
+    modex.runs[0] = "first_run.nxs";
 
     if (config.extrapolationMode == NONE) {
         modex.totalPulses = config.pulses.size();
@@ -44,6 +53,7 @@ int main(int argc, char** argv) {
 
         for (auto &p: config.period.pulses) {
             std::vector<Pulse> pulses;
+            std::cout << p.duration << std::endl;
             modex.extrapolatePulseTimes(
                 modex.runs[0],
                 config.periodBegin,
@@ -63,7 +73,7 @@ int main(int argc, char** argv) {
             modex.run(pair.second, pair.first);
         }
     }
-
+    rename(newFirstRun.c_str(), modex.truncatePath.c_str());
     return 0;
 
 }
