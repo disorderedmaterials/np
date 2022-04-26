@@ -1,0 +1,28 @@
+trigger: none
+
+pr:
+  autoCancel: true
+  branches:
+    include:
+      - "*"
+  paths:
+    exclude:
+      - .azure-pipelines/continuous.yml
+
+stages:
+  - stage: 'build'
+    displayName: 'Build'
+    jobs:   
+      - job: 'linux'
+        displayName: 'Linux'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          - template: templates/build-linux.yml
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathToPublish: "dist/"
+              ArtifactName: 'linux-artifacts'
+            displayName: 'Publish Linux Artifacts'
