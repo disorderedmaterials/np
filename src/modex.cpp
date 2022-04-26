@@ -11,6 +11,9 @@ ModEx::ModEx(Config cfg) {
     dataDir = cfg.dataFileDir;
     runs = cfg.runs;
     truncatePath = cfg.runs[0];
+    Nexus nxs(dataDir + "/" + truncatePath);
+    nxs.loadBasicData();
+    expStart = nxs.startSinceEpoch;
 }
 
 bool ModEx::run() {
@@ -38,7 +41,8 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
             // Load event mode data.
             nxs->loadEventModeData();
             // Create histogram using the pulse as boundaries.
-            nxs->createHistogram(pulse);
+            Pulse normPulse(pulseLabel, pulse.start-nxs->startSinceEpoch, pulse.end-nxs->startSinceEpoch);
+            nxs->createHistogram(normPulse);
             // Write the histogram.
             nxs->writeCountsHistogram();
         }
@@ -52,7 +56,7 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
         // Call gudrun_dcs.
         system(std::string("mkdir modex_intermediate && cd modex_intermediate && ../gudrun_dcs ../" + input + "> /dev/null").c_str());
         // Move the mint01 file to the output directory.
-        std::string output = out + "/" + std::to_string(pulse.start+nxs->startSinceEpoch) + "-" + pulseLabel + ".mint01";
+        std::string output = out + "/" + std::to_string(pulse.start-expStart) + "-" + pulseLabel + ".mint01";
         std::string target = "modex_intermediate/" + baseName + ".mint01";
         system(std::string("mv " + target + " " + output).c_str());
         system("rm -rf modex_intermediate");

@@ -382,7 +382,7 @@ bool Nexus::createHistogram(Pulse &pulse) {
         histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
         gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
     }
-
+    std::cout <<pulse.start << " " << pulse.end << std::endl;
     double event;
     int idx;
     std::map<unsigned int, std::vector<double>> partitions;
@@ -395,7 +395,6 @@ bool Nexus::createHistogram(Pulse &pulse) {
             continue;
         partitions[idx].push_back(event);
     }
-
     for (auto partition : partitions) {
         for (auto ev : partition.second) {
             gsl_histogram_increment(histogram[partition.first], ev);
@@ -414,8 +413,9 @@ bool Nexus::writeCountsHistogram() {
 
     for (int i=0; i<1; ++i)
         for (int j=0; j<nSpec; ++j)
-            for (int k=0; k<nBin; ++k)
+            for (int k=0; k<nBin; ++k){
                 buf[(i*nSpec+j)*nBin+k] = gsl_histogram_get(histogram[spectra[j]], k);
+            }
                 // buf[(i*nSpec+j)*nBin+k] = histogram[spectra[j]][k]; //buf[i][j][k] = buf[(i*Y+j)*Z+k]
 
     Nexus::copy();

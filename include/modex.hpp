@@ -16,6 +16,7 @@ class ModEx {
         std::string dataDir;
         std::vector<std::string> runs;
         std::string truncatePath;
+        int expStart;
         double progress;
         int totalPulses = 0;
 
