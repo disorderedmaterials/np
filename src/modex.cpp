@@ -43,12 +43,16 @@ bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
             nxs->writeCountsHistogram();
         }
         else {
+            std::cout << currentPulse << " " << totalPulses << std::endl;
+            progress = ((double) currentPulse / (double) totalPulses) * 100;
+            std::cout << "Progress: " << progress << "%" << std::endl;
+            ++currentPulse;
             continue;
         }
         // Call gudrun_dcs.
         system(std::string("mkdir modex_intermediate && cd modex_intermediate && ../gudrun_dcs ../" + input + "> /dev/null").c_str());
         // Move the mint01 file to the output directory.
-        std::string output = out + "/" + std::to_string(pulse.start-nxs->startSinceEpoch) + "-" + pulseLabel + ".mint01";
+        std::string output = out + "/" + std::to_string(pulse.start+nxs->startSinceEpoch) + "-" + pulseLabel + ".mint01";
         std::string target = "modex_intermediate/" + baseName + ".mint01";
         system(std::string("mv " + target + " " + output).c_str());
         system("rm -rf modex_intermediate");
