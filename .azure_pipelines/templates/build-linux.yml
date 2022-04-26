@@ -1,0 +1,41 @@
+parameters:
+  - name: hdf5tag
+    default: hdf5-1_10_7
+  - name: extraflags
+    default: ''
+  - name: gsltag
+    default: gsl-2.7.1
+
+steps:
+  - bash: |
+      set -ex
+      sudo apt-get update
+      sudo apt-get install ninja-build
+    displayName: 'Install Prerequisites'
+  - bash: |
+      wget https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-linux.zip
+      unzip ${{ parameters.hdf5tag }}-linux.zip
+    displayName: 'Download HDF5 Artifacts'
+  - bash: |
+      set -ex
+      wget ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz
+      tar -zxvf ${{ parameters.gsltag }}.tar.gz
+      cd ${{ parameters.gsltag }}
+      mkdir /tmp/gsl
+      ./configure --prefix=/tmp/gsl
+      make
+      make install
+    displayName: 'Download and build GNU GSL'
+  - bash: |
+      set -ex
+      HDF5_DIR="$(pwd)/${{ parameters.hdf5tag }}"
+      GSL_DIR="/tmp/gsl"
+      mkdir build
+      cd build
+      cmake ../ -G Ninja ${{ parameters.extraflags }} -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
+      ninja
+      cd ..
+      mkdir dist
+      mv build/modulation_excitation dist/
+      mv build/partition_events dist/
+    displayName: 'Build'
