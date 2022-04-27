@@ -32,12 +32,20 @@ class Nexus {
         std::vector<int> frameIndices;
         std::vector<double> frameOffsets;
         std::vector<double> ranges;
+        std::map<int, std::vector<int>> monitors;
         std::map<unsigned int, gsl_histogram*> histogram;
         std::map<unsigned int, std::vector<double>> partitions;
 
         bool load(bool advanced = false);
         bool createHistogram(Pulse &pulse, int epochOffset=0);
+        bool createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset=0);
         bool output(std::vector<std::string> paths);
+        bool output(std::vector<std::string> paths, int rawFrames, std::map<int, std::vector<int>> monitors);
+        bool copy(H5::H5File in, H5::H5File out, std::vector<std::string> paths);
+        bool writeCounts(H5::H5File output);
+        bool writeGoodFrames(H5::H5File output, int goodFrames);
+        bool writeMonitors(H5::H5File output, std::map<int, std::vector<int>> monitors);
+        int countGoodFrames(Pulse &pulse, int epochOffset=0);
 
 };
 

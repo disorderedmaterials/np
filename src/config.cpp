@@ -40,10 +40,8 @@ bool Config::parse() {
         line = line.substr(pos);
         std::stringstream ss(line);
         std::getline(ss, path, ' ');
-        // std::cout << path << std::endl;
         if (path.rfind("/", 0) == 0) {
             nxsDefinitionPaths.push_back("/raw_data_1" + path);
-            std::cout << nxsDefinitionPaths[nxsDefinitionPaths.size()-1] << std::endl;
         }
     }
 

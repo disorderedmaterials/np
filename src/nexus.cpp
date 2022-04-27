@@ -14,12 +14,18 @@ bool Nexus::getLeafDataset(H5::H5File file, std::vector<H5std_string> terminals,
         for (const auto terminal : terminals) {
             if (root) {
                 root = false;
+                if (!file.nameExists(terminal))
+                    return false;
                 group = file.openGroup(terminal);
             }
             else {
+                if (!group.nameExists(terminal))
+                    return false;
                 group = group.openGroup(terminal);
             }
         }
+        if (!group.nameExists(dataset))
+            return false;
         out = group.openDataSet(dataset);
         return true;
     } catch (...) {
@@ -43,7 +49,6 @@ bool Nexus::load(bool advanced) {
         hsize_t* spectraDims = new hsize_t[spectraNDims];
         spectraSpace.getSimpleExtentDims(spectraDims);
 
-        // data.spectra = new int[(long int) spectraDims[0]];
         spectra.resize(spectraDims[0]);
         H5Dread(spectra_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra.data());
 
@@ -164,6 +169,28 @@ bool Nexus::load(bool advanced) {
 
             ranges.resize(binsDims[0]);
             H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges.data());
+
+            // Read in monitor data.
+
+            int i = 1;
+            bool result = true;
+            while (true) {
+
+                H5::DataSet monitor;
+                if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(i)}, "data", monitor)) {
+                    break;
+                }
+                H5::DataSpace monitorSpace = monitor.getSpace();
+                hsize_t monitorNDims = monitorSpace.getSimpleExtentNdims();
+                hsize_t* monitorDims = new hsize_t[monitorNDims];
+                monitorSpace.getSimpleExtentDims(monitorDims);
+
+                std::vector<int> monitorVec;
+                monitorVec.resize(monitorDims[2]);
+                H5Dread(monitor.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorVec.data());
+                monitors[i++] = monitorVec;
+            }
+
         }
 
         // Close file.
@@ -195,6 +222,35 @@ bool Nexus::createHistogram(Pulse &pulse, int epochOffset) {
     return true;
 }
 
+bool Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset) {
+
+    histogram = mask;
+
+    for (int i=0; i<events.size(); ++i) {
+        if ((events[i] >= pulse.start-epochOffset) && (events[i] < pulse.end-epochOffset)) {
+            if (eventIndices[i] > 0) {
+                gsl_histogram_increment(histogram[eventIndices[i]], events[i]);
+            }
+        }
+    }
+
+    return true;
+}
+
+int Nexus::countGoodFrames(Pulse &pulse, int epochOffset) {
+    int goodFrames = 0;
+
+    for (int i =0; i<frameIndices.size()-1; ++i) {
+        int frameStart = frameIndices[i];
+        int frameEnd = frameIndices[i+1];
+        double frameZero = frameOffsets[i];
+        if ((frameZero >= pulse.start-epochOffset) && (frameZero < pulse.end-epochOffset))
+            goodFrames++;
+    }
+    return goodFrames;
+
+}
+
 bool Nexus::output(std::vector<std::string> paths) {
 
     try {
@@ -204,50 +260,123 @@ bool Nexus::output(std::vector<std::string> paths) {
         // Create new Nexus file for output.
         H5::H5File output = H5::H5File(outpath, H5F_ACC_TRUNC);
 
-        hid_t ocpl_id, lcpl_id;
-        ocpl_id = H5Pcreate(H5P_OBJECT_COPY);
-        if (ocpl_id < 0)
-            return false;
-        lcpl_id = H5Pcreate(H5P_LINK_CREATE);
-        if (lcpl_id <0)
-            return false;
-        if (H5Pset_create_intermediate_group(lcpl_id, 1) < 0)
+        // Perform copying.
+        if (!Nexus::copy(input, output, paths))
             return false;
 
-        for (const auto &p : paths) {
-            std::cout << p << std::endl;
-            if (H5Ocopy(input.getId(), p.c_str(), output.getId(), p.c_str(), ocpl_id, lcpl_id) < 0)
-                return false;
-        }
-        // Close input file.
         input.close();
 
-        H5Pclose(ocpl_id);
-        H5Pclose(lcpl_id);
-
-        // Write out histogram.
-        const int nSpec = spectra.size();
-        const int nBin = ranges.size()-1;
-
-        int* buf = new int[1*nSpec*nBin]; // HDF5 expects contiguous memory. This is a pain.
-        int i;
-        for (int i=0; i<1; ++i)
-            for (int j=0; j<nSpec; ++j)
-                for (int k=0; k<nBin; ++k) {
-                    buf[(i*nSpec+j)*nBin+k] = gsl_histogram_get(histogram[spectra[j]], k);
-                    // std::cout << buf[(i*nSpec+j)*nBin+k] << std::endl;
-                }
-
-        H5::DataSet counts;
-        Nexus::getLeafDataset(output, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "counts", counts);
-
-        counts.write(buf, H5::PredType::STD_I32LE);
-        
+        writeCounts(output);
         output.close();
         return true;
 
     } catch (...) {
         return false;
     }
+
+}
+
+bool Nexus::output(std::vector<std::string> paths, int goodFrames, std::map<int, std::vector<int>> monitors) {
+
+    try {
+        // Open Nexus file in read only mode.
+        H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
+        
+        // Create new Nexus file for output.
+        H5::H5File output = H5::H5File(outpath, H5F_ACC_TRUNC);
+
+        // Perform copying.
+        if (!Nexus::copy(input, output, paths))
+            return false;
+
+        input.close();
+
+        writeCounts(output);
+        writeGoodFrames(output, goodFrames);
+        writeMonitors(output, monitors);
+        output.close();
+        return true;
+
+    } catch (...) {
+        return false;
+    }
+
+}
+
+bool Nexus::copy(H5::H5File input, H5::H5File output, std::vector<std::string> paths) {
+    hid_t ocpl_id, lcpl_id;
+    ocpl_id = H5Pcreate(H5P_OBJECT_COPY);
+    if (ocpl_id < 0)
+        return false;
+    lcpl_id = H5Pcreate(H5P_LINK_CREATE);
+    if (lcpl_id <0)
+        return false;
+    if (H5Pset_create_intermediate_group(lcpl_id, 1) < 0)
+        return false;
+
+    for (const auto &p : paths) {
+        std::cout << p << std::endl;
+        if (H5Ocopy(input.getId(), p.c_str(), output.getId(), p.c_str(), ocpl_id, lcpl_id) < 0)
+            return false;
+    }
+
+    H5Pclose(ocpl_id);
+    H5Pclose(lcpl_id);
+    
+    return true;
+}
+
+bool Nexus::writeCounts(H5::H5File output) {
+
+    // Write out histogram.
+    const int nSpec = spectra.size();
+    const int nBin = ranges.size()-1;
+
+    int* buf = new int[1*nSpec*nBin]; // HDF5 expects contiguous memory. This is a pain.
+    int i;
+    for (int i=0; i<1; ++i)
+        for (int j=0; j<nSpec; ++j)
+            for (int k=0; k<nBin; ++k) {
+                buf[(i*nSpec+j)*nBin+k] = gsl_histogram_get(histogram[spectra[j]], k);
+            }
+
+    H5::DataSet counts;
+    Nexus::getLeafDataset(output, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "counts", counts);
+
+    counts.write(buf, H5::PredType::STD_I32LE);
+    
+    return true;
+
+}
+
+bool Nexus::writeGoodFrames(H5::H5File output, int goodFrames) {
+
+    int* buf = new int[1];
+    buf[0] = goodFrames;
+
+    H5::DataSet goodFrames_;
+    Nexus::getLeafDataset(output, std::vector<H5std_string> {"raw_data_1"}, "good_frames", goodFrames_);
+
+    goodFrames_.write(buf, H5::PredType::STD_I32LE);
+    
+    return true;
+
+}
+
+bool Nexus::writeMonitors(H5::H5File output, std::map<int, std::vector<int>> monitors) {
+
+    for (auto pair : monitors) {
+
+        int* buf = new int[1*1*pair.second.size()];
+        for (int i=0; i<1; ++i)
+            for (int j=0; j<1; ++j)
+                for (int k=0; k<pair.second.size(); ++k)
+                    buf[i*j*k] = pair.second[k];
+
+        H5::DataSet monitor;
+        Nexus::getLeafDataset(output, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(pair.first)}, "data", monitor);
+        monitor.write(buf, H5::PredType::STD_I32LE);
+    }
+    return true;
 
 }
