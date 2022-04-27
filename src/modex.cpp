@@ -5,7 +5,10 @@
 
 bool ModEx::process() {
     if (cfg.extrapolationMode == NONE) {
-        ;
+        binPulsesToRuns(cfg.pulses);
+        for (Pulse &pulse : cfg.pulses) {
+            processPulse(pulse);
+        }
     }
     else {
         for (auto &p : cfg.period.pulses) {
