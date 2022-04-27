@@ -14,4 +14,4 @@ class PulseDefinition {
 
 };
 
-#endif
+#endif // PULSE_DEFINITION_H

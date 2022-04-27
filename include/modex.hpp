@@ -10,28 +10,20 @@ class ModEx {
     private:
         int currentPulse = 1;
     public:
-        std::string input;
-        std::string purge;
+        Config cfg;
         std::string out;
         std::string dataDir;
-        std::vector<std::string> runs;
-        std::string truncatePath;
         int expStart;
         double progress;
         int totalPulses = 0;
 
-        ModEx(std::string input_, std::string purge_, std::string out_, std::vector<std::string> runs_) : input(input_), purge(purge_), out(out_), runs(runs_) {}
-        ModEx(Config cfg);
+        ModEx(Config cfg_) : cfg(cfg_) {}
         ModEx() = default;
         
-        bool run();
-        bool run(std::string run, std::vector<Pulse> pulses);
-        bool run(std::string run, Pulse pulses);
-        bool run(std::map<std::string, std::vector<Pulse>> &runPulses, std::string pulseLabel);
-        bool run(std::vector<Pulse> &pulses, std::string pulseLabel);
+        bool process();
         bool epochPulses(std::vector<Pulse> &pulses);
         bool extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, PulseDefinition pulseDefinition, std::vector<Pulse> &pulses);
         bool binPulsesToRuns(std::vector<Pulse> &pulses);
 };
 
-#endif
+#endif // MODEX_H

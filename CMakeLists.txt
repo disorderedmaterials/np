@@ -154,17 +154,17 @@ include_directories(
     include
 )
 
-set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp include/period.hpp)
+set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp include/period.hpp include/pulse_definition.hpp)
 
 add_executable(modulation_excitation src/modulation_excitation.cpp ${SOURCES})
-add_executable(partition_events src/partition_events.cpp ${SOURCES})
+# add_executable(partition_events src/partition_events.cpp ${SOURCES})
 
 
 link_directories (${LIBRARY_OUTPUT_PATH})
 IF(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS})
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS})
+  # target_link_libraries(partition_events PRIVATE ${LINK_LIBS})
 ELSE(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl)
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl)
+  # target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl)
 ENDIF(WIN32)

@@ -7,88 +7,157 @@
 #include <sys/stat.h>
 
 
-Config::Config(std::string path) {
+bool Config::parse() {
+    
+    int nRuns, nPulses; // Number of run files and pulses.
+    std::string line; // Auxilliary variable to read into.
 
-    int nRuns, nPulses;
+    std::ifstream ifs(path); // Input file stream.
 
-    std::string line;
-    std::ifstream ifs(path);
-    std::getline(ifs, gudrunInputFile);
-    std::cout << "Gudrun input file: " << gudrunInputFile << std::endl;
-    std::getline(ifs, purgeInputFile);
-    std::cout << "Purge file: " << purgeInputFile << std::endl;
-    std::getline(ifs, outputDir);
+    // Read in the output directory.
+    if (!std::getline(ifs, outputDir))
+        return false;
     std::cout << "Output dir: " << outputDir << std::endl;
 
-    // Check if file exists, create if not.
+    // Check if the file exists.
     struct stat info;
-    if (stat(outputDir.c_str(), &info) !=0) {
-        mkdir(outputDir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        std::cout << "Created " << outputDir << std::endl;
+    if (stat(outputDir.c_str(), &info) != 0)
+        return false;
+    
+    // Read in paths from Nexus definitions file.
+    std::string nxsDefinitionPath;
+    if (!std::getline(ifs, nxsDefinitionPath))
+        return false;
+    std::ifstream nxsifs(nxsDefinitionPath); // Nexus definitions file stream.
+
+    // Parse the Nexus definitions file.
+    while (std::getline(nxsifs, line)) {
+        std::string path;
+        if (!line.size())
+            continue;
+        size_t pos = line.find("= ") + sizeof("= ")-1;
+        std::cout << pos << std::endl;
+        line = line.substr(pos);
+        std::stringstream ss(line);
+        std::getline(ss, path, ' ');
+        // std::cout << path << std::endl;
+        if (path.rfind("/", 0) == 0) {
+            nxsDefinitionPaths.push_back("/raw_data_1" + path);
+            std::cout << nxsDefinitionPaths[nxsDefinitionPaths.size()-1] << std::endl;
+        }
     }
 
-    std::getline(ifs, line);
+    // Read in nRuns.
+    if (!std::getline(ifs, line))
+        return false;
     nRuns = atoi(line.c_str());
     std::cout << "There are " << nRuns << " runs" << std::endl;
-    std::getline(ifs, dataFileDir);
+
+    // Read in runs.
     for (int i=0; i<nRuns; ++i) {
-        std::getline(ifs, line);
+        if(!std::getline(ifs, line))
+            return false;
         runs.push_back(line);
         std::cout << line << std::endl;
     }
 
-
-    std::getline(ifs, line);
-
+    // Read in extrapolation mode.
+    if (!std::getline(ifs, line))
+        return false;
     if (line == "BACKWARDS")
         extrapolationMode = BACKWARDS;
     else if (line == "FORWARDS")
         extrapolationMode = FORWARDS;
-    else if (line == "BI-DIRECTIONAL")
+    else if (line == "BI_DIRECTIONAL")
         extrapolationMode = BI_DIRECTIONAL;
     else
         extrapolationMode = NONE;
-    std::cout << "Extrapolate: " << extrapolationMode << std::endl;
-    if (extrapolationMode != NONE) {
-        std::getline(ifs, line);
-        double periodDuration = atof(line.c_str());
-        std::getline(ifs, line);
-        periodBegin = atof(line.c_str());
-        std::getline(ifs, line);
-        nPulses = atoi(line.c_str());
-        std::vector<PulseDefinition> pulses;
+    std::cout << "Extrapolation Mode: " << extrapolationMode << std::endl;
 
+    // If extrapolation mode is NONE, then expect pulses.
+    if (extrapolationMode == NONE) {
+
+        // Read in number of pulses.
+        if (!std::getline(ifs, line))
+            return false;
+        nPulses = atoi(line.c_str());
+
+        // Read in pulses.
         for (int i=0; i<nPulses; ++i) {
-            std::getline(ifs, line);
-            std::stringstream ss(line);
+            if (!std::getline(ifs, line))
+                return false;
+            
+            std::stringstream ss(line); // String stream for parsing.
+            std::string label;
+            double pulseStart, pulseEnd;
+            std::string item; // Auxilliary variable to read into.
+            
+            // Read in label.
+            if(!std::getline(ss, label, ' '))
+                return false;
+
+            // Read in pulse start time.
+            if(!std::getline(ss, item, ' '))
+                return false;
+            pulseStart = atof(item.c_str());
+
+            // Read in pulse end time.
+            if (!std::getline(ss, item, ' '))
+                return false;
+            pulseEnd = atof(item.c_str());
+
+            // Append pulse.
+            pulses.push_back(Pulse(label, pulseStart, pulseEnd));
+        }
+    } else { // Otherwise expect period definition.
+
+        // Read in period duration.
+        if (!std::getline(ifs, line))
+            return false;
+        double periodDuration = atof(line.c_str());
+
+        // Read in start time of first period.
+        if (!std::getline(ifs, line))
+            return false;
+        periodBegin = atof(line.c_str());
+
+        // Read in nPulses.
+        if (!std::getline(ifs, line))
+            return false;
+        nPulses = atoi(line.c_str());
+
+        std::vector<PulseDefinition> pulses; // Vector of defined pulses.
+
+        // Read in pulse definitions.
+        for (int i=0; i<nPulses; ++i) {
+            if (!std::getline(ifs, line))
+                return false;
+
+            std::stringstream ss(line); // String stream for parsing.
             std::string label;
             double periodOffset, duration;
             std::string item;
-            std::getline(ss, label, ' ');
-            std::getline(ss, item, ' ');
+
+            // Read in label.
+            if (!std::getline(ss, label, ' '))
+                return false;
+            
+            // Read in period offset.
+            if (!std::getline(ss, item, ' '))
+                return false;
             periodOffset = atof(item.c_str());
-            std::getline(ss, item, ' ');
+
+            // Read in pulse duration.
+            if (!std::getline(ss, item, ' '))
+                return false;
             duration = atof(item.c_str());
+
+            // Append pulse definition.
             pulses.push_back(PulseDefinition(label, periodOffset, duration));
         }
-
-        period = PeriodDefinition(periodDuration, pulses);
-    } else {
-        std::getline(ifs, line);
-        nPulses = atoi(line.c_str());
-        for (int i=0; i<nPulses; ++i) {
-            std::getline(ifs, line);
-            std::stringstream ss(line);
-            std::string label;
-            double pulseStart, pulseEnd;
-            std::string item;
-            std::getline(ss, label, ' ');
-            std::getline(ss, item, ' ');
-            pulseStart = atof(item.c_str());
-            std::getline(ss, item, ' ');
-            pulseEnd = atof(item.c_str());
-            pulses.push_back(Pulse(label, pulseStart, pulseEnd));
-        }
+        period = Period(periodDuration, pulses);
 
     }
+    return true;
+
 }
