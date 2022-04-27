@@ -21,6 +21,7 @@ class ModEx {
         ModEx() = default;
         
         bool process();
+        bool processPulse(Pulse &pulse);
         bool epochPulses(std::vector<Pulse> &pulses);
         bool extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, PulseDefinition pulseDefinition, std::vector<Pulse> &pulses);
         bool binPulsesToRuns(std::vector<Pulse> &pulses);

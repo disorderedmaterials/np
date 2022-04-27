@@ -21,23 +21,24 @@ bool ModEx::process() {
             );
             binPulsesToRuns(pulses);
             for (Pulse &pulse : pulses) {
-                Nexus *nxs;
-                if (pulse.startRun == pulse.endRun) {
-                    nxs = new Nexus(pulse.startRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
-                    if (!nxs->load(true))
-                        return false;
-                    if (!nxs->createHistogram(pulse, nxs->startSinceEpoch))
-                        return false;
-                    if (!nxs->output(cfg.nxsDefinitionPaths))
-                        return false;
-                    delete nxs;
-                }
-                
+                processPulse(pulse);
             }
         }
     }
     return true;
 
+}
+
+bool ModEx::processPulse(Pulse &pulse) {
+    if (pulse.startRun == pulse.endRun) {
+        Nexus nxs = Nexus(pulse.startRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
+        if (!nxs.load(true))
+            return false;
+        if (!nxs.createHistogram(pulse, nxs.startSinceEpoch))
+            return false;
+        if (!nxs.output(cfg.nxsDefinitionPaths))
+            return false;
+    }
 }
 
 bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
