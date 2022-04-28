@@ -36,7 +36,7 @@ bool Nexus::getLeafDataset(H5::H5File file, std::vector<H5std_string> terminals,
 bool Nexus::load(bool advanced) {
 
     try {
-
+        std::cout << path << std::endl;
         // Open Nexus file in read only mode.
         H5::H5File file = H5::H5File(path, H5F_ACC_RDONLY);
 
@@ -190,7 +190,6 @@ bool Nexus::load(bool advanced) {
                 H5Dread(monitor.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorVec.data());
                 monitors[i++] = monitorVec;
             }
-
         }
 
         // Close file.
@@ -239,7 +238,7 @@ bool Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*>
 
 int Nexus::countGoodFrames(Pulse &pulse, int epochOffset) {
     int goodFrames = 0;
-
+    std::cout << pulse.start << " " << pulse.end << std::endl;
     for (int i =0; i<frameIndices.size()-1; ++i) {
         int frameStart = frameIndices[i];
         int frameEnd = frameIndices[i+1];
@@ -276,7 +275,7 @@ bool Nexus::output(std::vector<std::string> paths) {
 
 }
 
-bool Nexus::output(std::vector<std::string> paths, int goodFrames, std::map<int, std::vector<int>> monitors) {
+bool Nexus::output(std::vector<std::string> paths, int numFrames, int goodFrames, std::map<int, std::vector<int>> monitors) {
 
     try {
         // Open Nexus file in read only mode.
@@ -292,6 +291,7 @@ bool Nexus::output(std::vector<std::string> paths, int goodFrames, std::map<int,
         input.close();
 
         writeCounts(output);
+        // writeTotalFrames(output, numFrames);
         writeGoodFrames(output, goodFrames);
         writeMonitors(output, monitors);
         output.close();
@@ -315,7 +315,6 @@ bool Nexus::copy(H5::H5File input, H5::H5File output, std::vector<std::string> p
         return false;
 
     for (const auto &p : paths) {
-        std::cout << p << std::endl;
         if (H5Ocopy(input.getId(), p.c_str(), output.getId(), p.c_str(), ocpl_id, lcpl_id) < 0)
             return false;
     }
@@ -349,6 +348,20 @@ bool Nexus::writeCounts(H5::H5File output) {
 
 }
 
+bool Nexus::writeTotalFrames(H5::H5File output, int frames) {
+
+    int* buf = new int[1];
+    buf[0] = frames;
+
+    H5::DataSet frames_;
+    Nexus::getLeafDataset(output, std::vector<H5std_string> {"raw_data_1"}, "total_frames", frames_);
+
+    frames_.write(buf, H5::PredType::STD_I32LE);
+    
+    return true;
+
+}
+
 bool Nexus::writeGoodFrames(H5::H5File output, int goodFrames) {
 
     int* buf = new int[1];
@@ -365,13 +378,13 @@ bool Nexus::writeGoodFrames(H5::H5File output, int goodFrames) {
 
 bool Nexus::writeMonitors(H5::H5File output, std::map<int, std::vector<int>> monitors) {
 
-    for (auto pair : monitors) {
+    for (auto& pair : monitors) {
 
         int* buf = new int[1*1*pair.second.size()];
         for (int i=0; i<1; ++i)
             for (int j=0; j<1; ++j)
                 for (int k=0; k<pair.second.size(); ++k)
-                    buf[i*j*k] = pair.second[k];
+                    buf[(i*1+j)*1+k] = pair.second[k];
 
         H5::DataSet monitor;
         Nexus::getLeafDataset(output, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(pair.first)}, "data", monitor);

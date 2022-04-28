@@ -36,6 +36,7 @@ bool ModEx::process() {
 
 bool ModEx::processPulse(Pulse &pulse) {
     if (pulse.startRun == pulse.endRun) {
+        return false;
         Nexus nxs = Nexus(pulse.startRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
         if (!nxs.load(true))
             return false;
@@ -48,51 +49,56 @@ bool ModEx::processPulse(Pulse &pulse) {
     else {
         std::cout << cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs" << std::endl;
         std::cout << pulse.startRun << std::endl;
-        Nexus startNxs = Nexus(pulse.startRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
+        std::cout << pulse.endRun << std::endl;
+        Nexus startNxs = Nexus(pulse.startRun);
         Nexus endNxs = Nexus(pulse.endRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
-        Pulse firstPulse(pulse.label, pulse.start, startNxs.endSinceEpoch);
-        Pulse secondPulse(pulse.label, startNxs.endSinceEpoch, pulse.end);
-
-        std::map<int, std::vector<int>> monitors = startNxs.monitors;
-
 
         if (!startNxs.load(true))
             return false;
         if (!endNxs.load(true))
             return false;
-            
+
+        std::cout << pulse.start << " " << pulse.end << std::endl;
+        Pulse firstPulse(pulse.label, pulse.start, startNxs.endSinceEpoch);
+        Pulse secondPulse(pulse.label, startNxs.endSinceEpoch, pulse.end);
+
+        std::map<int, std::vector<int>> monitors = startNxs.monitors;
         std::cout << "Sum monitors" << std::endl;
-        for (auto m : endNxs.monitors) {
-            for (int i=0; i<m.second.size(); ++i)
-                monitors[m.first][i] +=endNxs.monitors[m.first][i];
-            // monitors[m.first] += m.second;
+        for (auto &pair : monitors) {
+            for (int i=0; i<pair.second.size(); ++i) {
+                pair.second[i]+=endNxs.monitors[pair.first][i];
+            }
         }
-        // for (auto &pair : monitors) {
-        //     std::transform(pair.second.begin(), pair.second.end(), endNxs.monitors[pair.first].begin(), endNxs.monitors[pair.first].end(), std::plus<int>());
-        // }
+
         std::cout << "Count frames" << std::endl;
-        int goodFrames = startNxs.countGoodFrames(firstPulse, startNxs.startSinceEpoch) + endNxs.countGoodFrames(secondPulse, endNxs.startSinceEpoch);
+        int goodFramesA = startNxs.countGoodFrames(firstPulse, startNxs.startSinceEpoch);
+        std::cout << "Good frames 1 " << goodFramesA << std::endl;
+        int goodFramesB = endNxs.countGoodFrames(secondPulse, endNxs.startSinceEpoch);
+        std::cout << "Good frames 2 " << goodFramesB << std::endl;
+        int goodFrames = goodFramesA + goodFramesB;
         int totalFrames = startNxs.rawFrames[0] + endNxs.rawFrames[0];
-        double ratio = (double) goodFrames / (double) totalFrames;
+        std::cout << goodFrames << std::endl;
+        double ratio = (double) goodFrames /  (double) totalFrames;
+
+        std::cout << ratio << std::endl;
 
         std::cout << "Reduce monitors" << std::endl;
         for (auto &pair : monitors) {
             for (int i=0; i<pair.second.size(); ++i) {
-                pair.second[i]*=ratio;
+                pair.second[i]= (int) (pair.second[i] * ratio);
             }
-            // std::transform(pair.second.begin(), pair.second.end(), pair.second.begin(), [&ratio](int c){return (int) c*ratio;});
         }
 
         std::cout << "First histogram" << std::endl;
         if (!startNxs.createHistogram(firstPulse, startNxs.startSinceEpoch))
             return false;
-        if (!startNxs.output(cfg.nxsDefinitionPaths))
-            return false;
+        // if (!startNxs.output(cfg.nxsDefinitionPaths))
+        //     return false;
 
         std::cout << "Second histogram" << std::endl;
         if (!endNxs.createHistogram(secondPulse, startNxs.histogram, endNxs.startSinceEpoch))
             return false;
-        if (!endNxs.output(cfg.nxsDefinitionPaths, goodFrames, monitors))
+        if (!endNxs.output(cfg.nxsDefinitionPaths, totalFrames, goodFrames, monitors))
             return false;
         return true;
     }
@@ -202,6 +208,11 @@ bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
             }
 
         }
+        // if (!pulses[i].endRun.size()) {
+        //     for (int j=0; j<runBoundaries.size()-1; ++j) {
+
+        //     }
+        // }
         if (!pulses[i].endRun.size()) {
             for (int j=0; j<runBoundaries.size()-1; ++j) {
                 if ((pulses[i].end >= runBoundaries[j].second.second) && (pulses[i].end < runBoundaries[j+1].second.first)) {

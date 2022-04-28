@@ -36,7 +36,6 @@ bool Config::parse() {
         if (!line.size())
             continue;
         size_t pos = line.find("= ") + sizeof("= ")-1;
-        std::cout << pos << std::endl;
         line = line.substr(pos);
         std::stringstream ss(line);
         std::getline(ss, path, ' ');
