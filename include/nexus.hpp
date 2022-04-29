@@ -46,6 +46,7 @@ class Nexus {
         bool writeTotalFrames(H5::H5File output, int frames);
         bool writeGoodFrames(H5::H5File output, int goodFrames);
         bool writeMonitors(H5::H5File output, std::map<int, std::vector<int>> monitors);
+        bool writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned int upperSpec);
         int countGoodFrames(Pulse &pulse, int epochOffset=0);
 
 };

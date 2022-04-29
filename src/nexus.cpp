@@ -393,3 +393,34 @@ bool Nexus::writeMonitors(H5::H5File output, std::map<int, std::vector<int>> mon
     return true;
 
 }
+
+bool Nexus::writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned int higherSpec) {
+    double event;
+    int idx;
+    std::map<unsigned int, std::vector<double>> partitions;
+    for (int i=0; i<events.size(); ++i) {
+        event = events[i];
+        idx = eventIndices[i];
+        if (!idx || idx < lowerSpec || idx > higherSpec)
+            continue;
+        for (int j=0; j<frameIndices.size()-1; ++j) {
+            if ((i>= frameIndices[j]) && (i<frameIndices[j+1])) {
+                partitions[idx].push_back((event*0.000001) + frameOffsets[j]);
+            }
+        }
+    }
+
+    H5::H5File file(outpath, H5F_ACC_TRUNC);
+
+    for (auto pair : partitions) {
+        const int rank = 1;
+        hsize_t dims[1];
+        dims[0] = pair.second.size();
+        H5::DataSpace dataspace(rank, dims);
+        H5::DataSet dataset =  file.createDataSet(std::to_string(pair.first).c_str(), H5::PredType::NATIVE_DOUBLE, dataspace);
+        dataset.write(pair.second.data(), H5::PredType::NATIVE_DOUBLE);
+    }
+    file.close();
+
+    return true; 
+}
