@@ -24,8 +24,10 @@ bool ModEx::process() {
                 p,
                 pulses
             );
+            std::cout << "binning pulses to runs" << std::endl;
             binPulsesToRuns(pulses);
             for (Pulse &pulse : pulses) {
+                std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
                 processPulse(pulse);
             }
         }
@@ -36,7 +38,6 @@ bool ModEx::process() {
 
 bool ModEx::processPulse(Pulse &pulse) {
     if (pulse.startRun == pulse.endRun) {
-        return false;
         Nexus nxs = Nexus(pulse.startRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
         if (!nxs.load(true))
             return false;
