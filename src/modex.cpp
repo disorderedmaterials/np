@@ -38,13 +38,15 @@ bool ModEx::process() {
 
 bool ModEx::processPulse(Pulse &pulse) {
     if (pulse.startRun == pulse.endRun) {
-        Nexus nxs = Nexus(pulse.startRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
+        std::string outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
+        Nexus nxs = Nexus(pulse.startRun, outpath);
         if (!nxs.load(true))
             return false;
         if (!nxs.createHistogram(pulse, nxs.startSinceEpoch))
             return false;
         if (!nxs.output(cfg.nxsDefinitionPaths))
             return false;
+        std::cout << "Finished processing: " << outpath << std::endl;
         return true;
     }
     else {
