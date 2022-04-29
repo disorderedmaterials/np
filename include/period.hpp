@@ -12,6 +12,7 @@ class Period {
         std::vector<PulseDefinition> pulses;
         Period(double duration_, std::vector<PulseDefinition> pulses_) : duration(duration_), pulses(pulses_) {}  
         Period() = default;
+        bool isValid();
 };
 
 #endif // PERIOD_H
