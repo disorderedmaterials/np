@@ -209,11 +209,6 @@ bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
             }
 
         }
-        // if (!pulses[i].endRun.size()) {
-        //     for (int j=0; j<runBoundaries.size()-1; ++j) {
-
-        //     }
-        // }
         if (!pulses[i].endRun.size()) {
             for (int j=0; j<runBoundaries.size()-1; ++j) {
                 if ((pulses[i].end >= runBoundaries[j].second.second) && (pulses[i].end < runBoundaries[j+1].second.first)) {
