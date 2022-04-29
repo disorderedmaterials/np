@@ -1,5 +1,3 @@
-azobenzene.txt
-purge_det.dat
 testout
 1
 data/NIMROD00069862.nxs

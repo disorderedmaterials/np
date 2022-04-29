@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "period_definition.hpp"
+#include "period.hpp"
 #include "pulse_definition.hpp"
 #include "pulse.hpp"
 
@@ -12,21 +12,21 @@ enum ExtrapolationMode {FORWARDS, BACKWARDS, BI_DIRECTIONAL, NONE};
 class Config {
 
     public:
-        std::string gudrunInputFile; //input file for gudrun.
-        std::string purgeInputFile; //input file for purge.
+        std::string path;
         std::string outputDir; //where to output data
-        std::string dataFileDir; // data file directory.
-        std::vector<std::string> runs; // path to runs.
+        std::vector<std::string> runs; // abs path to runs.
+        std::vector<std::string> nxsDefinitionPaths;
         ExtrapolationMode extrapolationMode;
-        // std::vector<Pulse> definedPulses;
         double periodBegin;
-        PeriodDefinition period;
+        Period period;
         std::vector<Pulse> pulses;
 
-        Config(std::string path);
+        Config(std::string path_) : path(path_) {}
         Config() = default;
+
+        bool parse();
 
 };
 
 
-#endif
+#endif // CONFIG_H

@@ -1,82 +1,117 @@
-#include "modex.hpp"
-#include <cstdlib>
 #include <algorithm>
 #include <iostream>
-#include <iomanip>
 
-ModEx::ModEx(Config cfg) {
-    input = cfg.gudrunInputFile;
-    purge = cfg.purgeInputFile;
-    out = cfg.outputDir;
-    dataDir = cfg.dataFileDir;
-    runs = cfg.runs;
-    truncatePath = cfg.runs[0];
-    Nexus nxs(dataDir + "/" + truncatePath);
-    nxs.loadBasicData();
-    expStart = nxs.startSinceEpoch;
-}
+#include <modex.hpp>
+#include <nexus.hpp>
 
-bool ModEx::run() {
-    return true;
-}
-
-bool ModEx::run(std::vector<Pulse> &pulses, std::string pulseLabel) {
-    // Perform a purge.
-    system(std::string("./purge_det " + purge + "> /dev/null").c_str());
-
-    // Iterate through pulses.
-    for (Pulse &pulse : pulses) {
-        
-        std::size_t dot = truncatePath.rfind('.');
-        std::string baseName = truncatePath.substr(0, dot);
-        std::cout << truncatePath << std::endl;
-        std::cout << baseName << std::endl;
-        Nexus *nxs;
-        if (pulse.startRun == pulse.endRun) {
-            // Allocate a new Nexus objecs on the heap.
-            std::cout << dataDir + "/" + baseName + ".nxs" << std::endl;
-            nxs = new Nexus(dataDir + "/" + pulse.startRun, dataDir + "/" + baseName + ".nxs");
-            // Load basic data.
-            nxs->loadBasicData();
-            // Load event mode data.
-            nxs->loadEventModeData();
-            // Create histogram using the pulse as boundaries.
-            Pulse normPulse(pulseLabel, pulse.start-nxs->startSinceEpoch, pulse.end-nxs->startSinceEpoch);
-            nxs->createHistogram(normPulse);
-            // Write the histogram.
-            nxs->writeCountsHistogram();
+bool ModEx::process() {
+    if (cfg.extrapolationMode == NONE) {
+        epochPulses(cfg.pulses);
+        binPulsesToRuns(cfg.pulses);
+        for (Pulse &pulse : cfg.pulses) {
+            processPulse(pulse);
         }
-        else {
-            std::cout << currentPulse << " " << totalPulses << std::endl;
-            progress = ((double) currentPulse / (double) totalPulses) * 100;
-            std::cout << "Progress: " << progress << "%" << std::endl;
-            ++currentPulse;
-            continue;
+    }
+    else {
+        for (auto &p : cfg.period.pulses) {
+            std::vector<Pulse> pulses;
+            extrapolatePulseTimes(
+                cfg.runs[0],
+                cfg.periodBegin,
+                cfg.extrapolationMode == BACKWARDS || cfg.extrapolationMode == BI_DIRECTIONAL,
+                cfg.extrapolationMode == FORWARDS || cfg.extrapolationMode == BI_DIRECTIONAL,
+                cfg.period.duration,
+                p,
+                pulses
+            );
+            std::cout << "binning pulses to runs" << std::endl;
+            binPulsesToRuns(pulses);
+            for (Pulse &pulse : pulses) {
+                std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
+                processPulse(pulse);
+            }
         }
-        // Call gudrun_dcs.
-        system(std::string("mkdir modex_intermediate && cd modex_intermediate && ../gudrun_dcs ../" + input + "> /dev/null").c_str());
-        // Move the mint01 file to the output directory.
-        std::string output = out + "/" + std::to_string(pulse.start-expStart) + "-" + pulseLabel + ".mint01";
-        std::string target = "modex_intermediate/" + baseName + ".mint01";
-        system(std::string("mv " + target + " " + output).c_str());
-        system("rm -rf modex_intermediate");
-        // system(("rm " + dataDir + "/" + baseName + ".nxs").c_str());
-        delete nxs;
-        std::cout << currentPulse << " " << totalPulses << std::endl;
-        progress = ((double) currentPulse / (double) totalPulses) * 100;
-        std::cout << "Progress: " << progress << "%" << std::endl;
-        ++currentPulse;
     }
     return true;
+
+}
+
+bool ModEx::processPulse(Pulse &pulse) {
+    if (pulse.startRun == pulse.endRun) {
+        Nexus nxs = Nexus(pulse.startRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
+        if (!nxs.load(true))
+            return false;
+        if (!nxs.createHistogram(pulse, nxs.startSinceEpoch))
+            return false;
+        if (!nxs.output(cfg.nxsDefinitionPaths))
+            return false;
+        return true;
+    }
+    else {
+        std::cout << cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs" << std::endl;
+        std::cout << pulse.startRun << std::endl;
+        std::cout << pulse.endRun << std::endl;
+        Nexus startNxs = Nexus(pulse.startRun);
+        Nexus endNxs = Nexus(pulse.endRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
+
+        if (!startNxs.load(true))
+            return false;
+        if (!endNxs.load(true))
+            return false;
+
+        std::cout << pulse.start << " " << pulse.end << std::endl;
+        Pulse firstPulse(pulse.label, pulse.start, startNxs.endSinceEpoch);
+        Pulse secondPulse(pulse.label, startNxs.endSinceEpoch, pulse.end);
+
+        std::map<int, std::vector<int>> monitors = startNxs.monitors;
+        std::cout << "Sum monitors" << std::endl;
+        for (auto &pair : monitors) {
+            for (int i=0; i<pair.second.size(); ++i) {
+                pair.second[i]+=endNxs.monitors[pair.first][i];
+            }
+        }
+
+        std::cout << "Count frames" << std::endl;
+        int goodFramesA = startNxs.countGoodFrames(firstPulse, startNxs.startSinceEpoch);
+        std::cout << "Good frames 1 " << goodFramesA << std::endl;
+        int goodFramesB = endNxs.countGoodFrames(secondPulse, endNxs.startSinceEpoch);
+        std::cout << "Good frames 2 " << goodFramesB << std::endl;
+        int goodFrames = goodFramesA + goodFramesB;
+        int totalFrames = startNxs.rawFrames[0] + endNxs.rawFrames[0];
+        std::cout << goodFrames << std::endl;
+        double ratio = (double) goodFrames /  (double) totalFrames;
+
+        std::cout << ratio << std::endl;
+
+        std::cout << "Reduce monitors" << std::endl;
+        for (auto &pair : monitors) {
+            for (int i=0; i<pair.second.size(); ++i) {
+                pair.second[i]= (int) (pair.second[i] * ratio);
+            }
+        }
+
+        std::cout << "First histogram" << std::endl;
+        if (!startNxs.createHistogram(firstPulse, startNxs.startSinceEpoch))
+            return false;
+        // if (!startNxs.output(cfg.nxsDefinitionPaths))
+        //     return false;
+
+        std::cout << "Second histogram" << std::endl;
+        if (!endNxs.createHistogram(secondPulse, startNxs.histogram, endNxs.startSinceEpoch))
+            return false;
+        if (!endNxs.output(cfg.nxsDefinitionPaths, totalFrames, goodFrames, monitors))
+            return false;
+        return true;
+    }
 }
 
 bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
 
     // Assume runs are ordered.
-    const std::string firstRun = runs[0];
+    std::string firstRun = cfg.runs[0];
     // Load the first run.
-    Nexus firstRunNXS(dataDir + "/" + firstRun);
-    firstRunNXS.loadBasicData();
+    Nexus firstRunNXS(firstRun);
+    firstRunNXS.load();
 
     // Apply offset.
 
@@ -91,20 +126,19 @@ bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
 
 }
 
-
 bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, PulseDefinition pulseDefinition, std::vector<Pulse> &pulses) {
 
     // Assume runs are ordered.
-    const std::string firstRun = runs[0];
-    const std::string lastRun = runs[runs.size()-1];
+    const std::string firstRun = cfg.runs[0];
+    const std::string lastRun = cfg.runs[cfg.runs.size()-1];
 
     // Load the first, last and start runs.
-    Nexus firstRunNXS(dataDir + "/" + firstRun);
-    firstRunNXS.loadBasicData();
-    Nexus lastRunNXS(dataDir + "/" + lastRun);
-    lastRunNXS.loadBasicData();
-    Nexus startRunNXS(dataDir + "/" + start_run);
-    startRunNXS.loadBasicData();
+    Nexus firstRunNXS(firstRun);
+    firstRunNXS.load();
+    Nexus lastRunNXS(lastRun);
+    lastRunNXS.load();
+    Nexus startRunNXS(start_run);
+    startRunNXS.load();
     // Determine start, end and first pulse times, since unix epoch.
     const int expStart = firstRunNXS.startSinceEpoch;
     const int expEnd = lastRunNXS.endSinceEpoch;
@@ -113,7 +147,7 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
     // pulses.push_back(std::make_pair(startPulse, startPulse+pulseDefinition.duration));
     pulses.push_back(Pulse(pulseDefinition.label, startPulse, startPulse+pulseDefinition.duration));
 
-    // Extrapolate backwardsa.
+    // Extrapolate backwards.
     if (backwards) {
         pulse = startPulse - periodDuration;
         while (pulse > expStart) {
@@ -146,20 +180,43 @@ bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool back
 
 bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
 
+    std::vector<std::pair<std::string, std::pair<int, int>>> runBoundaries;
+
+    for (auto &r : cfg.runs) {
+        Nexus nxs(r);
+        nxs.load();
+        runBoundaries.push_back(std::make_pair(r, std::make_pair(nxs.startSinceEpoch, nxs.endSinceEpoch)));
+    }
+
     for (int i=0; i<pulses.size(); ++i) {
-        for (int j=0; j<runs.size(); ++j) {
-            Nexus *runNXS = new Nexus(dataDir + "/" + runs[j]); // Heap allocation.
-            runNXS->loadBasicData();
-            // Find start and end run.
-            if ((pulses[i].start >= runNXS->startSinceEpoch) && (pulses[i].start<=runNXS->endSinceEpoch)) {
-                pulses[i].startRun = runs[j];
-            }
-            if ((pulses[i].end >= runNXS->startSinceEpoch) && (pulses[i].end<=runNXS->endSinceEpoch)) {
-                pulses[i].endRun = runs[j];
+        for (auto& pair: runBoundaries) {
+            if ((pulses[i].start >= pair.second.first) && (pulses[i].start < pair.second.second)) {
+                pulses[i].startRun = pair.first;
                 break;
             }
-            delete runNXS;
+        }
+        for (auto& pair: runBoundaries) {
+            if ((pulses[i].end >= pair.second.first) && (pulses[i].end < pair.second.second)) {
+                pulses[i].endRun = pair.first;
+                break;
+            }
+        }
+        if (!pulses[i].startRun.size()) {
+            for (int j=0; j<runBoundaries.size()-1; ++j) {
+                if ((pulses[i].start >= runBoundaries[j].second.second) && (pulses[i].start < runBoundaries[j+1].second.first)) {
+                    pulses[i].startRun = runBoundaries[j+1].first;
+                }
+            }
+
+        }
+        if (!pulses[i].endRun.size()) {
+            for (int j=0; j<runBoundaries.size()-1; ++j) {
+                if ((pulses[i].end >= runBoundaries[j].second.second) && (pulses[i].end < runBoundaries[j+1].second.first)) {
+                    pulses[i].endRun = runBoundaries[j].first;
+                }
+            }
         }
     }
+
     return true;
 }

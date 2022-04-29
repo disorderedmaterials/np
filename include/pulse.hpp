@@ -14,4 +14,4 @@ class Pulse {
 
 };
 
-#endif
+#endif // PULSE_H

@@ -15,6 +15,7 @@ class Nexus {
         const H5std_string path;
         const H5std_string outpath;
         H5::H5File file;
+        bool getLeafDataset(H5::H5File file, std::vector<H5std_string> terminals, H5std_string dataset, H5::DataSet &out);
 
     public:
         Nexus(std::string path_, std::string outpath_) : path(path_), outpath(outpath_) {}
@@ -31,33 +32,24 @@ class Nexus {
         std::vector<int> frameIndices;
         std::vector<double> frameOffsets;
         std::vector<double> ranges;
-        // std::vector<std::pair<double, double>> bins;
+        std::map<int, std::vector<int>> monitors;
         std::map<unsigned int, gsl_histogram*> histogram;
         std::map<unsigned int, std::vector<double>> partitions;
 
-        bool parseNexusFile();
-        bool loadBasicData();
-        bool loadEventModeData();
-
-        bool getLeafDataset(H5::H5File file, std::vector<H5std_string> terminals, H5std_string dataset, H5::DataSet &out);
-        bool copy();
-        bool writeCountsHistogram();
-        bool writePartitions();
-        bool writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned int higherSpec);
-
-        bool partitionEvents();
-        bool partitionEvents(std::vector<int> &spectra_);
-
-        bool createHistogram();
-        bool createHistogram(std::vector<std::pair<double, double>> &bounds);
-        bool createHistogram(std::pair<double, double> &bounds);
-
-        bool createHistogram(Pulse &pulse);
-
-        bool extractPulseTimes(int spectrum, std::vector<double> &pulses);
-        bool extrapolatePulseTimes(double start, bool backwards, bool forwards, double step, double duration, std::vector<std::pair<double, double>> &pulses);
+        bool load(bool advanced = false);
+        bool createHistogram(Pulse &pulse, int epochOffset=0);
+        bool createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset=0);
+        bool output(std::vector<std::string> paths);
+        bool output(std::vector<std::string> paths, int numFrames, int rawFrames, std::map<int, std::vector<int>> monitors);
+        bool copy(H5::H5File in, H5::H5File out, std::vector<std::string> paths);
+        bool writeCounts(H5::H5File output);
+        bool writeTotalFrames(H5::H5File output, int frames);
+        bool writeGoodFrames(H5::H5File output, int goodFrames);
+        bool writeMonitors(H5::H5File output, std::map<int, std::vector<int>> monitors);
+        bool writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned int upperSpec);
+        int countGoodFrames(Pulse &pulse, int epochOffset=0);
 
 };
 
 
-#endif
+#endif // NEXUS_H
