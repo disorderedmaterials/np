@@ -11,6 +11,7 @@ steps:
       set -ex
       brew update-reset
       brew install ninja
+      brew install gsl
     displayName: 'Install Prerequisites'
   - bash: |
       wget https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-osx.zip
@@ -18,18 +19,8 @@ steps:
     displayName: 'Download HDF5 Artifacts'
   - bash: |
       set -ex
-      wget ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz
-      tar -zxvf ${{ parameters.gsltag }}.tar.gz
-      cd ${{ parameters.gsltag }}
-      mkdir /tmp/gsl
-      ./configure --prefix=/tmp/gsl
-      make
-      make install
-    displayName: 'Download and build GNU GSL'
-  - bash: |
-      set -ex
       HDF5_DIR="$(pwd)/${{ parameters.hdf5tag }}"
-      GSL_DIR="/tmp/gsl"
+      GSL_DIR="/usr/local/Cellar/gsl/2.7.1"
       mkdir build
       cd build
       cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-9" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
