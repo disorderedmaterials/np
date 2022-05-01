@@ -1,0 +1,53 @@
+trigger:
+  branches:
+    include:
+      - release/*
+
+pr: none
+
+
+
+
+stages:
+  - stage: 'build'
+    displayName: 'Build'
+    jobs:   
+      - job: 'linux'
+        displayName: 'Linux'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          - template: templates/build-linux.yml
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathToPublish: "dist/"
+              ArtifactName: 'linux-artifacts'
+            displayName: 'Publish Linux Artifacts'
+      - job: 'osx'
+        displayName: 'OSX'
+        pool:
+          vmImage: 'macos-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          - template: templates/build-osx.yml
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathToPublish: "dist/"
+              ArtifactName: 'osx-artifacts'
+            displayName: 'Publish OSX Artifacts'
+
+  - stage: 'release'
+    displayName: 'Release'
+    jobs:
+
+      - job: 'release_github'
+        displayName: 'Release'
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          - template: templates/create_release.yml

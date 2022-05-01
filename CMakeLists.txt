@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(modex)
 
+set(DESCRIPTION "ModEx")
+set(AUTHOR "Jared Swift")
+set(VERSION_MAJOR "0")
+set(VERSION_MINOR "1")
+set(VERSION_PATCH "0")
+
 set(CMAKE_CXX_STANDARD 11)
 
 # Include application support
