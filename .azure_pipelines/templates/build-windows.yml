@@ -8,4 +8,4 @@ parameters:
 
 steps:
   - powershell: |
-      cygcheck -cd
+      cygcheck -c libgsl-devel
