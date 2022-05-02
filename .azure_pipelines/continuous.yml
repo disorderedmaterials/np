@@ -39,3 +39,11 @@ stages:
               PathToPublish: "dist/"
               ArtifactName: 'osx-artifacts'
             displayName: 'Publish OSX Artifacts'
+      - job: 'windows'
+        displayName: 'Windows'
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          - template: templates/build-windows.yml
