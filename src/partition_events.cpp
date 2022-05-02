@@ -10,7 +10,9 @@ int main(int argc, char **argv) {
     }
 
     Nexus nxs(argv[1], argv[4]);
-    nxs.load(true);
-    nxs.writePartitionsWithRelativeTimes(atoi(argv[2]), atoi(argv[3]));
+    if (!nxs.load(true))
+        return -1;
+    if (!nxs.writePartitionsWithRelativeTimes(atoi(argv[2]), atoi(argv[3])))
+        return -1;
     return 0;
 }
