@@ -397,7 +397,7 @@ bool Nexus::writeMonitors(H5::H5File output, std::map<int, std::vector<int>> mon
 bool Nexus::writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned int higherSpec) {
 
     if (lowerSpec > higherSpec) {
-        std::cerr << "Lower spectrum (" << lowerSpec << ") > higher spectrum (" << higherSpec << ") did you get them the wrong way round?" << stdL::endl;
+        std::cerr << "Lower spectrum (" << lowerSpec << ") > higher spectrum (" << higherSpec << ") did you get them the wrong way round?" << std::endl;
         return false;
     }
 
