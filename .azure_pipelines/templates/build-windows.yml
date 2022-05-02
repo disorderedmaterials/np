@@ -8,4 +8,4 @@ parameters:
 
 steps:
   - bash: |
-      cygcheck -cd | grep gsl
+      cygcheck -cd
