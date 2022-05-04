@@ -250,22 +250,27 @@ int Nexus::countGoodFrames(Pulse &pulse, int epochOffset) {
 
 }
 
-bool Nexus::output(std::vector<std::string> paths) {
+bool Nexus::output(std::vector<std::string> paths, int rawFrames, int goodFrames, std::map<int, std::vector<int>> monitors) {
 
     try {
-        // Open Nexus file in read only mode.
-        H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
+        if (!Nexus::copy()) {
+            return false;
+        }
+        // // Open Nexus file in read only mode.
+        // H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
         
         // Create new Nexus file for output.
-        H5::H5File output = H5::H5File(outpath, H5F_ACC_TRUNC);
+        H5::H5File output = H5::H5File(outpath, H5F_ACC_RDWR);
 
-        // Perform copying.
-        if (!Nexus::copy(input, output, paths))
-            return false;
+        // // Perform copying.
+        // if (!Nexus::copy(input, output, paths))
+        //     return false;
 
-        input.close();
+        // input.close();
 
         writeCounts(output);
+        writeMonitors(output, monitors);
+        writeGoodFrames(output, goodFrames);
         output.close();
         return true;
 
@@ -275,32 +280,41 @@ bool Nexus::output(std::vector<std::string> paths) {
 
 }
 
-bool Nexus::output(std::vector<std::string> paths, int numFrames, int goodFrames, std::map<int, std::vector<int>> monitors) {
+// bool Nexus::output(std::vector<std::string> paths, int numFrames, int goodFrames, std::map<int, std::vector<int>> monitors) {
 
-    try {
-        // Open Nexus file in read only mode.
-        H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
+//     try {
+//         // Open Nexus file in read only mode.
+//         H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
         
-        // Create new Nexus file for output.
-        H5::H5File output = H5::H5File(outpath, H5F_ACC_TRUNC);
+//         // Create new Nexus file for output.
+//         H5::H5File output = H5::H5File(outpath, H5F_ACC_TRUNC);
 
-        // Perform copying.
-        if (!Nexus::copy(input, output, paths))
-            return false;
+//         // Perform copying.
+//         if (!Nexus::copy(input, output, paths))
+//             return false;
 
-        input.close();
+//         input.close();
 
-        writeCounts(output);
-        // writeTotalFrames(output, numFrames);
-        writeGoodFrames(output, goodFrames);
-        writeMonitors(output, monitors);
-        output.close();
-        return true;
+//         writeCounts(output);
+//         // writeTotalFrames(output, numFrames);
+//         writeGoodFrames(output, goodFrames);
+//         writeMonitors(output, monitors);
+//         output.close();
+//         return true;
 
-    } catch (...) {
-        return false;
-    }
+//     } catch (...) {
+//         return false;
+//     }
 
+// }
+
+bool Nexus::copy() {
+    std::ifstream src(path, std::ios::binary);
+    std::ofstream dest(outpath, std::ios::binary);
+    dest  << src.rdbuf();
+    src.close();
+    dest.close();
+    return true;
 }
 
 bool Nexus::copy(H5::H5File input, H5::H5File output, std::vector<std::string> paths) {

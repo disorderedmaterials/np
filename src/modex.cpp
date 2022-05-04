@@ -44,7 +44,15 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
         if (!nxs.createHistogram(pulse, nxs.startSinceEpoch))
             return false;
-        if (!nxs.output(cfg.nxsDefinitionPaths))
+        int goodFrames = nxs.countGoodFrames(pulse, nxs.startSinceEpoch);
+        double ratio = (double) goodFrames /  (double) nxs.rawFrames[0];
+        std::map<int, std::vector<int>> monitors = nxs.monitors;
+        for (auto &pair : monitors) {
+            for (int i=0; i<pair.second.size(); ++i) {
+                pair.second[i]= (int) (pair.second[i] * ratio);
+            }
+        }
+        if (!nxs.output(cfg.nxsDefinitionPaths, nxs.rawFrames[0], goodFrames, monitors))
             return false;
         std::cout << "Finished processing: " << outpath << std::endl;
         return true;

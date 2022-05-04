@@ -41,6 +41,7 @@ class Nexus {
         bool createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset=0);
         bool output(std::vector<std::string> paths);
         bool output(std::vector<std::string> paths, int numFrames, int rawFrames, std::map<int, std::vector<int>> monitors);
+        bool copy();
         bool copy(H5::H5File in, H5::H5File out, std::vector<std::string> paths);
         bool writeCounts(H5::H5File output);
         bool writeTotalFrames(H5::H5File output, int frames);
