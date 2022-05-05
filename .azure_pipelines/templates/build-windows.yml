@@ -7,7 +7,6 @@ parameters:
     default: gsl-2.7.1
 
 steps:
-steps:
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.x'
