@@ -14,6 +14,6 @@ steps:
   - script: |
       choco install -y mingw
     displayName: 'Install Prerequisites'
-  - bash:
+  - bash: |
     MINGWLIB="C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin\\"
     ls $MINGWLIB
