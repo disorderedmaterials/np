@@ -205,55 +205,46 @@ bool Nexus::load(bool advanced) {
 }
 
 bool Nexus::createHistogram(Pulse &pulse, int epochOffset) {
+    int start, end, id;
+    double frameZero, event;
     for (auto spec: spectra) {
         histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
         gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
     }
 
-    for (int i=0; i<events.size(); ++i) {
-        if ((events[i] >= pulse.start-epochOffset) && (events[i] < pulse.end-epochOffset)) {
-            if (eventIndices[i] > 0) {
-                gsl_histogram_increment(histogram[eventIndices[i]], events[i]);
+    goodFrames = 0;
+
+    for (int i=0; i<frameIndices.size()-1; ++i) {
+        start = frameIndices[i];
+        end = frameIndices[i+1];
+        frameZero = frameOffsets[i];
+        if ((frameZero >= (pulse.start-epochOffset)) && (frameZero < (pulse.end-epochOffset))) {
+            for (int k=start; k<end; ++k) {
+                id = eventIndices[k];
+                event = events[k];
+                if (id > 0)
+                    gsl_histogram_increment(histogram[id], event);
             }
+            ++goodFrames;
         }
     }
 
+    std::cout << "There are " << goodFrames << " goodframes!" << std::endl;
     return true;
 }
 
 bool Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset) {
 
     histogram = mask;
-
-    for (int i=0; i<events.size(); ++i) {
-        if ((events[i] >= pulse.start-epochOffset) && (events[i] < pulse.end-epochOffset)) {
-            if (eventIndices[i] > 0) {
-                gsl_histogram_increment(histogram[eventIndices[i]], events[i]);
-            }
-        }
-    }
-
-    return true;
+    return createHistogram(pulse, epochOffset);
+    
 }
 
-int Nexus::countGoodFrames(Pulse &pulse, int epochOffset) {
-    int goodFrames = 0;
-    std::cout << pulse.start << " " << pulse.end << std::endl;
-    for (int i =0; i<frameIndices.size()-1; ++i) {
-        int frameStart = frameIndices[i];
-        int frameEnd = frameIndices[i+1];
-        double frameZero = frameOffsets[i];
-        if ((frameZero >= pulse.start-epochOffset) && (frameZero < pulse.end-epochOffset))
-            goodFrames++;
-    }
-    return goodFrames;
-
-}
 
 bool Nexus::output(std::vector<std::string> paths) {
 
     try {
-        // Open Nexus file in read only mode.
+        // // Open Nexus file in read only mode.
         H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
         
         // Create new Nexus file for output.
@@ -266,6 +257,8 @@ bool Nexus::output(std::vector<std::string> paths) {
         input.close();
 
         writeCounts(output);
+        writeMonitors(output, monitors);
+        writeGoodFrames(output, goodFrames);
         output.close();
         return true;
 
@@ -275,32 +268,13 @@ bool Nexus::output(std::vector<std::string> paths) {
 
 }
 
-bool Nexus::output(std::vector<std::string> paths, int numFrames, int goodFrames, std::map<int, std::vector<int>> monitors) {
-
-    try {
-        // Open Nexus file in read only mode.
-        H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
-        
-        // Create new Nexus file for output.
-        H5::H5File output = H5::H5File(outpath, H5F_ACC_TRUNC);
-
-        // Perform copying.
-        if (!Nexus::copy(input, output, paths))
-            return false;
-
-        input.close();
-
-        writeCounts(output);
-        // writeTotalFrames(output, numFrames);
-        writeGoodFrames(output, goodFrames);
-        writeMonitors(output, monitors);
-        output.close();
-        return true;
-
-    } catch (...) {
-        return false;
-    }
-
+bool Nexus::copy() {
+    std::ifstream src(path, std::ios::binary);
+    std::ofstream dest(outpath, std::ios::binary);
+    dest  << src.rdbuf();
+    src.close();
+    dest.close();
+    return true;
 }
 
 bool Nexus::copy(H5::H5File input, H5::H5File output, std::vector<std::string> paths) {
@@ -374,6 +348,15 @@ bool Nexus::writeGoodFrames(H5::H5File output, int goodFrames) {
     
     return true;
 
+}
+
+bool Nexus::reduceMonitors(double scale) {
+    for (auto &pair : monitors) {
+        for (int i=0; i<pair.second.size(); ++i) {
+            pair.second[i]= (int) (pair.second[i] * scale);
+        }
+    }
+    return true;
 }
 
 bool Nexus::writeMonitors(H5::H5File output, std::map<int, std::vector<int>> monitors) {

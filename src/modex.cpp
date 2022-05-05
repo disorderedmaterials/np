@@ -44,12 +44,15 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
         if (!nxs.createHistogram(pulse, nxs.startSinceEpoch))
             return false;
+        if (!nxs.reduceMonitors((double) nxs.goodFrames / (double) *nxs.rawFrames))
+            return false;
         if (!nxs.output(cfg.nxsDefinitionPaths))
             return false;
         std::cout << "Finished processing: " << outpath << std::endl;
         return true;
     }
     else {
+        
         std::cout << cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs" << std::endl;
         std::cout << pulse.startRun << std::endl;
         std::cout << pulse.endRun << std::endl;
@@ -73,35 +76,15 @@ bool ModEx::processPulse(Pulse &pulse) {
             }
         }
 
-        std::cout << "Count frames" << std::endl;
-        int goodFramesA = startNxs.countGoodFrames(firstPulse, startNxs.startSinceEpoch);
-        std::cout << "Good frames 1 " << goodFramesA << std::endl;
-        int goodFramesB = endNxs.countGoodFrames(secondPulse, endNxs.startSinceEpoch);
-        std::cout << "Good frames 2 " << goodFramesB << std::endl;
-        int goodFrames = goodFramesA + goodFramesB;
-        int totalFrames = startNxs.rawFrames[0] + endNxs.rawFrames[0];
-        std::cout << goodFrames << std::endl;
-        double ratio = (double) goodFrames /  (double) totalFrames;
-
-        std::cout << ratio << std::endl;
-
-        std::cout << "Reduce monitors" << std::endl;
-        for (auto &pair : monitors) {
-            for (int i=0; i<pair.second.size(); ++i) {
-                pair.second[i]= (int) (pair.second[i] * ratio);
-            }
-        }
-
-        std::cout << "First histogram" << std::endl;
         if (!startNxs.createHistogram(firstPulse, startNxs.startSinceEpoch))
             return false;
-        // if (!startNxs.output(cfg.nxsDefinitionPaths))
-        //     return false;
-
-        std::cout << "Second histogram" << std::endl;
         if (!endNxs.createHistogram(secondPulse, startNxs.histogram, endNxs.startSinceEpoch))
             return false;
-        if (!endNxs.output(cfg.nxsDefinitionPaths, totalFrames, goodFrames, monitors))
+        int totalGoodFrames = startNxs.goodFrames + endNxs.goodFrames;
+        int totalFrames = *startNxs.rawFrames + *endNxs.rawFrames;
+        if (!endNxs.reduceMonitors((double) totalGoodFrames / (double) totalFrames))
+            return false;
+        if (!endNxs.output(cfg.nxsDefinitionPaths))
             return false;
         return true;
     }
