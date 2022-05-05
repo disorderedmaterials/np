@@ -38,7 +38,6 @@ bool ModEx::process() {
 
 bool ModEx::processPulse(Pulse &pulse) {
     if (pulse.startRun == pulse.endRun) {
-        return false;
         std::string outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
         Nexus nxs = Nexus(pulse.startRun, outpath);
         if (!nxs.load(true))
