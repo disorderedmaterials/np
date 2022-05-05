@@ -7,5 +7,5 @@ parameters:
     default: gsl-2.7.1
 
 steps:
-  - powershell: |
-      cygcheck -c libgsl-devel
+  - bash: |
+      ls C:/MinGW
