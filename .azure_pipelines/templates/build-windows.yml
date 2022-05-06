@@ -20,6 +20,6 @@ steps:
       tar -zxvf ${{ parameters.gsltag }}.tar.gz
       cd ${{ parameters.gsltag }}
       ./configure --prefix=$MINGWLIB
-      make
+      make -f Makefile
       make install
     displayName: 'Download and build GNU GSL'
