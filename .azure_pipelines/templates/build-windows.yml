@@ -13,7 +13,7 @@ steps:
   # - script: |
   #     choco install -y mingw
   #   displayName: 'Install Prerequisites'
-  - bash: |
+  - powershell: |
       set -ex
       MINGWLIB="C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\\"
       ls $MINGWLIB
