@@ -7,12 +7,12 @@ parameters:
     default: gsl-2.7.1
 
 steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-  - script: |
-      choco install -y mingw
-    displayName: 'Install Prerequisites'
+  # - task: UsePythonVersion@0
+  #   inputs:
+  #     versionSpec: '3.x'
+  # - script: |
+  #     choco install -y mingw
+  #   displayName: 'Install Prerequisites'
   - bash: |
       set -ex
       MINGWLIB="C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\\"
