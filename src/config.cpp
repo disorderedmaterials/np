@@ -117,15 +117,8 @@ bool Config::parse() {
             }
             
             std::stringstream ss(line); // String stream for parsing.
-            std::string label;
             double pulseStart, pulseEnd;
             std::string item; // Auxilliary variable to read into.
-            
-            // Read in label.
-            if(!std::getline(ss, label, ' ')) {
-                std::cerr << "ERROR: couldn't retrieve label from pulse " << i << "." << std::endl;
-                return false;
-            }
 
             // Read in pulse start time.
             if(!std::getline(ss, item, ' ')) {
@@ -142,7 +135,7 @@ bool Config::parse() {
             pulseEnd = atof(item.c_str());
 
             // Append pulse.
-            pulses.push_back(Pulse(label, pulseStart, pulseEnd));
+            pulses.push_back(Pulse(pulseStart, pulseEnd));
         }
     } else { // Otherwise expect period definition.
 
