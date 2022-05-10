@@ -22,5 +22,7 @@ steps:
       ./configure --prefix=$MINGWLIB
       ls
       make
-      make install
     displayName: 'Download and build GNU GSL'
+  - powershell: |
+    cd ${{ parameters.gsltag }}
+    make install
