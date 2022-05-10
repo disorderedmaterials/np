@@ -69,7 +69,7 @@ bool Config::parse() {
         return false;
     }
     nRuns = atoi(line.c_str());
-    std::cerr << "There are " << nRuns << " runs" << std::endl;
+    std::cout << "There are " << nRuns << " runs" << std::endl;
 
     // Read in runs.
     for (int i=0; i<nRuns; ++i) {

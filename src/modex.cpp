@@ -8,11 +8,13 @@ bool ModEx::process() {
     if (cfg.extrapolationMode == NONE) {
         epochPulses(cfg.pulses);
         binPulsesToRuns(cfg.pulses);
+        totalPulses = cfg.pulses.size();
         for (Pulse &pulse : cfg.pulses) {
             processPulse(pulse);
         }
     }
     else {
+        std::vector<std::vector<Pulse>> allPulses;
         for (auto &p : cfg.period.pulses) {
             std::vector<Pulse> pulses;
             extrapolatePulseTimes(
@@ -26,11 +28,18 @@ bool ModEx::process() {
             );
             std::cout << "binning pulses to runs" << std::endl;
             binPulsesToRuns(pulses);
+            allPulses.push_back(pulses);
+        }
+        for (auto &pulses : allPulses) {
+            totalPulses += pulses.size();
+        }        
+        for (auto &pulses : allPulses) {
             for (Pulse &pulse : pulses) {
                 std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
                 processPulse(pulse);
             }
         }
+
     }
     return true;
 
@@ -48,16 +57,20 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
         if (!nxs.output(cfg.nxsDefinitionPaths))
             return false;
+        progress = (double) currentPulse / (double) totalPulses;
+        progress*=100;
+        ++currentPulse;
         std::cout << "Finished processing: " << outpath << std::endl;
+        std::cout << "Progress: " << progress << "%" << std::endl;
         return true;
     }
     else {
-        
+        std::string outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
         std::cout << cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs" << std::endl;
         std::cout << pulse.startRun << std::endl;
         std::cout << pulse.endRun << std::endl;
         Nexus startNxs = Nexus(pulse.startRun);
-        Nexus endNxs = Nexus(pulse.endRun, cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs");
+        Nexus endNxs = Nexus(pulse.endRun, outpath);
 
         if (!startNxs.load(true))
             return false;
@@ -86,6 +99,11 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
         if (!endNxs.output(cfg.nxsDefinitionPaths))
             return false;
+        progress = (double) currentPulse / (double) totalPulses;
+        progress*=100;
+        ++currentPulse;
+        std::cout << "Finished processing: " << outpath << std::endl;
+        std::cout << "Progress: " << progress << "%" << std::endl;
         return true;
     }
 }
