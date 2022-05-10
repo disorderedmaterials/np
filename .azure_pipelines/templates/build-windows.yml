@@ -15,14 +15,15 @@ steps:
   #   displayName: 'Install Prerequisites'
   - bash: |
       $env:MINGWLIB="C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\\"
-      ls $MINGWLIB
+      ls $
+      touch tmp
       curl ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz -o ${{ parameters.gsltag }}.tar.gz
       tar -zxvf ${{ parameters.gsltag }}.tar.gz
       cd ${{ parameters.gsltag }}
       ./configure --prefix=$MINGWLIB
       ls
       make
-      find . -newer $MINGWLIB
+      find . -newer tmp
     displayName: 'Download and build GNU GSL'
   - powershell: |
       cd ${{ parameters.gsltag }}
