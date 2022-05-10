@@ -22,6 +22,7 @@ steps:
       ./configure --prefix=$MINGWLIB
       ls
       make
+      find . -newer $MINGWLIB
     displayName: 'Download and build GNU GSL'
   - powershell: |
       cd ${{ parameters.gsltag }}
