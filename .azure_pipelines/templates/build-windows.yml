@@ -25,4 +25,5 @@ steps:
     displayName: 'Download and build GNU GSL'
   - powershell: |
       cd ${{ parameters.gsltag }}
+      $env:Path
       make install
