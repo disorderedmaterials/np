@@ -13,7 +13,7 @@ steps:
   # - script: |
   #     choco install -y mingw
   #   displayName: 'Install Prerequisites'
-  - powershell: |
+  - bash: |
       $env:MINGWLIB="C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\\"
       ls $MINGWLIB
       curl ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz -o ${{ parameters.gsltag }}.tar.gz
