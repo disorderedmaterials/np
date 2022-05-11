@@ -16,16 +16,15 @@ steps:
   - bash: |
       $env:MINGWLIB="C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\\"
       ls $
-      touch $MINGWLIB\tmp
       curl ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz -o ${{ parameters.gsltag }}.tar.gz
       tar -zxvf ${{ parameters.gsltag }}.tar.gz
       cd ${{ parameters.gsltag }}
       ./configure --prefix=$MINGWLIB
       ls
       make
-      find . -newer $MINGWLIB\tmp
     displayName: 'Download and build GNU GSL'
   - powershell: |
       cd ${{ parameters.gsltag }}
       $env:Path
+      New-Item -ItemType SymbolicLink -Path "C:\Progra~1\Git\usr\bin\sh.exe" -Target "C:\Program"
       make install
