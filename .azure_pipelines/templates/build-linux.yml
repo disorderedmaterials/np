@@ -28,6 +28,7 @@ steps:
     displayName: 'Download and build GNU GSL'
   - bash: |
       set -ex
+      VERSION=`grep "#define MODEX_VERSION" version.h | sed "s/.*\"\(.*\)\"/\1/g"`
       HDF5_DIR="$(pwd)/${{ parameters.hdf5tag }}"
       GSL_DIR="/tmp/gsl"
       mkdir build
@@ -38,4 +39,7 @@ steps:
       mkdir dist
       mv build/modulation_excitation dist/
       mv build/partition_events dist/
+      mv build/modulation_excitation dist/
+      mv build/partition_events dist/
+      7z a dist/ModEx-{$VERSION}-linux.zip dist/modulation_excitation dist/partition_events
     displayName: 'Build'
