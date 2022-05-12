@@ -30,5 +30,5 @@ steps:
       mkdir binaries-${VERSION}-osx
       mv build/modulation_excitation binaries-${VERSION}-osx/
       mv build/partition_events binaries-${VERSION}-osx/
-      7z a binaries-${VERSION}-linux.zip binaries-${VERSION}-osx/
+      7z a binaries-${VERSION}-osx.zip binaries-${VERSION}-osx/
     displayName: 'Build'
