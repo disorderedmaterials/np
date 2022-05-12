@@ -27,8 +27,8 @@ steps:
       cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-9" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
       ninja
       cd ..
-      mkdir dist
-      mv build/modulation_excitation dist/
-      mv build/partition_events dist/
-      7z a dist/ModEx-{$VERSION}-osx.zip dist/modulation_excitation dist/partition_events
+      mkdir binaries-${VERSION}-osx
+      mv build/modulation_excitation binaries-${VERSION}-osx/
+      mv build/partition_events binaries-${VERSION}-osx/
+      7z a binaries-${VERSION}-linux.zip binaries-${VERSION}-osx/
     displayName: 'Build'

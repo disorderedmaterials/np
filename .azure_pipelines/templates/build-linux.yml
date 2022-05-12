@@ -36,8 +36,8 @@ steps:
       cmake ../ -G Ninja ${{ parameters.extraflags }} -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
       ninja
       cd ..
-      mkdir dist
-      mv build/modulation_excitation dist/
-      mv build/partition_events dist/
-      7z a dist/ModEx-{$VERSION}-linux.zip dist/modulation_excitation dist/partition_events
+      mkdir binaries-${VERSION}-linux
+      mv build/modulation_excitation binaries-${VERSION}-linux/
+      mv build/partition_events binaries-${VERSION}-linux/
+      7z a binaries-${VERSION}-linux.zip binaries-${VERSION}-linux/
     displayName: 'Build'
