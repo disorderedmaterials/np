@@ -40,4 +40,5 @@ steps:
       mv build/modulation_excitation binaries-${VERSION}-linux/
       mv build/partition_events binaries-${VERSION}-linux/
       7z a binaries-${VERSION}-linux.zip binaries-${VERSION}-linux/
+      ls
     displayName: 'Build'
