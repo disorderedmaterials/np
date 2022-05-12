@@ -23,7 +23,7 @@ stages:
           - template: templates/build-linux.yml
           - task: PublishBuildArtifacts@1
             inputs:
-              PathToPublish: "dist/"
+              PathToPublish: "binaries-*-linux.zip"
               ArtifactName: 'linux-artifacts'
             displayName: 'Publish Linux Artifacts'
       - job: 'osx'
@@ -36,6 +36,6 @@ stages:
           - template: templates/build-osx.yml
           - task: PublishBuildArtifacts@1
             inputs:
-              PathToPublish: "dist/"
+              PathToPublish: "binaries-*-osx.zip"
               ArtifactName: 'osx-artifacts'
             displayName: 'Publish OSX Artifacts'
