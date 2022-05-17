@@ -6,7 +6,7 @@
 
 
 ModEx::ModEx(Config cfg_) : cfg(cfg_) {
-    diagnosticFile = std::ofstream(diagnosticPath);
+    diagnosticFile = std::ofstream(diagnosticPath, std::ofstream::out | std::ofstream::trunc);
 }
 
 ModEx::~ModEx() {
