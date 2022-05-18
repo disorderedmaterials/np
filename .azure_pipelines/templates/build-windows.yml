@@ -8,7 +8,7 @@ parameters:
 
 steps:
   - bash: |
-      curl -L https://github.com/facebook/zstd/releases/v1.5.1/zstd-v1.5.2-win64.zip > zstd.zip
+      curl -L https://github.com/facebook/zstd/releases/download/v1.5.2/zstd-v1.5.2-win64.zip > zstd.zip
       ls
       unzip zstd.zip
     displayName: Collect zstd
