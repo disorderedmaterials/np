@@ -21,7 +21,7 @@ steps:
       tar xvf ${{ parameters.gsltag }}.pkg.tar --directory ${{ parameters.gsltag }}
     displayName: Collect GSL
   - bash: |
-      wget https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-windows.zip
+      curl https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-windows.zip > ${{ parameters.hdf5tag }}-windows.zip
       unzip ${{ parameters.hdf5tag }}-windows.zip
     displayName: 'Download HDF5 Artifacts'
   - bash: |
