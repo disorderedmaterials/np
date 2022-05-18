@@ -22,8 +22,7 @@ steps:
     displayName: Collect GSL
   - bash: |
       set -x
-      curl https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-windows.zip > ${{ parameters.hdf5tag }}-windows.zip
-      ls
+      curl -L https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-windows.zip > ${{ parameters.hdf5tag }}-windows.zip
       unzip ${{ parameters.hdf5tag }}-windows.zip
     displayName: 'Download HDF5 Artifacts'
   - bash: |
