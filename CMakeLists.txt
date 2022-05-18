@@ -21,7 +21,11 @@ option(
   OFF)
 
 if(LOCAL_STATIC_GSL)
-  list(APPEND LINK_LIBS "${GSL_DIR}/lib/libgsl.a")
+  list(APPEND LINK_LIBS "${GSL_DIR}/lib/libgsl.a" "${GSL_DIR}/lib/libgslcblas.a")
+  if(WIN32)
+    list(APPEND LINK_LIBS "${GSL_DIR}/lib/libgsl.dll.a" "${GSL_DIR}/lib/libgslcblas.dll.a")
+  endif(WIN32)
+  include_directories(${GSL_DIR}/include)
 endif(LOCAL_STATIC_GSL)
 
 option(
@@ -165,13 +169,14 @@ set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/
 add_executable(modulation_excitation src/modulation_excitation.cpp ${SOURCES})
 add_executable(partition_events src/partition_events.cpp ${SOURCES})
 
-find_package(GSL REQUIRED)
+include(CMakePrintHelpers)
+cmake_print_variables(LINK_LIBS)
 
 link_directories (${LIBRARY_OUTPUT_PATH})
 IF(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} GSL::gsl)
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} GSL::gsl)
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl)
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl)
 ELSE(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl GSL::gsl)
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl GSL::gsl)
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS})
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS})
 ENDIF(WIN32)
