@@ -28,7 +28,7 @@ steps:
   - bash: |
       set -ex
       HDF5_DIR="$(pwd)/${{ parameters.hdf5tag }}"
-      GSL_DIR="${{ parameters.gsltag }}/mingw64"
+      GSL_DIR="$(pwd)/${{ parameters.gsltag }}/mingw64"
       mkdir build
       cd build
       cmake ../ -G "MinGW Makefiles" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
