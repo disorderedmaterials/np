@@ -8,7 +8,6 @@ parameters:
 
 steps:
   - bash: |
-      set -ex
       brew update-reset
       brew install ninja
       brew install gsl

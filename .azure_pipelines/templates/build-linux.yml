@@ -8,7 +8,6 @@ parameters:
 
 steps:
   - bash: |
-      set -ex
       sudo apt-get update
       sudo apt-get install ninja-build
     displayName: 'Install Prerequisites'
@@ -17,7 +16,6 @@ steps:
       unzip ${{ parameters.hdf5tag }}-linux.zip
     displayName: 'Download HDF5 Artifacts'
   - bash: |
-      set -ex
       wget ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz
       tar -zxvf ${{ parameters.gsltag }}.tar.gz
       cd ${{ parameters.gsltag }}
@@ -27,7 +25,6 @@ steps:
       make install
     displayName: 'Download and build GNU GSL'
   - bash: |
-      set -ex
       VERSION=`grep "#define MODEX_VERSION" version.h | sed "s/.*\"\(.*\)\"/\1/g"`
       HDF5_DIR="$(pwd)/${{ parameters.hdf5tag }}"
       GSL_DIR="/tmp/gsl"

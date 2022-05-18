@@ -13,7 +13,14 @@ steps:
       downloadType: 'single'
       artifactName: 'osx-artifacts'
     displayName: 'Download OSX Artifacts'
-  - bash: |
+  - task: DownloadBuildArtifacts@0
+    inputs:
+      buildType: 'current'
+      specificBuildWithTriggering: true
+      downloadType: 'single'
+      artifactName: 'windows-artifacts'
+    displayName: 'Download Windows Artifacts'
+    - bash: |
       VERSION=`grep "#define MODEX_VERSION" version.h | sed "s/.*\"\(.*\)\"/\1/g"`
       git clone https://github.com/disorderedmaterials/scripts.git
       sed -i  -e 's/trisyoungs/jswift-stfc/g' scripts/update-release
