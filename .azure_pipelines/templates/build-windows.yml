@@ -9,10 +9,10 @@ parameters:
 steps:
   - bash: |
       curl -L https://github.com/facebook/zstd/releases/v1.5.1/zstd-v1.5.2-win64.zip > zstd.zip
-      unzip zstd.zip
       ls
+      unzip zstd.zip
     displayName: Collect zstd
   
   - bash: |
-      curl - L https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gsl-${{ parameters.gsltag }}-1-any.pkg.tar.zst > ${{ parameters.gsltag }}.pkg.tar.zst
+      curl -L https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gsl-${{ parameters.gsltag }}-1-any.pkg.tar.zst > ${{ parameters.gsltag }}.pkg.tar.zst
     displayName: Collect GSL
