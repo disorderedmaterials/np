@@ -7,24 +7,5 @@ parameters:
     default: gsl-2.7.1
 
 steps:
-  # - task: UsePythonVersion@0
-  #   inputs:
-  #     versionSpec: '3.x'
-  # - script: |
-  #     choco install -y mingw
-  #   displayName: 'Install Prerequisites'
   - bash: |
-      $env:MINGWLIB="C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\\"
-      ls $
-      curl ftp://ftp.gnu.org/gnu/gsl/${{ parameters.gsltag }}.tar.gz -o ${{ parameters.gsltag }}.tar.gz
-      tar -zxvf ${{ parameters.gsltag }}.tar.gz
-      cd ${{ parameters.gsltag }}
-      ./configure --prefix=$MINGWLIB
-      ls
-      make
-    displayName: 'Download and build GNU GSL'
-  - powershell: |
-      cd ${{ parameters.gsltag }}
-      $env:Path
-      New-Item -ItemType SymbolicLink -Path "C:\Progra~1\Git\usr\bin\sh.exe" -Target "C:\Program"
-      make install
+      pacman -S mingw-w64-x86_64-gsl
