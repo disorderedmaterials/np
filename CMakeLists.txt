@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(modex)
+include(CMakePrintHelpers)
+
 
 set(DESCRIPTION "ModEx")
 set(AUTHOR "Jared Swift")
@@ -7,7 +9,9 @@ set(VERSION_MAJOR "0")
 set(VERSION_MINOR "1")
 set(VERSION_PATCH "0")
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Include application support
 include(ExternalProject)
@@ -25,7 +29,8 @@ if(LOCAL_STATIC_GSL)
   if(WIN32)
     list(APPEND LINK_LIBS "${GSL_DIR}/lib/libgsl.dll.a" "${GSL_DIR}/lib/libgslcblas.dll.a")
   endif(WIN32)
-  include_directories(${GSL_DIR}/include)
+  include_directories(${GSL_DIR}/include ${GSL_DIR}/include/gsl)
+  message("${GSL_DIR}/include")
 endif(LOCAL_STATIC_GSL)
 
 option(
@@ -164,18 +169,16 @@ include_directories(
     include
 )
 
+cmake_print_variables(LINK_LIBS)
+
 set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp  src/period.cpp include/period.hpp include/pulse_definition.hpp)
 
 add_executable(modulation_excitation src/modulation_excitation.cpp ${SOURCES})
 add_executable(partition_events src/partition_events.cpp ${SOURCES})
 
-include(CMakePrintHelpers)
-cmake_print_variables(LINK_LIBS)
-
-link_directories (${LIBRARY_OUTPUT_PATH})
 IF(WIN32)
-	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl)
-  target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl)
+	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS})
+  target_link_libraries(partition_events PRIVATE ${LINK_LIBS})
 ELSE(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS})
   target_link_libraries(partition_events PRIVATE ${LINK_LIBS})
