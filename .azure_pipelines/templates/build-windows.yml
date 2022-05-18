@@ -34,7 +34,7 @@ steps:
       mkdir binaries-${VERSION}-windows
       mv build/modulation_excitation binaries-${VERSION}-windows/
       mv build/partition_events binaries-${VERSION}-windows/
-      7z a binaries-${VERSION}-osx.zip binaries-${VERSION}-windows/
+      7z a binaries-${VERSION}-windows.zip binaries-${VERSION}-windows/
       mkdir dist
       mv binaries-${VERSION}-windows.zip dist/
     displayName: 'Build'
