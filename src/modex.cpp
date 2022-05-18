@@ -4,6 +4,16 @@
 #include <modex.hpp>
 #include <nexus.hpp>
 
+
+ModEx::ModEx(Config cfg_) : cfg(cfg_) {
+    diagnosticFile = std::ofstream(diagnosticPath, std::ofstream::out | std::ofstream::trunc);
+}
+
+ModEx::~ModEx() {
+    if (diagnosticFile)
+        diagnosticFile.close();
+}
+
 bool ModEx::process() {
     if (cfg.extrapolationMode == NONE) {
         epochPulses(cfg.pulses);
@@ -47,7 +57,11 @@ bool ModEx::process() {
 
 bool ModEx::processPulse(Pulse &pulse) {
     if (pulse.startRun == pulse.endRun) {
-        std::string outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
+        std::string outpath;
+        if (!pulse.label.empty())
+            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + "-" + pulse.label + ".nxs";
+        else
+            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
         Nexus nxs = Nexus(pulse.startRun, outpath);
         if (!nxs.load(true))
             return false;
@@ -57,6 +71,7 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
         if (!nxs.output(cfg.nxsDefinitionPaths))
             return false;
+        diagnosticFile << outpath << " " << nxs.goodFrames << std::endl;
         progress = (double) currentPulse / (double) totalPulses;
         progress*=100;
         ++currentPulse;
@@ -65,8 +80,12 @@ bool ModEx::processPulse(Pulse &pulse) {
         return true;
     }
     else {
-        std::string outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
-        std::cout << cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs" << std::endl;
+        std::string outpath;
+        if (!pulse.label.empty())
+            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + "-" + pulse.label + ".nxs";
+        else
+            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
+        std::cout << outpath << std::endl;
         std::cout << pulse.startRun << std::endl;
         std::cout << pulse.endRun << std::endl;
         Nexus startNxs = Nexus(pulse.startRun);
@@ -99,6 +118,7 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
         if (!endNxs.output(cfg.nxsDefinitionPaths))
             return false;
+        diagnosticFile << outpath << " " << startNxs.goodFrames + endNxs.goodFrames << std::endl;
         progress = (double) currentPulse / (double) totalPulses;
         progress*=100;
         ++currentPulse;
