@@ -17,7 +17,7 @@ steps:
       set -ex
       curl -L https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-${{ parameters.gsltag }}-1-any.pkg.tar.zst > ${{ parameters.gsltag }}.pkg.tar.zst
       ./zstd-v1.5.2-win64/zstd.exe -d ${{ parameters.gsltag }}.pkg.tar.zst
-      unzip ${{ parameters.gsltag }}.pkg.tar
+      tar xzvf ${{ parameters.gsltag }}.pkg.tar ${{ parameters.gsltag }}.pkg
     displayName: Collect GSL
   - bash: |
       wget https://github.com/disorderedmaterials/HDF5/releases/download/${{ parameters.hdf5tag }}/${{ parameters.hdf5tag }}-windows.zip
