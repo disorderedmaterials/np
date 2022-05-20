@@ -15,7 +15,7 @@ class Period {
         std::vector<Pulse> pulses;
         Period(PeriodDefinition &definition_, double start_, double end_, std::vector<Pulse> pulses_) : definition(definition_), start(start_), end(end_), pulses(pulses_) {}
         Period() = default;
-        bool isComplete() {return true;}
+        bool isComplete();
 
 };
 

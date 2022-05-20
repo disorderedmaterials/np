@@ -14,8 +14,6 @@ class Pulse {
         Pulse(PulseDefinition &definition_, double start_, double end_) : start(start_), end(end_) {}
         Pulse(double start_, double end_) : start(start_), end(end_) {}
         Pulse() = default;
-
-        bool inBounds(double lower, double upper) {return ((start >= lower) && (end <= upper));}
 };
 
 #endif // PULSE_H
