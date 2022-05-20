@@ -171,7 +171,7 @@ include_directories(
 
 cmake_print_variables(LINK_LIBS)
 
-set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp  src/period.cpp include/period.hpp include/pulse_definition.hpp)
+set(SOURCES src/nexus.cpp include/nexus.hpp src/modex.cpp include/modex.hpp src/config.cpp include/config.hpp include/pulse.hpp  src/period_definition.cpp include/period.hpp include/pulse_definition.hpp)
 
 add_executable(modulation_excitation src/modulation_excitation.cpp ${SOURCES})
 add_executable(partition_events src/partition_events.cpp ${SOURCES})

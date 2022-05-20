@@ -1,8 +1,8 @@
-#include <period.hpp>
+#include <period_definition.hpp>
 
 #include <iostream>
 
-bool Period::isValid() {
+bool PeriodDefinition::isValid() {
 
     for (const auto &pulse : pulses) {
         if (pulse.periodOffset > duration) {

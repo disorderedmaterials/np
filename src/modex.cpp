@@ -16,50 +16,146 @@ ModEx::~ModEx() {
 
 bool ModEx::process() {
     if (cfg.extrapolationMode == NONE) {
-        epochPulses(cfg.pulses);
-        binPulsesToRuns(cfg.pulses);
-        totalPulses = cfg.pulses.size();
-        for (Pulse &pulse : cfg.pulses) {
+        epochPulses(cfg.rawPulses);
+        binPulsesToRuns(cfg.rawPulses);
+        totalPulses = cfg.rawPulses.size();
+        for (auto &pulse : cfg.rawPulses) {
+            std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
             processPulse(pulse);
         }
     }
     else {
-        std::vector<std::vector<Pulse>> allPulses;
-        for (auto &p : cfg.period.pulses) {
-            std::vector<Pulse> pulses;
-            extrapolatePulseTimes(
-                cfg.runs[0],
-                cfg.periodBegin,
-                cfg.extrapolationMode == BACKWARDS || cfg.extrapolationMode == BI_DIRECTIONAL,
-                cfg.extrapolationMode == FORWARDS || cfg.extrapolationMode == BI_DIRECTIONAL,
-                cfg.period.duration,
-                p,
-                pulses
-            );
-            std::cout << "binning pulses to runs" << std::endl;
-            binPulsesToRuns(pulses);
-            allPulses.push_back(pulses);
-        }
-        for (auto &pulses : allPulses) {
-            totalPulses += pulses.size();
-        }        
-        for (auto &pulses : allPulses) {
-            for (Pulse &pulse : pulses) {
-                std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
-                processPulse(pulse);
+        std::vector<Period> periods;
+        extrapolatePeriods(periods);
+        binPeriodsToRuns(periods);
+        totalPulses = periods.size() * cfg.periodDefinition.pulses.size();
+        for (auto &period : periods) {
+            if (period.isComplete()) {
+                for (auto & pulse : period.pulses) {
+                    std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
+                    processPulse(pulse);
+                }
+            }
+            else {
+                currentPulse += cfg.periodDefinition.pulses.size();
+                progress = (double) currentPulse / (double) totalPulses;
+                progress*=100;
+                diagnosticFile << "Period " << period.start << " to " << period.end << " was ignored (incomplete period)." << std::endl;
             }
         }
-
     }
     return true;
+}
 
+bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
+
+    Nexus firstRunNXS(cfg.runs[0]);
+    firstRunNXS.load();
+    Nexus lastRunNXS(cfg.runs[cfg.runs.size()-1]);
+    lastRunNXS.load();
+
+    const int expStart = firstRunNXS.startSinceEpoch;
+    const int expEnd = lastRunNXS.endSinceEpoch;
+    double startPeriod = double(expStart) + cfg.periodBegin;
+    double periodBegin = 0;
+
+    // First period
+    std::vector<Pulse> firstPeriodPulses;
+    for (auto &p :cfg.periodDefinition.pulses) {
+        firstPeriodPulses.push_back(Pulse(p, startPeriod + p.periodOffset, startPeriod + p.periodOffset + p.duration));
+    }
+
+    periods.push_back(Period(cfg.periodDefinition, startPeriod, startPeriod + cfg.periodDefinition.duration, firstPeriodPulses));
+
+    if (cfg.extrapolationMode == BACKWARDS || cfg.extrapolationMode == BI_DIRECTIONAL) {
+        periodBegin = startPeriod - cfg.periodDefinition.duration;
+        while (periodBegin > expStart) {
+            std::vector<Pulse> pulses;
+            for (auto& p: cfg.periodDefinition.pulses) {
+                pulses.push_back(Pulse(p, periodBegin + p.periodOffset, periodBegin + p.periodOffset + p.duration));
+            }
+            periods.push_back(Period(cfg.periodDefinition, periodBegin, periodBegin + cfg.periodDefinition.duration, pulses));
+            periodBegin -= cfg.periodDefinition.duration;
+        }
+    
+    }
+    if (cfg.extrapolationMode == FORWARDS || cfg.extrapolationMode == BI_DIRECTIONAL) {
+        periodBegin  = startPeriod + cfg.periodDefinition.duration;
+        while (periodBegin < expEnd) {
+            std::vector<Pulse> pulses;
+            for (auto& p: cfg.periodDefinition.pulses) {
+                pulses.push_back(Pulse(p, periodBegin + p.periodOffset, periodBegin + p.periodOffset + p.duration));
+            }
+            periods.push_back(Period(cfg.periodDefinition, periodBegin, periodBegin + cfg.periodDefinition.duration, pulses));
+            periodBegin += cfg.periodDefinition.duration;
+        }
+    }
+
+    std::sort(
+        periods.begin(), periods.end(),
+        [](
+            const Period a,
+            const Period b
+        ){
+            return a.start < b.end;
+        }
+    );
+    return true;
+}
+
+bool ModEx::binPeriodsToRuns(std::vector<Period> &periods) {
+
+
+    for (auto &period : periods) {
+        binPulsesToRuns(period.pulses);
+    }
+
+    return true;
+}
+
+bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
+
+    std::vector<std::pair<std::string, std::pair<int, int>>> runBoundaries;
+
+    for (const auto &run : cfg.runs) {
+        Nexus nxs(run);
+        nxs.load();
+        runBoundaries.push_back(std::make_pair(run, std::make_pair(nxs.startSinceEpoch, nxs.endSinceEpoch)));
+    }
+
+        for (auto &pulse : pulses) {
+            for (int i=0; i<runBoundaries.size(); ++i) {
+                if ((pulse.start >= runBoundaries[i].second.first) && (pulse.start < runBoundaries[i].second.second)) {
+                    pulse.startRun = runBoundaries[i].first;
+                    if (i < runBoundaries.size()-1) {
+                        pulse.endRun = runBoundaries[i+1].first;
+                    }
+                    else {
+                        pulse.endRun = pulse.startRun;
+                    }
+                }
+                if ((pulse.end >= runBoundaries[i].second.first) && (pulse.end < runBoundaries[i].second.second)) {
+                    pulse.endRun = runBoundaries[i].first;
+                    if (pulse.startRun.empty()) {
+                        if (i > 0) {
+                            pulse.startRun = runBoundaries[i-1].first;
+                        }
+                        else {
+                            pulse.startRun = pulse.endRun;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        return true;
 }
 
 bool ModEx::processPulse(Pulse &pulse) {
     if (pulse.startRun == pulse.endRun) {
         std::string outpath;
-        if (!pulse.label.empty())
-            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + "-" + pulse.label + ".nxs";
+        if (!pulse.definition.label.empty())
+            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + "-" + pulse.definition.label + ".nxs";
         else
             outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
         Nexus nxs = Nexus(pulse.startRun, outpath);
@@ -81,8 +177,8 @@ bool ModEx::processPulse(Pulse &pulse) {
     }
     else {
         std::string outpath;
-        if (!pulse.label.empty())
-            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + "-" + pulse.label + ".nxs";
+        if (!pulse.definition.label.empty())
+            outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + "-" + pulse.definition.label + ".nxs";
         else
             outpath = cfg.outputDir + "/" + std::to_string((int) pulse.start) + ".nxs";
         std::cout << outpath << std::endl;
@@ -97,9 +193,9 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
 
         std::cout << pulse.start << " " << pulse.end << std::endl;
-        Pulse firstPulse(pulse.label, pulse.start, startNxs.endSinceEpoch);
-        Pulse secondPulse(pulse.label, startNxs.endSinceEpoch, pulse.end);
-
+        Pulse firstPulse(pulse.start, startNxs.endSinceEpoch);
+        Pulse secondPulse(endNxs.startSinceEpoch, pulse.end);
+        std::cout << "Pulse duration: " << secondPulse.end - firstPulse.start << std::endl;
         std::map<int, std::vector<int>> monitors = startNxs.monitors;
         std::cout << "Sum monitors" << std::endl;
         for (auto &pair : monitors) {
@@ -147,101 +243,4 @@ bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
 
     return true;
 
-}
-
-bool ModEx::extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, PulseDefinition pulseDefinition, std::vector<Pulse> &pulses) {
-
-    // Assume runs are ordered.
-    const std::string firstRun = cfg.runs[0];
-    const std::string lastRun = cfg.runs[cfg.runs.size()-1];
-
-    // Load the first, last and start runs.
-    Nexus firstRunNXS(firstRun);
-    firstRunNXS.load();
-    Nexus lastRunNXS(lastRun);
-    lastRunNXS.load();
-    Nexus startRunNXS(start_run);
-    startRunNXS.load();
-    // Determine start, end and first pulse times, since unix epoch.
-    const int expStart = firstRunNXS.startSinceEpoch;
-    const int expEnd = lastRunNXS.endSinceEpoch;
-    double startPulse = startRunNXS.startSinceEpoch + start + pulseDefinition.periodOffset;
-    double pulse = 0;
-    // pulses.push_back(std::make_pair(startPulse, startPulse+pulseDefinition.duration));
-    pulses.push_back(Pulse(pulseDefinition.label, startPulse, startPulse+pulseDefinition.duration));
-
-    // Extrapolate backwards.
-    if (backwards) {
-        pulse = startPulse - periodDuration;
-        while (pulse > expStart) {
-            pulses.push_back(Pulse(pulseDefinition.label, pulse, pulse+pulseDefinition.duration));
-            pulse-=periodDuration;
-        }
-    }
-
-    // Extrapolate forwards.
-    if (forwards) {
-        pulse = startPulse + periodDuration;
-        while (pulse < expEnd) {
-            pulses.push_back(Pulse(pulseDefinition.label, pulse, pulse+pulseDefinition.duration));
-            pulse+=periodDuration;
-        }
-    }
-
-    // Sort pulses by their start time.
-    std::sort(
-        pulses.begin(), pulses.end(),
-        [](
-            const Pulse a,
-            const Pulse b
-            ){
-                return a.start < b.end;
-            }
-    );
-    return true;
-}
-
-bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
-
-    std::vector<std::pair<std::string, std::pair<int, int>>> runBoundaries;
-
-    for (auto &r : cfg.runs) {
-        Nexus nxs(r);
-        nxs.load();
-        runBoundaries.push_back(std::make_pair(r, std::make_pair(nxs.startSinceEpoch, nxs.endSinceEpoch)));
-    }
-
-    for (int i=0; i<pulses.size(); ++i) {
-        for (auto& pair: runBoundaries) {
-            if ((pulses[i].start >= pair.second.first) && (pulses[i].start < pair.second.second)) {
-                pulses[i].startRun = pair.first;
-                break;
-            }
-        }
-        for (auto& pair: runBoundaries) {
-            if ((pulses[i].end >= pair.second.first) && (pulses[i].end < pair.second.second)) {
-                pulses[i].endRun = pair.first;
-                break;
-            }
-        }
-        if (!pulses[i].startRun.size()) {
-            for (int j=0; j<runBoundaries.size()-1; ++j) {
-                if ((pulses[i].start >= runBoundaries[j].second.second) && (pulses[i].start < runBoundaries[j+1].second.first)) {
-                    pulses[i].startRun = runBoundaries[j+1].first;
-                }
-            }
-        }
-        if (!pulses[i].endRun.size()) {
-            for (int j=0; j<runBoundaries.size()-1; ++j) {
-                if ((pulses[i].end >= runBoundaries[j].second.second) && (pulses[i].end < runBoundaries[j+1].second.first)) {
-                    pulses[i].endRun = runBoundaries[j].first;
-                }
-            }
-        }
-        if (!pusles[i].endRun.size() || !pulses[i].startRun.size())
-            std::cout << pulses[i].start << " " << pulses[i].end << " couldn't be resolved!" << std::endl;
-
-    }
-
-    return true;
 }

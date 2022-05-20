@@ -1,18 +1,22 @@
 #ifndef PERIOD_H
 #define PERIOD_H
 
-#include <pulse_definition.hpp>
+#include <pulse.hpp>
+#include "period_definition.hpp"
 #include <vector>
 
 
 class Period {
 
     public:
-        double duration;
-        std::vector<PulseDefinition> pulses;
-        Period(double duration_, std::vector<PulseDefinition> pulses_) : duration(duration_), pulses(pulses_) {}  
+        PeriodDefinition definition;
+        double start;
+        double end;
+        std::vector<Pulse> pulses;
+        Period(PeriodDefinition &definition_, double start_, double end_, std::vector<Pulse> pulses_) : definition(definition_), start(start_), end(end_), pulses(pulses_) {}
         Period() = default;
-        bool isValid();
+        bool isComplete() {return true;}
+
 };
 
 #endif // PERIOD_H
