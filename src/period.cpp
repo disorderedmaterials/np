@@ -1,18 +1,10 @@
 #include <period.hpp>
 
-#include <iostream>
 
-bool Period::isValid() {
-
-    for (const auto &pulse : pulses) {
-        if (pulse.periodOffset > duration) {
-            std::cerr << "ERROR: Pulse with label " << pulse.label << " has period offset (" << pulse.periodOffset << ")greater than period duration (" << duration << ")." << std::endl;
+bool Period::isComplete() {
+    for (auto &p : pulses) {
+        if (p.startRun.empty() || p.endRun.empty())
             return false;
-        }
-        if ((pulse.periodOffset + pulse.duration) > duration) {
-            std::cerr << "ERROR: Pulse with label " << pulse.label << " has end time (" << pulse.periodOffset + pulse.duration << ")greater than period duration (" << duration << ")." << std::endl;
-            return false;
-        }
     }
     return true;
 }

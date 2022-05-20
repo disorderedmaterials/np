@@ -135,7 +135,7 @@ bool Config::parse() {
             pulseEnd = atof(item.c_str());
 
             // Append pulse.
-            pulses.push_back(Pulse(pulseStart, pulseEnd));
+            rawPulses.push_back(Pulse(pulseStart, pulseEnd));
         }
     } else { // Otherwise expect period definition.
 
@@ -198,8 +198,8 @@ bool Config::parse() {
             // Append pulse definition.
             pulses.push_back(PulseDefinition(label, periodOffset, duration));
         }
-        period = Period(periodDuration, pulses);
-        if (!period.isValid()) {
+        periodDefinition = PeriodDefinition(periodDuration, pulses);
+        if (!periodDefinition.isValid()) {
             return false;
         }
     }

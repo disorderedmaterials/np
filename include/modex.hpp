@@ -2,6 +2,8 @@
 #define MODEX_H
 
 #include "nexus.hpp"
+#include "pulse.hpp"
+#include "period.hpp"
 #include "config.hpp"
 #include <vector>
 #include <fstream>
@@ -27,8 +29,10 @@ class ModEx {
         bool process();
         bool processPulse(Pulse &pulse);
         bool epochPulses(std::vector<Pulse> &pulses);
-        bool extrapolatePulseTimes(std::string start_run, double start, bool backwards, bool forwards, double periodDuration, PulseDefinition pulseDefinition, std::vector<Pulse> &pulses);
+        bool extrapolatePeriods(std::vector<Period> &periods);
+        bool processPeriod(Period &period);
         bool binPulsesToRuns(std::vector<Pulse> &pulses);
+        bool binPeriodsToRuns(std::vector<Period> &periods);
 };
 
 #endif // MODEX_H
