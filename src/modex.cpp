@@ -230,7 +230,6 @@ bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
                     pulses[i].startRun = runBoundaries[j+1].first;
                 }
             }
-
         }
         if (!pulses[i].endRun.size()) {
             for (int j=0; j<runBoundaries.size()-1; ++j) {
@@ -239,6 +238,9 @@ bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
                 }
             }
         }
+        if (!pusles[i].endRun.size() || !pulses[i].startRun.size())
+            std::cout << pulses[i].start << " " << pulses[i].end << " couldn't be resolved!" << std::endl;
+
     }
 
     return true;
