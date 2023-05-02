@@ -183,3 +183,6 @@ ELSE(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl)
   target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl)
 ENDIF(WIN32)
+
+# Install targets
+install(TARGETS modulation_excitation partition_events RUNTIME DESTINATION bin)
