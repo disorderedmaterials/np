@@ -31,6 +31,9 @@ if(LOCAL_STATIC_GSL)
   endif(WIN32)
   include_directories(${GSL_DIR}/include ${GSL_DIR}/include/gsl)
   message("${GSL_DIR}/include")
+else(LOCAL_STATIC_GSL)
+  find_package(GSL REQUIRED)
+  list(APPEND LINK_LIBS "${GSL_LIBRARIES}")
 endif(LOCAL_STATIC_GSL)
 
 option(
