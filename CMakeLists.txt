@@ -31,6 +31,9 @@ if(LOCAL_STATIC_GSL)
   endif(WIN32)
   include_directories(${GSL_DIR}/include ${GSL_DIR}/include/gsl)
   message("${GSL_DIR}/include")
+else(LOCAL_STATIC_GSL)
+  find_package(GSL REQUIRED)
+  list(APPEND LINK_LIBS "${GSL_LIBRARIES}")
 endif(LOCAL_STATIC_GSL)
 
 option(
@@ -61,34 +64,6 @@ else(BUILD_ZLIB)
     list(APPEND LINK_LIBS "${ZLIB_LIBRARIES}")
   endif(NOT LOCAL_STATIC_HDF5)
 endif(BUILD_ZLIB)
-
-# Build SZIP as an external project
-option(BUILD_SZIP "Build SZIP as an external project" OFF)
-if(BUILD_SZIP)
-  ExternalProject_Add(
-    szip
-    PREFIX 3rdparty
-    URL https://support.hdfgroup.org/ftp/lib-external/szip/2.1.1/src/szip-2.1.1.tar.gz
-    BUILD_ALWAYS ON
-    INSTALL_DIR "${CMAKE_BINARY_DIR}/3rdparty/"
-    BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/3rdparty/lib/libszip-static.a"
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    INSTALL_COMMAND ${CMAKE_COMMAND} --install .
-    COMMAND ${CMAKE_COMMAND} -E remove -f
-            ${CMAKE_BINARY_DIR}/3rdparty/src/szip-build/szip-config.cmake
-    COMMAND ${CMAKE_COMMAND} -E remove -f
-            ${CMAKE_BINARY_DIR}/3rdparty/src/szip-build/szip-targets.cmake)
-  add_library(sziplib STATIC IMPORTED GLOBAL)
-  set_property(
-    TARGET sziplib PROPERTY IMPORTED_LOCATION
-                            "${CMAKE_BINARY_DIR}/3rdparty/lib/libszip-static.a")
-  list(APPEND LINK_LIBS "sziplib")
-else(BUILD_SZIP)
-  if(NOT LOCAL_STATIC_HDF5)
-    find_package(SZIP REQUIRED)
-    list(APPEND LINK_LIBS "${SZIP_LIBRARIES}")
-  endif(NOT LOCAL_STATIC_HDF5)
-endif(BUILD_SZIP)
 
 # Build HDF5 as an external project
 option(BUILD_HDF "Build HDF as an external project" OFF)
@@ -134,10 +109,36 @@ if(BUILD_HDF)
     PROPERTY IMPORTED_LOCATION
               "${CMAKE_BINARY_DIR}/3rdparty/lib/libhdf5_f90cstub.a")
   list(APPEND LINK_LIBS "hdf5f90cstub" "hdf5fortran" "hdf5main" "hdf5cpp")
+
+  # Build SZIP as an external project
+  option(BUILD_SZIP "Build SZIP as an external project" OFF)
   if(BUILD_SZIP)
+    ExternalProject_Add(
+      szip
+      PREFIX 3rdparty
+      URL https://support.hdfgroup.org/ftp/lib-external/szip/2.1.1/src/szip-2.1.1.tar.gz
+      BUILD_ALWAYS ON
+      INSTALL_DIR "${CMAKE_BINARY_DIR}/3rdparty/"
+      BUILD_BYPRODUCTS "${CMAKE_BINARY_DIR}/3rdparty/lib/libszip-static.a"
+      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+      INSTALL_COMMAND ${CMAKE_COMMAND} --install .
+      COMMAND ${CMAKE_COMMAND} -E remove -f
+              ${CMAKE_BINARY_DIR}/3rdparty/src/szip-build/szip-config.cmake
+      COMMAND ${CMAKE_COMMAND} -E remove -f
+              ${CMAKE_BINARY_DIR}/3rdparty/src/szip-build/szip-targets.cmake)
+    add_library(sziplib STATIC IMPORTED GLOBAL)
+    set_property(
+      TARGET sziplib PROPERTY IMPORTED_LOCATION
+                              "${CMAKE_BINARY_DIR}/3rdparty/lib/libszip-static.a")
+    list(APPEND LINK_LIBS "sziplib")
     add_dependencies(hdf5main HDF5 szip)
     add_dependencies(hdf5fortran HDF5 szip)
     add_dependencies(hdf5f90cstub HDF5 szip)
+  else(BUILD_SZIP)
+    if(NOT LOCAL_STATIC_HDF5)
+      find_package(SZIP REQUIRED)
+      list(APPEND LINK_LIBS "${SZIP_LIBRARIES}")
+    endif(NOT LOCAL_STATIC_HDF5)
   endif(BUILD_SZIP)
 else(BUILD_HDF)
   if(LOCAL_STATIC_HDF5)
@@ -152,8 +153,8 @@ else(BUILD_HDF)
     endif(WIN32)
     include_directories(${HDF5_DIR}/include ${HDF5_DIR}/include/static)
   else(LOCAL_STATIC_HDF5)
-    find_package(HDF5 REQUIRED)
-    list(APPEND LINK_LIBS "${HDF5_CXX_LIBRARIES}" "${HDF5_C_LIBRARIES}" "${HDF5_Fortran_LIBRARIES}")
+    find_package(HDF5 REQUIRED COMPONENTS CXX)
+    list(APPEND LINK_LIBS "${HDF5_CXX_LIBRARIES}" "${HDF5_LIBRARIES}")
     include_directories(${HDF5_INCLUDE_DIRS})
   endif(LOCAL_STATIC_HDF5)
 endif(BUILD_HDF)
@@ -182,3 +183,6 @@ ELSE(WIN32)
 	target_link_libraries(modulation_excitation PRIVATE ${LINK_LIBS} dl)
   target_link_libraries(partition_events PRIVATE ${LINK_LIBS} dl)
 ENDIF(WIN32)
+
+# Install targets
+install(TARGETS modulation_excitation partition_events RUNTIME DESTINATION bin)
