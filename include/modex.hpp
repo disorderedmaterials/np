@@ -30,6 +30,7 @@ class ModEx {
         bool processPulse(Pulse &pulse);
         bool epochPulses(std::vector<Pulse> &pulses);
         bool extrapolatePeriods(std::vector<Period> &periods);
+        bool createSuperPeriod(Period &period);
         bool processPeriod(Period &period);
         bool binPulsesToRuns(std::vector<Pulse> &pulses);
         bool binPeriodsToRuns(std::vector<Period> &periods);

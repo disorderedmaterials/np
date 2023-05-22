@@ -44,7 +44,7 @@ bool Config::parse() {
     // Check if file exists.
     if (stat(nxsDefinitionPath.c_str(), &info) != 0) {
         std::cerr << "ERROR: couldn't stat Nexus definitions file " << nxsDefinitionPath << " does it exist?" << std::endl;
-        return false;
+        return false;        bool createSuperPeriod(Period &period);
     }
 
     std::ifstream nxsifs(nxsDefinitionPath); // Nexus definitions file stream.
@@ -92,6 +92,8 @@ bool Config::parse() {
         extrapolationMode = FORWARDS;
     else if (line == "BI_DIRECTIONAL")
         extrapolationMode = BI_DIRECTIONAL;
+    else if (line == "FORWARDS_SUMMED")
+        extrapolationMode = FORWARDS_SUMMED;
     else if (line == "NONE")
         extrapolationMode = NONE;
     else {
@@ -159,6 +161,13 @@ bool Config::parse() {
             return false;
         }
         nPulses = atoi(line.c_str());
+
+        // For the FORWARDS_SUMMED option we expect exactly one pulse definition
+        if (extrapolationMode == FORWARDS_SUMMED && nPulses != 1)
+        {
+            std::cerr << "ERROR: for the FORWARDS_SUMMED mode exactly one pulse must be provided." << std::endl;
+            return false;
+        }
 
         std::vector<PulseDefinition> pulseDefs; // Vector of defined pulses.
 

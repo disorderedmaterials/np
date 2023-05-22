@@ -7,7 +7,7 @@
 #include "pulse_definition.hpp"
 #include "pulse.hpp"
 
-enum ExtrapolationMode {FORWARDS, BACKWARDS, BI_DIRECTIONAL, NONE};
+enum ExtrapolationMode {FORWARDS, BACKWARDS, BI_DIRECTIONAL, FORWARDS_SUMMED, NONE};
 
 class Config {
 

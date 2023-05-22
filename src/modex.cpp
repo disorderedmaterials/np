@@ -24,6 +24,14 @@ bool ModEx::process() {
             processPulse(pulse);
         }
     }
+    else if (cfg.extrapolationMode == FORWARDS_SUMMED) {
+        // Our period ("sequence of pulses") contains exactly one pulse that we're interested in (enforced in config.cpp)
+        // Extrapolate defined period forwards in time to generate all periods we need to bin from
+        Period superPeriod;
+        createSuperPeriod(superPeriod);
+    
+
+    }
     else {
         std::vector<Period> periods;
 
@@ -105,6 +113,46 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
 
     printf("Extrapolated %i periods:\n", periods.size());
     for (const auto &p : periods)
+        printf("  %f  ->  %f\n", p.start, p.end);
+    return true;
+}
+
+
+bool ModEx::createSuperPeriod(Period &period)
+{
+  std::cout << "Extrapolating periods (in seconds since epoch)\n";
+    Nexus firstRunNXS(cfg.runs[0]);
+    firstRunNXS.load();
+    Nexus lastRunNXS(cfg.runs[cfg.runs.size()-1]);
+    lastRunNXS.load();
+
+    // Get limiting times of experiment (seconds since epoch values)
+    const int expStart = firstRunNXS.startSinceEpoch;
+    const int expEnd = lastRunNXS.endSinceEpoch;
+
+    // Set absolute start time of first period, equal to the experiment start plus first defined pulse time
+    double periodStart = double(expStart) + cfg.periodBegin;
+
+    // We have enforced that only a single master PulseDefinition exists - grab it
+    auto &masterPulseDef = cfg.periodDefinition.pulseDefinitions.front();
+
+    // Create copies of the master pulse extrapolating forwards in time by the period duration
+    std::vector<Pulse> pulses;
+    while (periodStart < expEnd) {
+        // Check that the actual start of the pulse is before the experimental end time
+        if ((periodStart + masterPulseDef.periodOffset) >= expEnd)
+            break;
+        pulses.push_back(Pulse(masterPulseDef, periodStart + masterPulseDef.periodOffset, periodStart + masterPulseDef.periodOffset + masterPulseDef.duration));
+        periodStart += cfg.periodDefinition.duration;
+    }
+
+    // Create the superperiod
+    auto superPeriodStart = double(expStart) + cfg.periodBegin;
+    auto superPeriodEnd = superPeriodStart + cfg.periodDefinition.duration * pulses.size();
+    period = Period(cfg.periodDefinition, superPeriodStart, superPeriodEnd, pulses);
+
+    printf("Extrapolated %i pulses into superperiod:\n", period.pulses.size());
+    for (const auto &p : period.pulses)
         printf("  %f  ->  %f\n", p.start, p.end);
     return true;
 }
