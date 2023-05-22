@@ -39,9 +39,12 @@ class Nexus {
         bool load(bool advanced = false);
         bool createHistogram(Pulse &pulse, int epochOffset=0);
         bool createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset=0);
+        void binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination);
+        void addMonitors(int nGoodFrames, Nexus &destination);
         bool output(std::vector<std::string> paths);
         bool copy();
         bool copy(H5::H5File in, H5::H5File out, std::vector<std::string> paths);
+        bool createEmpty(std::vector<std::string> pathss);
         bool writeCounts(H5::H5File output);
         bool writeTotalFrames(H5::H5File output, int frames);
         bool writeGoodFrames(H5::H5File output, int goodFrames);

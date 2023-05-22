@@ -44,7 +44,7 @@ bool Config::parse() {
     // Check if file exists.
     if (stat(nxsDefinitionPath.c_str(), &info) != 0) {
         std::cerr << "ERROR: couldn't stat Nexus definitions file " << nxsDefinitionPath << " does it exist?" << std::endl;
-        return false;        bool createSuperPeriod(Period &period);
+        return false;
     }
 
     std::ifstream nxsifs(nxsDefinitionPath); // Nexus definitions file stream.

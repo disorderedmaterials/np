@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <memory>
 
 #include <modex.hpp>
 #include <nexus.hpp>
@@ -26,11 +27,77 @@ bool ModEx::process() {
     }
     else if (cfg.extrapolationMode == FORWARDS_SUMMED) {
         // Our period ("sequence of pulses") contains exactly one pulse that we're interested in (enforced in config.cpp)
-        // Extrapolate defined period forwards in time to generate all periods we need to bin from
+        // Extrapolate defined pulse forwards in time to generate all pulses we need to bin from over the entire run
         Period superPeriod;
-        createSuperPeriod(superPeriod);
+        if (!createSuperPeriod(superPeriod))
+            return false;
     
+        // Template our output file from the first run
+        std::string outpath = cfg.outputDir + "/sum-" + std::to_string((int) cfg.periodBegin);
+        if (!cfg.periodDefinition.pulseDefinitions.front().label.empty())
+            outpath += "-" + cfg.periodDefinition.pulseDefinitions.front().label + ".nxs";
+        else
+            outpath += ".nxs";
+        Nexus outputNXS(cfg.runs[0], outpath);
+        if (!outputNXS.createEmpty(cfg.nxsDefinitionPaths))
+            return false;
 
+        // Get iterators to pulse and Nexus files
+        auto pulseIt = superPeriod.pulses.begin();
+        auto nexusIt = cfg.runs.begin();
+
+        // Open the first Nexus file ready for use
+        auto nxs = std::make_shared<Nexus>(*nexusIt);
+        nxs->load(true);
+
+        int lastGoodFrames = 0;
+
+        // Cycle over pulses in the superperiod
+        while (pulseIt != superPeriod.pulses.end())
+        {
+            auto &pulse = *pulseIt;
+
+            // If / while the current pulse starts after the endtime of the current run, load the next run
+            while (pulseIt->start > nxs->endSinceEpoch)
+            {
+                ++nexusIt;
+                if (nexusIt == cfg.runs.end())
+                    break;
+                printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
+                nxs = std::make_shared<Nexus>(*nexusIt);
+                nxs->load(true);
+            }
+            if (nexusIt == cfg.runs.end())
+                break;
+
+            // Process the pulse
+            // -- Detector events
+            nxs->binPulseEvents(pulse, nxs->startSinceEpoch, outputNXS);
+            printf(" ... pulse from %f -> %f added %i good frames (%i) total)\n", pulse.start, pulse.end, outputNXS.goodFrames - lastGoodFrames, outputNXS.goodFrames);
+            lastGoodFrames = outputNXS.goodFrames;
+            // -- Monitors
+
+
+            // If the current pulse ends after the end of the current Nexus file, load in the next file and don't increment the pulse
+            if (pulseIt->end > nxs->endSinceEpoch)
+            {
+                ++nexusIt;
+                if (nexusIt == cfg.runs.end())
+                    break;
+                printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
+                nxs = std::make_shared<Nexus>(*nexusIt);
+                nxs->load(true);
+            }
+            else
+                ++pulseIt;
+            if (nexusIt == cfg.runs.end())
+                break;
+        }
+
+        // Save output file
+        if (!outputNXS.output(cfg.nxsDefinitionPaths))
+            return false;
+        diagnosticFile << outpath << " " << outputNXS.goodFrames << std::endl;
     }
     else {
         std::vector<Period> periods;
@@ -122,9 +189,11 @@ bool ModEx::createSuperPeriod(Period &period)
 {
   std::cout << "Extrapolating periods (in seconds since epoch)\n";
     Nexus firstRunNXS(cfg.runs[0]);
-    firstRunNXS.load();
+    if (!firstRunNXS.load())
+        return false;
     Nexus lastRunNXS(cfg.runs[cfg.runs.size()-1]);
-    lastRunNXS.load();
+    if (!lastRunNXS.load())
+        return false;
 
     // Get limiting times of experiment (seconds since epoch values)
     const int expStart = firstRunNXS.startSinceEpoch;

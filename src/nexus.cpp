@@ -239,6 +239,29 @@ bool Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*>
     
 }
 
+void Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
+{
+    // Bin events from this Nexus / pulse into the destination histogram bins
+    for (int i=0; i<frameIndices.size()-1; ++i) {
+        auto start = frameIndices[i];
+        auto end = frameIndices[i+1];
+        auto frameZero = frameOffsets[i];
+        if ((frameZero >= (pulse.start-epochOffset)) && (frameZero < (pulse.end-epochOffset))) {
+            for (int k=start; k<end; ++k) {
+                auto id = eventIndices[k];
+                auto event = events[k];
+                if (id > 0)
+                    gsl_histogram_increment(destination.histogram[id], event);
+            }
+            ++destination.goodFrames;
+        }
+    }
+}
+
+void Nexus::addMonitors(int nGoodFrames, Nexus &destination)
+{
+
+}
 
 bool Nexus::output(std::vector<std::string> paths) {
 
@@ -295,6 +318,84 @@ bool Nexus::copy(H5::H5File input, H5::H5File output, std::vector<std::string> p
     H5Pclose(ocpl_id);
     H5Pclose(lcpl_id);
     
+    return true;
+}
+
+
+bool Nexus::createEmpty(std::vector<std::string> paths)
+{
+    // Create an empty, minimal Nexus file to sum data into
+    try {
+        // Open input Nexus file in read only mode.
+        H5::H5File input = H5::H5File(path, H5F_ACC_RDONLY);
+        
+        // Create new Nexus file for output.
+        H5::H5File output = H5::H5File(outpath, H5F_ACC_TRUNC);
+
+        printf("Copying source Nexus file to template...\n");
+        // Perform copying.
+        if (!Nexus::copy(input, output, paths))
+            return false;
+
+        // Read in spectra
+        H5::DataSet spectra_;
+        if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "spectrum_index", spectra_))
+            return false;
+        H5::DataSpace spectraSpace = spectra_.getSpace();
+        hsize_t spectraNDims = spectraSpace.getSimpleExtentNdims();
+        hsize_t* spectraDims = new hsize_t[spectraNDims];
+        spectraSpace.getSimpleExtentDims(spectraDims);
+        spectra.resize(spectraDims[0]);
+        H5Dread(spectra_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra.data());
+        printf("... got spectra.\n");
+    
+        // Read in bin information.
+        H5::DataSet bins_;
+        if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "monitor_1"}, "time_of_flight", bins_))
+            return false;
+        H5::DataSpace binsSpace = bins_.getSpace();
+        hsize_t binsNDims = binsSpace.getSimpleExtentNdims();
+        hsize_t* binsDims = new hsize_t[binsNDims];
+        binsSpace.getSimpleExtentDims(binsDims);
+        ranges.resize(binsDims[0]);
+        H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges.data());
+        printf("... got ranges.\n");
+
+        // Read in monitor data.
+        int i = 1;
+        bool result = true;
+        while (true) {
+
+            H5::DataSet monitor;
+            if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(i)}, "data", monitor)) {
+                break;
+            }
+            H5::DataSpace monitorSpace = monitor.getSpace();
+            hsize_t monitorNDims = monitorSpace.getSimpleExtentNdims();
+            hsize_t* monitorDims = new hsize_t[monitorNDims];
+            monitorSpace.getSimpleExtentDims(monitorDims);
+
+            std::vector<int> monitorVec;
+            monitorVec.resize(monitorDims[2]);
+            H5Dread(monitor.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorVec.data());
+            monitors[i++] = monitorVec;
+        }
+
+        // Set up 
+        for (auto spec: spectra) {
+            histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
+            gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
+        }
+
+        goodFrames = 0;
+
+        input.close();
+        //output.close();
+
+    } catch (...) {
+        return false;
+    }
+
     return true;
 }
 
