@@ -197,7 +197,6 @@ bool Nexus::load(bool advanced) {
         return true;
 
     } catch (...) {
-        file.close();
         return false;
     }
     return true;
