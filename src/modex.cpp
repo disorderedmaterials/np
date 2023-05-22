@@ -20,19 +20,20 @@ bool ModEx::process() {
         binPulsesToRuns(cfg.rawPulses);
         totalPulses = cfg.rawPulses.size();
         for (auto &pulse : cfg.rawPulses) {
-            std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
+            printf("   Processing  %f  ->  %f\n", pulse.start, pulse.end);
             processPulse(pulse);
         }
     }
     else {
         std::vector<Period> periods;
+
         extrapolatePeriods(periods);
         binPeriodsToRuns(periods);
         totalPulses = periods.size() * cfg.periodDefinition.pulses.size();
         for (auto &period : periods) {
             if (period.isComplete()) {
                 for (auto & pulse : period.pulses) {
-                    std::cout << "Processing " << pulse.start << " " << pulse.end << std::endl;
+                    printf("   Processing  %f  ->  %f\n", pulse.start, pulse.end);
                     processPulse(pulse);
                 }
             }
@@ -49,6 +50,7 @@ bool ModEx::process() {
 
 bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
 
+    std::cout << "Extrapolating periods (in seconds since epoch)\n";
     Nexus firstRunNXS(cfg.runs[0]);
     firstRunNXS.load();
     Nexus lastRunNXS(cfg.runs[cfg.runs.size()-1]);
@@ -100,6 +102,10 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
             return a.start < b.end;
         }
     );
+
+    printf("Extrapolated %i periods:\n", periods.size());
+    for (const auto &p : periods)
+        printf("  %f  ->  %f\n", p.start, p.end);
     return true;
 }
 
