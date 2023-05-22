@@ -160,7 +160,7 @@ bool Config::parse() {
         }
         nPulses = atoi(line.c_str());
 
-        std::vector<PulseDefinition> pulses; // Vector of defined pulses.
+        std::vector<PulseDefinition> pulseDefs; // Vector of defined pulses.
 
         // Read in pulse definitions.
         for (int i=0; i<nPulses; ++i) {
@@ -196,9 +196,9 @@ bool Config::parse() {
             duration = atof(item.c_str());
 
             // Append pulse definition.
-            pulses.push_back(PulseDefinition(label, periodOffset, duration));
+            pulseDefs.push_back(PulseDefinition(label, periodOffset, duration));
         }
-        periodDefinition = PeriodDefinition(periodDuration, pulses);
+        periodDefinition = PeriodDefinition(periodDuration, pulseDefs);
         if (!periodDefinition.isValid()) {
             return false;
         }

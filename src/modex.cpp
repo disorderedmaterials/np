@@ -29,7 +29,7 @@ bool ModEx::process() {
 
         extrapolatePeriods(periods);
         binPeriodsToRuns(periods);
-        totalPulses = periods.size() * cfg.periodDefinition.pulses.size();
+        totalPulses = periods.size() * cfg.periodDefinition.pulseDefinitions.size();
         for (auto &period : periods) {
             if (period.isComplete()) {
                 for (auto & pulse : period.pulses) {
@@ -38,7 +38,7 @@ bool ModEx::process() {
                 }
             }
             else {
-                currentPulse += cfg.periodDefinition.pulses.size();
+                currentPulse += cfg.periodDefinition.pulseDefinitions.size();
                 progress = (double) currentPulse / (double) totalPulses;
                 progress*=100;
                 diagnosticFile << "Period " << period.start << " to " << period.end << " was ignored (incomplete period)." << std::endl;
@@ -63,7 +63,7 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
 
     // First period
     std::vector<Pulse> firstPeriodPulses;
-    for (auto &p :cfg.periodDefinition.pulses) {
+    for (auto &p :cfg.periodDefinition.pulseDefinitions) {
         firstPeriodPulses.push_back(Pulse(p, startPeriod + p.periodOffset, startPeriod + p.periodOffset + p.duration));
     }
 
@@ -73,7 +73,7 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
         periodBegin = startPeriod - cfg.periodDefinition.duration;
         while (periodBegin > expStart) {
             std::vector<Pulse> pulses;
-            for (auto& p: cfg.periodDefinition.pulses) {
+            for (auto& p: cfg.periodDefinition.pulseDefinitions) {
                 pulses.push_back(Pulse(p, periodBegin + p.periodOffset, periodBegin + p.periodOffset + p.duration));
             }
             periods.push_back(Period(cfg.periodDefinition, periodBegin, periodBegin + cfg.periodDefinition.duration, pulses));
@@ -85,7 +85,7 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
         periodBegin  = startPeriod + cfg.periodDefinition.duration;
         while (periodBegin < expEnd) {
             std::vector<Pulse> pulses;
-            for (auto& p: cfg.periodDefinition.pulses) {
+            for (auto& p: cfg.periodDefinition.pulseDefinitions) {
                 pulses.push_back(Pulse(p, periodBegin + p.periodOffset, periodBegin + p.periodOffset + p.duration));
             }
             periods.push_back(Period(cfg.periodDefinition, periodBegin, periodBegin + cfg.periodDefinition.duration, pulses));
