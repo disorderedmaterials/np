@@ -23,7 +23,7 @@ steps:
       GSL_DIR="/usr/local/Cellar/gsl/2.7.1"
       mkdir build
       cd build
-      cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-9" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
+      cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-11" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
       ninja
       cd ..
       mkdir binaries-${VERSION}-osx
