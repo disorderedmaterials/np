@@ -50,7 +50,8 @@ bool ModEx::process() {
         auto nxs = std::make_shared<Nexus>(*nexusIt);
         nxs->load(true);
 
-        int lastGoodFrames = 0;
+        int lastTotalGoodFrames = 0;
+        int currentFileFrames = 0;
 
         // Cycle over pulses in the superperiod
         while (pulseIt != superPeriod.pulses.end())
@@ -60,12 +61,17 @@ bool ModEx::process() {
             // If / while the current pulse starts after the endtime of the current run, load the next run
             while (pulseIt->start > nxs->endSinceEpoch)
             {
+                // Store monitor counts from this file before we lose it
+                if (currentFileFrames > 0)
+                    nxs->addMonitors((double) currentFileFrames / nxs->goodFrames, outputNXS);
+
                 ++nexusIt;
                 if (nexusIt == cfg.runs.end())
                     break;
                 printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
                 nxs = std::make_shared<Nexus>(*nexusIt);
                 nxs->load(true);
+                currentFileFrames = 0;
             }
             if (nexusIt == cfg.runs.end())
                 break;
@@ -73,20 +79,24 @@ bool ModEx::process() {
             // Process the pulse
             // -- Detector events
             nxs->binPulseEvents(pulse, nxs->startSinceEpoch, outputNXS);
-            printf(" ... pulse from %f -> %f added %i good frames (%i) total)\n", pulse.start, pulse.end, outputNXS.goodFrames - lastGoodFrames, outputNXS.goodFrames);
-            lastGoodFrames = outputNXS.goodFrames;
-            // -- Monitors
-
+            printf(" ... pulse from %f -> %f added %i good frames (%i) total)\n", pulse.start, pulse.end, outputNXS.goodFrames - lastTotalGoodFrames, outputNXS.goodFrames);
+            currentFileFrames += outputNXS.goodFrames - lastTotalGoodFrames;
+            lastTotalGoodFrames = outputNXS.goodFrames;
 
             // If the current pulse ends after the end of the current Nexus file, load in the next file and don't increment the pulse
             if (pulseIt->end > nxs->endSinceEpoch)
             {
+                // Store monitor counts from this file before we lose it
+                if (currentFileFrames > 0)
+                    nxs->addMonitors((double) currentFileFrames / nxs->goodFrames, outputNXS);
+
                 ++nexusIt;
                 if (nexusIt == cfg.runs.end())
                     break;
                 printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
                 nxs = std::make_shared<Nexus>(*nexusIt);
                 nxs->load(true);
+                currentFileFrames = 0;
             }
             else
                 ++pulseIt;

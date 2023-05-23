@@ -258,9 +258,16 @@ void Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
     }
 }
 
-void Nexus::addMonitors(int nGoodFrames, Nexus &destination)
+void Nexus::addMonitors(double scale, Nexus &destination)
 {
-
+    auto destIt = destination.monitors.begin();
+    for (const auto &pair : monitors) {
+        auto &destCounts = destIt->second;
+        for (int i=0; i<pair.second.size(); ++i) {
+            destCounts[i] += (int) (pair.second[i] * scale);
+        }
+        ++destIt;
+    }
 }
 
 bool Nexus::output(std::vector<std::string> paths) {
@@ -376,8 +383,7 @@ bool Nexus::createEmpty(std::vector<std::string> paths)
             monitorSpace.getSimpleExtentDims(monitorDims);
 
             std::vector<int> monitorVec;
-            monitorVec.resize(monitorDims[2]);
-            H5Dread(monitor.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorVec.data());
+            monitorVec.resize(monitorDims[2], 0);
             monitors[i++] = monitorVec;
         }
 
