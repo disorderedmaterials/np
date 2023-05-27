@@ -1,0 +1,55 @@
+name: Build
+description: Build Windows artifacts
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Collect zstd
+    shell: bash
+    run: |
+      curl -L https://github.com/facebook/zstd/releases/download/v1.5.2/zstd-v1.5.2-win64.zip > zstd.zip
+      unzip zstd.zip
+
+  - name: Collect GSL
+    shell: bash
+    run: |
+      curl -L https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-${{ parameters.gsltag }}-1-any.pkg.tar.zst > ${{ parameters.gsltag }}.pkg.tar.zst
+      ./zstd-v1.5.2-win64/zstd.exe -d ${{ parameters.gsltag }}.pkg.tar.zst
+      mkdir ${{ parameters.gsltag }}
+      tar xvf ${{ parameters.gsltag }}.pkg.tar --directory ${{ parameters.gsltag }}
+
+  - name: Download HDF5 Artifacts
+    shell: powershell
+    run: |
+      $ErrorActionPreference = 'Stop'
+      $HDF5_ARTIFACTS = "https://github.com/disorderedmaterials/HDF5/releases/download/" + "${{ env.hdf5tag }}/${{ env.hdf5tag }}-windows.zip"
+      wget $HDF5_ARTIFACTS -O hdf5.zip
+      7z x hdf5.zip
+
+  - name: Build
+    shell: bash
+    run: |
+      set -ex
+      HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
+      GSL_DIR="$(pwd)/${{ parameters.gsltag }}/mingw64"
+      mkdir build
+      cd build
+      cmake ../ -G "MinGW Makefiles" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
+      cmake --build . --config Release
+
+  - name: Create Zip
+    shell: bash
+    run: |
+      set -ex
+      mkdir packages
+      mkdir binaries-${{ env.modExVersion }}-windows
+      cp build/modulation_excitation binaries-${{ env.modExVersion }}-windows/
+      cp build/partition_events binaries-${{ env.modExVersion }}-windows/
+      7z a packages/binaries-${{ env.modExVersion }}-windows.zip binaries-${{ env.modExVersion }}-windows/
+
+  - name: Upload Raw Build Artifacts
+    uses: actions/upload-artifact@v3
+    with:
+      name: packages
+      path: ${{ github.workspace }}/packages

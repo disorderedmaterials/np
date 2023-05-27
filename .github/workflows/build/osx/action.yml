@@ -1,0 +1,46 @@
+name: Build
+description: Build OSX artifacts
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Install Prerequisites
+    shell: bash
+    run: |
+      set -ex
+      brew update-reset
+      brew install ninja gsl
+
+  - name: Download HDF5 Artifacts
+    shell: bash
+    run: |
+      wget https://github.com/disorderedmaterials/HDF5/releases/download/${{ env.hdf5tag }}/${{ env.hdf5tag }}-osx.zip
+      unzip ${{ env.hdf5tag }}-osx.zip
+
+  - name: Build
+    shell: bash
+    run: |
+      set -ex
+      HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
+      GSL_DIR="/usr/local/Cellar/gsl/2.7.1"
+      mkdir build
+      cd build
+      cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-11" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
+      ninja
+
+  - name: Create Zip
+    shell: bash
+    run: |
+      set -ex
+      mkdir packages
+      mv bin binaries-${{ env.modExVersion }}-osx
+      cp build/modulation_excitation binaries-${{ env.modExVersion }}-osx/
+      cp build/partition_events binaries-${{ env.modExVersion }}-osx/
+      zip -9rv packages/binaries-${{ env.modExVersion }}-osx.zip binaries-${{ env.modExVersion }}-osx/
+
+  - name: Upload Raw Build Artifacts
+    uses: actions/upload-artifact@v3
+    with:
+      name: packages
+      path: ${{ github.workspace }}/packages

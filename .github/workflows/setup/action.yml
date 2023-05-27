@@ -1,0 +1,14 @@
+name: Set Environment
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Set Environment
+    shell: bash
+    run: |
+      set -ex
+      echo "hdf5tag=hdf5-1_10_7" >> ${GITHUB_ENV}
+      MODEXVERSION=`grep "#define MODEX_VERSION" version.h | sed "s/.*\"\(.*\)\"/\1/g"`
+      echo "modExVersion=${MODEXVERSION}" >> ${GITHUB_ENV}
+
