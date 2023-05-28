@@ -34,7 +34,7 @@ runs:
     run: |
       set -ex
       mkdir packages
-      mv bin binaries-${{ env.modExVersion }}-osx
+      mkdir binaries-${{ env.modExVersion }}-osx
       cp build/modulation_excitation binaries-${{ env.modExVersion }}-osx/
       cp build/partition_events binaries-${{ env.modExVersion }}-osx/
       zip -9rv packages/binaries-${{ env.modExVersion }}-osx.zip binaries-${{ env.modExVersion }}-osx/

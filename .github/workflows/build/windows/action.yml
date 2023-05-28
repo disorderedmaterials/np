@@ -1,6 +1,10 @@
 name: Build
 description: Build Windows artifacts
 
+inputs:
+  gsltag:
+    default: gsl-2.7.1
+
 runs:
   using: "composite"
   steps:
@@ -14,10 +18,10 @@ runs:
   - name: Collect GSL
     shell: bash
     run: |
-      curl -L https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-${{ parameters.gsltag }}-1-any.pkg.tar.zst > ${{ parameters.gsltag }}.pkg.tar.zst
-      ./zstd-v1.5.2-win64/zstd.exe -d ${{ parameters.gsltag }}.pkg.tar.zst
-      mkdir ${{ parameters.gsltag }}
-      tar xvf ${{ parameters.gsltag }}.pkg.tar --directory ${{ parameters.gsltag }}
+      curl -L https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-${{ inputs.gsltag }}-1-any.pkg.tar.zst > ${{ inputs.gsltag }}.pkg.tar.zst
+      ./zstd-v1.5.2-win64/zstd.exe -d ${{ inputs.gsltag }}.pkg.tar.zst
+      mkdir ${{ inputs.gsltag }}
+      tar xvf ${{ inputs.gsltag }}.pkg.tar --directory ${{ inputs.gsltag }}
 
   - name: Download HDF5 Artifacts
     shell: powershell
@@ -32,7 +36,7 @@ runs:
     run: |
       set -ex
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
-      GSL_DIR="$(pwd)/${{ parameters.gsltag }}/mingw64"
+      GSL_DIR="$(pwd)/${{ inputs.gsltag }}/mingw64"
       mkdir build
       cd build
       cmake ../ -G "MinGW Makefiles" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
