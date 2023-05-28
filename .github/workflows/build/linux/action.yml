@@ -1,0 +1,60 @@
+name: Build
+description: Build Linux artifacts
+
+inputs:
+  gsltag:
+    default: gsl-2.7.1
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Install Prerequisites
+    shell: bash
+    run: |
+      sudo apt-get update -q
+      sudo apt-get install ninja-build
+
+  - name: Download HDF5 Artifacts
+    shell: bash
+    run: |
+      wget https://github.com/disorderedmaterials/HDF5/releases/download/${{ env.hdf5tag }}/${{ env.hdf5tag }}-linux.zip
+      unzip ${{ env.hdf5tag }}-linux.zip
+
+  - name: Build GSL
+    shell: bash
+    run: |
+      wget ftp://ftp.gnu.org/gnu/gsl/${{ inputs.gsltag }}.tar.gz
+      tar -zxvf ${{ inputs.gsltag }}.tar.gz
+      cd ${{ inputs.gsltag }}
+      mkdir /tmp/gsl
+      ./configure --prefix=/tmp/gsl
+      make
+      make install
+
+  - name: Build
+    shell: bash
+    run: |
+      set -ex
+      HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
+      GSL_DIR="/tmp/gsl"
+      mkdir build
+      cd build
+      cmake ../ -G Ninja -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
+      ninja
+
+  - name: Create Zip
+    shell: bash
+    run: |
+      set -ex
+      mkdir packages
+      mkdir binaries-${{ env.modExVersion }}-linux
+      cp build/modulation_excitation binaries-${{ env.modExVersion }}-linux/
+      cp build/partition_events binaries-${{ env.modExVersion }}-linux/
+      zip -9rv packages/binaries-${{ env.modExVersion }}-linux.zip binaries-${{ env.modExVersion }}-linux/
+
+  - name: Upload Package Artifacts
+    uses: actions/upload-artifact@v3
+    with:
+      name: packages
+      path: ${{ github.workspace }}/packages
