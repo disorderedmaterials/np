@@ -35,8 +35,3 @@ jobs:
       uses: "./.github/workflows/setup"
     - name: Publish
       uses: "./.github/workflows/publish"
-      with:
-        isRelease: false
-      env:
-        HARBOR_USER: ${{ secrets.HARBOR_USER }}
-        HARBOR_SECRET: ${{ secrets.HARBOR_SECRET }}
