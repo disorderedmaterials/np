@@ -49,6 +49,7 @@ bool ModEx::process() {
         // Open the first Nexus file ready for use
         auto nxs = std::make_shared<Nexus>(*nexusIt);
         nxs->load(true);
+        printf("Initial nexus file has %i goodframes...\n", nxs->goodFrames);
 
         int lastTotalGoodFrames = 0;
         int currentFileFrames = 0;
@@ -103,6 +104,12 @@ bool ModEx::process() {
             if (nexusIt == cfg.runs.end())
                 break;
         }
+
+        // Add in fractional monitors if there are currentFileFrames (we probably had a nice pulse sequence which ended within the last file)
+        if (currentFileFrames > 0)
+            nxs->addMonitors((double) currentFileFrames / (double) nxs->goodFrames, outputNXS);
+
+        printf("Output nexus has %li good frames in total.\n", outputNXS.goodFrames);
 
         // Save output file
         if (!outputNXS.output(cfg.nxsDefinitionPaths))

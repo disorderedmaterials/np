@@ -274,11 +274,13 @@ void Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
 
 void Nexus::addMonitors(double scale, Nexus &destination)
 {
+    printf(" ... adding fractional monitors (%f) from current file\n", scale);
     auto destIt = destination.monitors.begin();
     for (const auto &pair : monitors) {
         auto &destCounts = destIt->second;
-        for (int i=0; i<pair.second.size(); ++i) {
-            destCounts[i] += (int) (pair.second[i] * scale);
+        auto &sourceCounts = pair.second;
+        for (int i=0; i<sourceCounts.size(); ++i) {
+            destCounts[i] += (int) (sourceCounts[i] * scale);
         }
         ++destIt;
     }
