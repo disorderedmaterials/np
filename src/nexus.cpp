@@ -65,6 +65,19 @@ bool Nexus::load(bool advanced) {
         H5Dread(rawFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFramesTemp);
         rawFrames = rawFramesTemp[0];
 
+        // Read in good frames.
+        H5::DataSet goodFrames_;
+        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "raw_frames", goodFrames_))
+            return false;
+        H5::DataSpace goodFramesSpace = goodFrames_.getSpace();
+        hsize_t goodFramesNDims = goodFramesSpace.getSimpleExtentNdims();
+        hsize_t* goodFramesDims = new hsize_t[goodFramesNDims];
+        goodFramesSpace.getSimpleExtentDims(goodFramesDims);
+
+        auto goodFramesTemp = new int[(long int) goodFramesDims[0]];
+        H5Dread(goodFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
+        goodFrames = goodFramesTemp[0];
+
         // Read in start time in Unix time.
         hid_t memType = H5Tcopy(H5T_C_S1);
         H5Tset_size(memType, UCHAR_MAX);
