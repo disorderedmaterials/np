@@ -296,7 +296,7 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
         if (!nxs.createHistogram(pulse, nxs.startSinceEpoch))
             return false;
-        if (!nxs.reduceMonitors((double) nxs.goodFrames / (double) *nxs.rawFrames))
+        if (!nxs.reduceMonitors((double) nxs.goodFrames / (double) nxs.rawFrames))
             return false;
         if (!nxs.output(cfg.nxsDefinitionPaths))
             return false;
@@ -342,7 +342,7 @@ bool ModEx::processPulse(Pulse &pulse) {
         if (!endNxs.createHistogram(secondPulse, startNxs.histogram, endNxs.startSinceEpoch))
             return false;
         int totalGoodFrames = startNxs.goodFrames + endNxs.goodFrames;
-        int totalFrames = *startNxs.rawFrames + *endNxs.rawFrames;
+        int totalFrames = startNxs.rawFrames + endNxs.rawFrames;
         if (!endNxs.reduceMonitors((double) totalGoodFrames / (double) totalFrames))
             return false;
         if (!endNxs.output(cfg.nxsDefinitionPaths))

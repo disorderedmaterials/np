@@ -61,8 +61,9 @@ bool Nexus::load(bool advanced) {
         hsize_t* rawFramesDims = new hsize_t[rawFramesNDims];
         rawFramesSpace.getSimpleExtentDims(rawFramesDims);
 
-        rawFrames = new int[(long int) rawFramesDims[0]];
-        H5Dread(rawFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFrames);
+        auto rawFramesTemp = new int[(long int) rawFramesDims[0]];
+        H5Dread(rawFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFramesTemp);
+        rawFrames = rawFramesTemp[0];
 
         // Read in start time in Unix time.
         hid_t memType = H5Tcopy(H5T_C_S1);

@@ -22,7 +22,7 @@ class Nexus {
         Nexus() = default;
 
         std::vector<int> spectra;
-        int* rawFrames;
+        int rawFrames;
         int goodFrames;
         int startSinceEpoch;
         int endSinceEpoch;
