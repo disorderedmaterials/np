@@ -18,6 +18,7 @@ class Config {
         std::vector<std::string> nxsDefinitionPaths;
         ExtrapolationMode extrapolationMode;
         double periodBegin;
+        int summedNSlices;
         PeriodDefinition periodDefinition;
         std::vector<Pulse> rawPulses;
         Config(std::string path_) : path(path_) {}

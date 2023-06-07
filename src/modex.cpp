@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <memory>
 
 #include <modex.hpp>
@@ -29,18 +31,25 @@ bool ModEx::process() {
         // Our period ("sequence of pulses") contains exactly one pulse that we're interested in (enforced in config.cpp)
         // Extrapolate defined pulse forwards in time to generate all pulses we need to bin from over the entire run
         Period superPeriod;
-        if (!createSuperPeriod(superPeriod))
+        if (!createSuperPeriod(superPeriod, cfg.summedNSlices))
             return false;
     
-        // Template our output file from the first run
-        std::string outpath = cfg.outputDir + "/sum-" + std::to_string((int) cfg.periodBegin);
-        if (!cfg.periodDefinition.pulseDefinitions.front().label.empty())
-            outpath += "-" + cfg.periodDefinition.pulseDefinitions.front().label + ".nxs";
-        else
-            outpath += ".nxs";
-        Nexus outputNXS(cfg.runs[0], outpath);
-        if (!outputNXS.createEmpty(cfg.nxsDefinitionPaths))
-            return false;
+        // Template our output file(s) from the first run
+        std::map<int, Nexus> outputFiles;
+        for (auto n = 0; n< cfg.summedNSlices; ++n)
+        {
+            // std::string outpath = cfg.outputDir + "/sum-" + std::to_string((int) cfg.periodBegin);
+            std::stringstream ss;
+            ss << cfg.outputDir << "/sum-" << std::to_string((int) cfg.periodBegin);
+            if (!cfg.periodDefinition.pulseDefinitions.front().label.empty())
+                ss << "-" << cfg.periodDefinition.pulseDefinitions.front().label;
+            if (cfg.summedNSlices > 1)
+                ss << "-" << std::setw(3) << std::setfill('0') << (n+1);
+            ss << ".nxs";
+            auto data = outputFiles.emplace(n, Nexus(cfg.runs[0], ss.str()));
+            if (!data.first->second.createEmpty(cfg.nxsDefinitionPaths))
+                return false;
+        }
 
         // Get iterators to pulse and Nexus files
         auto pulseIt = superPeriod.pulses.begin();
@@ -51,20 +60,20 @@ bool ModEx::process() {
         nxs->load(true);
         printf("Initial nexus file has %i goodframes...\n", nxs->goodFrames);
 
-        int lastTotalGoodFrames = 0;
-        int currentFileFrames = 0;
+        int currentPulseFrames = 0;
 
         // Cycle over pulses in the superperiod
         while (pulseIt != superPeriod.pulses.end())
         {
             auto &pulse = *pulseIt;
+            auto &destNxs = outputFiles[pulse.sliceIndex];
 
             // If / while the current pulse starts after the endtime of the current run, load the next run
             while (pulseIt->start > nxs->endSinceEpoch)
             {
                 // Store monitor counts from this file before we lose it
-                if (currentFileFrames > 0)
-                    nxs->addMonitors((double) currentFileFrames / nxs->goodFrames, outputNXS);
+                if (currentPulseFrames > 0)
+                    nxs->addMonitors((double) currentPulseFrames / nxs->goodFrames, destNxs);
 
                 ++nexusIt;
                 if (nexusIt == cfg.runs.end())
@@ -72,24 +81,21 @@ bool ModEx::process() {
                 printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
                 nxs = std::make_shared<Nexus>(*nexusIt);
                 nxs->load(true);
-                currentFileFrames = 0;
             }
             if (nexusIt == cfg.runs.end())
                 break;
 
             // Process the pulse
             // -- Detector events
-            nxs->binPulseEvents(pulse, nxs->startSinceEpoch, outputNXS);
-            printf(" ... pulse from %f -> %f added %i good frames (%i) total)\n", pulse.start, pulse.end, outputNXS.goodFrames - lastTotalGoodFrames, outputNXS.goodFrames);
-            currentFileFrames += outputNXS.goodFrames - lastTotalGoodFrames;
-            lastTotalGoodFrames = outputNXS.goodFrames;
+            currentPulseFrames = nxs->binPulseEvents(pulse, nxs->startSinceEpoch, destNxs);
+            printf(" ... pulse from %f -> %f (slice %i) added %i good frames (%i) total)\n", pulse.start, pulse.end, pulse.sliceIndex + 1, currentPulseFrames, destNxs.goodFrames);
 
             // If the current pulse ends after the end of the current Nexus file, load in the next file and don't increment the pulse
             if (pulseIt->end > nxs->endSinceEpoch)
             {
                 // Store monitor counts from this file before we lose it
-                if (currentFileFrames > 0)
-                    nxs->addMonitors((double) currentFileFrames / nxs->goodFrames, outputNXS);
+                if (currentPulseFrames > 0)
+                    nxs->addMonitors((double) currentPulseFrames / nxs->goodFrames, destNxs);
 
                 ++nexusIt;
                 if (nexusIt == cfg.runs.end())
@@ -97,7 +103,7 @@ bool ModEx::process() {
                 printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
                 nxs = std::make_shared<Nexus>(*nexusIt);
                 nxs->load(true);
-                currentFileFrames = 0;
+                currentPulseFrames = 0;
             }
             else
                 ++pulseIt;
@@ -105,16 +111,25 @@ bool ModEx::process() {
                 break;
         }
 
-        // Add in fractional monitors if there are currentFileFrames (we probably had a nice pulse sequence which ended within the last file)
-        if (currentFileFrames > 0)
-            nxs->addMonitors((double) currentFileFrames / (double) nxs->goodFrames, outputNXS);
+        // Add in fractional monitors if there are currentPulseFrames (we probably had a nice pulse sequence which ended within the last file)
+        if (currentPulseFrames > 0)
+        {
+            auto &destNxs = outputFiles[superPeriod.pulses.back().sliceIndex];
+            nxs->addMonitors((double) currentPulseFrames / (double) nxs->goodFrames, destNxs);
+        }
 
-        printf("Output nexus has %li good frames in total.\n", outputNXS.goodFrames);
+        // Save output files
+        for (auto &data : outputFiles)
+        {
+            auto sliceIndex = data.first + 1;
+            auto &nexus = data.second;
 
-        // Save output file
-        if (!outputNXS.output(cfg.nxsDefinitionPaths))
-            return false;
-        diagnosticFile << outpath << " " << outputNXS.goodFrames << std::endl;
+            printf("Output nexus for slice %i has %li good frames in total.\n", sliceIndex, nexus.goodFrames);
+
+            if (!nexus.output(cfg.nxsDefinitionPaths))
+                return false;
+            diagnosticFile << nexus.getOutpath() << " " << nexus.goodFrames << std::endl;
+        }
     }
     else {
         std::vector<Period> periods;
@@ -202,7 +217,7 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
 }
 
 
-bool ModEx::createSuperPeriod(Period &period)
+bool ModEx::createSuperPeriod(Period &period, int nSlices)
 {
   std::cout << "Extrapolating periods (in seconds since epoch)\n";
     Nexus firstRunNXS(cfg.runs[0]);
@@ -224,11 +239,22 @@ bool ModEx::createSuperPeriod(Period &period)
 
     // Create copies of the master pulse extrapolating forwards in time by the period duration
     std::vector<Pulse> pulses;
+    auto nWholePulses = 0;
     while (periodStart < expEnd) {
         // Check that the actual start of the pulse is before the experimental end time
         if ((periodStart + masterPulseDef.periodOffset) >= expEnd)
             break;
-        pulses.push_back(Pulse(masterPulseDef, periodStart + masterPulseDef.periodOffset, periodStart + masterPulseDef.periodOffset + masterPulseDef.duration));
+        
+        // Take the pulse and split into the number of slices
+        auto sliceDelta = (double) masterPulseDef.duration / (double) nSlices;
+        auto sliceStart = periodStart + masterPulseDef.periodOffset;
+        for (auto n = 0; n < nSlices; ++n)
+        {
+            pulses.push_back(Pulse(masterPulseDef, sliceStart, sliceStart + sliceDelta, n));
+            sliceStart += sliceDelta;   
+        }
+
+        ++nWholePulses;
         periodStart += cfg.periodDefinition.duration;
     }
 
@@ -237,7 +263,7 @@ bool ModEx::createSuperPeriod(Period &period)
     auto superPeriodEnd = superPeriodStart + cfg.periodDefinition.duration * pulses.size();
     period = Period(cfg.periodDefinition, superPeriodStart, superPeriodEnd, pulses);
 
-    printf("Extrapolated %i pulses into superperiod:\n", period.pulses.size());
+    printf("Extrapolated %i pulses into superperiod (from %i whole pulses split into %i slices each):\n", period.pulses.size(), nWholePulses, nSlices);
     for (const auto &p : period.pulses)
         printf("  %f  ->  %f\n", p.start, p.end);
     return true;

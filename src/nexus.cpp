@@ -253,9 +253,10 @@ bool Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*>
     
 }
 
-void Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
+int Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
 {
     // Bin events from this Nexus / pulse into the destination histogram bins
+    int nBinned = 0;
     for (int i=0; i<frameIndices.size()-1; ++i) {
         auto start = frameIndices[i];
         auto end = frameIndices[i+1];
@@ -267,9 +268,13 @@ void Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
                 if (id > 0)
                     gsl_histogram_increment(destination.histogram[id], event);
             }
-            ++destination.goodFrames;
+            ++nBinned;
         }
     }
+
+    destination.goodFrames += nBinned;
+
+    return nBinned;
 }
 
 void Nexus::addMonitors(double scale, Nexus &destination)
@@ -285,6 +290,8 @@ void Nexus::addMonitors(double scale, Nexus &destination)
         ++destIt;
     }
 }
+
+std::string Nexus::getOutpath() { return outpath; }
 
 bool Nexus::output(std::vector<std::string> paths) {
 

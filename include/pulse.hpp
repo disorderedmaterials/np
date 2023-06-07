@@ -11,7 +11,8 @@ class Pulse {
         double end;
         std::string startRun;
         std::string endRun;
-        Pulse(PulseDefinition &definition_, double start_, double end_) : definition(definition_), start(start_), end(end_) {}
+        int sliceIndex;
+        Pulse(PulseDefinition &definition_, double start_, double end_,int sliceIndex_ = 0) : definition(definition_), start(start_), end(end_), sliceIndex(sliceIndex_) {}
         Pulse(double start_, double end_) : start(start_), end(end_) {}
         Pulse() = default;
 };
