@@ -51,71 +51,77 @@ bool ModEx::process() {
                 return false;
         }
 
-        // Get iterators to pulse and Nexus files
-        auto pulseIt = superPeriod.pulses.begin();
-        auto nexusIt = cfg.runs.begin();
-
-        // Open the first Nexus file ready for use
-        auto nxs = std::make_shared<Nexus>(*nexusIt);
-        nxs->load(true);
-        printf("Initial nexus file has %i goodframes...\n", nxs->goodFrames);
-
-        int currentPulseFrames = 0;
-
-        // Cycle over pulses in the superperiod
-        while (pulseIt != superPeriod.pulses.end())
+        // Loop over input Nexus files
+        for (auto &nxsFileName : cfg.runs)
         {
-            auto &pulse = *pulseIt;
-            auto &destNxs = outputFiles[pulse.sliceIndex];
+            // Open the Nexus file ready for use
+            Nexus nxs(nxsFileName);
+            nxs.load(true);
+            printf("Nexus file has %i goodframes...\n", nxs.goodFrames);
 
-            // If / while the current pulse starts after the endtime of the current run, load the next run
-            while (pulseIt->start > nxs->endSinceEpoch)
+            // Zero frame counters in all pulses
+            for (auto &p : superPeriod.pulses)
+                p.frameCounter = 0;
+
+            // Get first and last pulses which this file might contribute to
+            auto beginPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.end > nxs.startSinceEpoch && p.end < nxs.endSinceEpoch; });
+            if (beginPulseIt == superPeriod.pulses.end())
             {
-                // Store monitor counts from this file before we lose it
-                if (currentPulseFrames > 0)
-                    nxs->addMonitors((double) currentPulseFrames / nxs->goodFrames, destNxs);
-
-                ++nexusIt;
-                if (nexusIt == cfg.runs.end())
-                    break;
-                printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
-                nxs = std::make_shared<Nexus>(*nexusIt);
-                nxs->load(true);
+                printf("!!! No pulses fall into the time range of this file - moving on to the next...\n");
+                continue;
             }
-            if (nexusIt == cfg.runs.end())
-                break;
+            auto endPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.start > nxs.endSinceEpoch; });
 
-            // Process the pulse
-            // -- Detector events
-            currentPulseFrames = nxs->binPulseEvents(pulse, nxs->startSinceEpoch, destNxs);
-            printf(" ... pulse from %f -> %f (slice %i) added %i good frames (%i) total)\n", pulse.start, pulse.end, pulse.sliceIndex + 1, currentPulseFrames, destNxs.goodFrames);
-
-            // If the current pulse ends after the end of the current Nexus file, load in the next file and don't increment the pulse
-            if (pulseIt->end > nxs->endSinceEpoch)
+            // Loop over frames in the Nexus file
+            auto pulseIt = beginPulseIt;
+            for (int i=0; i<nxs.frameIndices.size()-1; ++i)
             {
-                // Store monitor counts from this file before we lose it
-                if (currentPulseFrames > 0)
-                    nxs->addMonitors((double) currentPulseFrames / nxs->goodFrames, destNxs);
+                // Get start, end, and zero for frame
+                auto eventStart = nxs.frameIndices[i];
+                auto eventEnd = nxs.frameIndices[i+1];
+                auto frameZero = nxs.frameOffsets[i] + nxs.startSinceEpoch;
 
-                ++nexusIt;
-                if (nexusIt == cfg.runs.end())
-                    break;
-                printf("[ Loading Next Nexus File - '%s'... ]\n", *nexusIt->c_str());
-                nxs = std::make_shared<Nexus>(*nexusIt);
-                nxs->load(true);
-                currentPulseFrames = 0;
+                // If the frame zero is less than the start time of the current pulse, move on
+                if (frameZero < pulseIt->start)
+                    continue;
+
+                // If the frame zero is less than the end time of the current pulse, bin the events. Otherwise, increase the pulse iterator
+                if (frameZero < pulseIt->end)
+                {
+                    // Grab the destination datafile for this pulse and bin events
+                    auto &destinationNexus = outputFiles[pulseIt->sliceIndex];
+                    for (int k=eventStart; k<eventEnd; ++k)
+                    {
+                        auto id = nxs.eventIndices[k];
+                        auto event = nxs.events[k];
+                        if (id > 0)
+                            gsl_histogram_increment(destinationNexus.histogram[id], event);
+                    }
+
+                    // Increment the goodframes counter for this pulse
+                    ++(pulseIt->frameCounter);
+                }
+                else
+                    ++pulseIt;
+                
+                // If we have no more pulses, we can stop processing frames
+                if (pulseIt == endPulseIt)
+                        break;
             }
-            else
-                ++pulseIt;
-            if (nexusIt == cfg.runs.end())
-                break;
-        }
 
-        // Add in fractional monitors if there are currentPulseFrames (we probably had a nice pulse sequence which ended within the last file)
-        if (currentPulseFrames > 0)
-        {
-            auto &destNxs = outputFiles[superPeriod.pulses.back().sliceIndex];
-            nxs->addMonitors((double) currentPulseFrames / (double) nxs->goodFrames, destNxs);
+            // For each pulse we just added to, increase the goodFrames, and monitors by the correct fractional amount
+            for (auto it = beginPulseIt; it < endPulseIt; ++it)
+            {
+                if (it->frameCounter == 0)
+                    continue;
+                auto &destinationNexus = outputFiles[it->sliceIndex];
+                destinationNexus.goodFrames += it->frameCounter;
+                nxs.addMonitors((double) it->frameCounter / nxs.goodFrames, destinationNexus);
+            }
+
+            // If we have no more pulses, we can stop processing nexus files
+            if (pulseIt == endPulseIt)
+                break;
         }
 
         // Save output files
