@@ -10,7 +10,7 @@
 bool Config::parse() {
     
     int nRuns, nPulses; // Number of run files and pulses.
-    std::string line; // Auxilliary variable to read into.
+    std::string line, item; // Auxilliary variable to read into.
     struct stat info; // For statting files.
 
     // Check if file exists.
@@ -92,6 +92,8 @@ bool Config::parse() {
         extrapolationMode = FORWARDS;
     else if (line == "BI_DIRECTIONAL")
         extrapolationMode = BI_DIRECTIONAL;
+    else if (line == "FORWARDS_SUMMED")
+        extrapolationMode = FORWARDS_SUMMED;
     else if (line == "NONE")
         extrapolationMode = NONE;
     else {
@@ -118,7 +120,6 @@ bool Config::parse() {
             
             std::stringstream ss(line); // String stream for parsing.
             double pulseStart, pulseEnd;
-            std::string item; // Auxilliary variable to read into.
 
             // Read in pulse start time.
             if(!std::getline(ss, item, ' ')) {
@@ -153,14 +154,31 @@ bool Config::parse() {
         }
         periodBegin = atof(line.c_str());
 
-        // Read in number of pulses.
+        // Read in number of pulses / slices
         if (!std::getline(ifs, line)) {
-            std::cerr << "ERROR: couldn't retrieve number of pulses." << std::endl;
+            std::cerr << "ERROR: couldn't retrieve number of pulses / slices." << std::endl;
             return false;
         }
-        nPulses = atoi(line.c_str());
+        std::stringstream pulseSliceStream(line); // String stream for parsing.
+        if (!std::getline(pulseSliceStream, item, ' ')) {
+            std::cerr << "ERROR: couldn't retrieve number of pulses" << std::endl;
+            return false;
+        }
+        nPulses = atoi(item.c_str());
+        if (!std::getline(pulseSliceStream, item, ' ')) {
+            std::cerr << "ERROR: couldn't retrieve number of slices" << std::endl;
+            return false;
+        }
+        summedNSlices = atoi(item.c_str());
 
-        std::vector<PulseDefinition> pulses; // Vector of defined pulses.
+        // For the FORWARDS_SUMMED option we expect exactly one pulse definition
+        if (extrapolationMode == FORWARDS_SUMMED && nPulses != 1)
+        {
+            std::cerr << "ERROR: for the FORWARDS_SUMMED mode exactly one pulse must be provided." << std::endl;
+            return false;
+        }
+
+        std::vector<PulseDefinition> pulseDefs; // Vector of defined pulses.
 
         // Read in pulse definitions.
         for (int i=0; i<nPulses; ++i) {
@@ -173,7 +191,6 @@ bool Config::parse() {
             std::stringstream ss(line); // String stream for parsing.
             std::string label;
             double periodOffset, duration;
-            std::string item;
 
             // Read in label.
             if (!std::getline(ss, label, ' ')) {
@@ -196,9 +213,9 @@ bool Config::parse() {
             duration = atof(item.c_str());
 
             // Append pulse definition.
-            pulses.push_back(PulseDefinition(label, periodOffset, duration));
+            pulseDefs.push_back(PulseDefinition(label, periodOffset, duration));
         }
-        periodDefinition = PeriodDefinition(periodDuration, pulses);
+        periodDefinition = PeriodDefinition(periodDuration, pulseDefs);
         if (!periodDefinition.isValid()) {
             return false;
         }

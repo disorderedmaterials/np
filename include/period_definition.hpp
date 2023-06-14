@@ -9,8 +9,8 @@ class PeriodDefinition {
 
     public:
         double duration;
-        std::vector<PulseDefinition> pulses;
-        PeriodDefinition(double duration_, std::vector<PulseDefinition> pulses_) : duration(duration_), pulses(pulses_) {}  
+        std::vector<PulseDefinition> pulseDefinitions;
+        PeriodDefinition(double duration_, std::vector<PulseDefinition> pulseDefinitions_) : duration(duration_), pulseDefinitions(pulseDefinitions_) {}  
         PeriodDefinition() = default;
         bool isValid();
 };

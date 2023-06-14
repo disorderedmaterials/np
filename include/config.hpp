@@ -7,7 +7,7 @@
 #include "pulse_definition.hpp"
 #include "pulse.hpp"
 
-enum ExtrapolationMode {FORWARDS, BACKWARDS, BI_DIRECTIONAL, NONE};
+enum ExtrapolationMode {FORWARDS, BACKWARDS, BI_DIRECTIONAL, FORWARDS_SUMMED, NONE};
 
 class Config {
 
@@ -18,6 +18,7 @@ class Config {
         std::vector<std::string> nxsDefinitionPaths;
         ExtrapolationMode extrapolationMode;
         double periodBegin;
+        int summedNSlices;
         PeriodDefinition periodDefinition;
         std::vector<Pulse> rawPulses;
         Config(std::string path_) : path(path_) {}
