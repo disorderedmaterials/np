@@ -135,6 +135,7 @@ bool ModEx::process() {
             if (!nexus.output(cfg.nxsDefinitionPaths))
                 return false;
             diagnosticFile << nexus.getOutpath() << " " << nexus.goodFrames << std::endl;
+            std::cout << "Finished processing: " << nexus.getOutpath() << std::endl;
         }
     }
     else {
