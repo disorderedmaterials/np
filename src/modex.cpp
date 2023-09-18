@@ -130,7 +130,7 @@ bool ModEx::process() {
             auto sliceIndex = data.first + 1;
             auto &nexus = data.second;
 
-            printf("Output nexus for slice %i has %li good frames in total.\n", sliceIndex, nexus.goodFrames);
+            printf("Output nexus for slice %i has %i good frames in total.\n", sliceIndex, nexus.goodFrames);
 
             if (!nexus.output(cfg.nxsDefinitionPaths))
                 return false;
@@ -217,7 +217,7 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
         }
     );
 
-    printf("Extrapolated %i periods:\n", periods.size());
+    printf("Extrapolated %li periods:\n", periods.size());
     for (const auto &p : periods)
         printf("  %f  ->  %f\n", p.start, p.end);
     return true;
@@ -270,7 +270,7 @@ bool ModEx::createSuperPeriod(Period &period, int nSlices)
     auto superPeriodEnd = superPeriodStart + cfg.periodDefinition.duration * pulses.size();
     period = Period(cfg.periodDefinition, superPeriodStart, superPeriodEnd, pulses);
 
-    printf("Extrapolated %i pulses into superperiod (from %i whole pulses split into %i slices each):\n", period.pulses.size(), nWholePulses, nSlices);
+    printf("Extrapolated %li pulses into superperiod (from %i whole pulses split into %i slices each):\n", period.pulses.size(), nWholePulses, nSlices);
     for (const auto &p : period.pulses)
         printf("  %f  ->  %f\n", p.start, p.end);
     return true;
