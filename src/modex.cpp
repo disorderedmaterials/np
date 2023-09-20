@@ -33,6 +33,11 @@ bool ModEx::process() {
         Period superPeriod;
         if (!createSuperPeriod(superPeriod, cfg.summedNSlices))
             return false;
+
+        // Determine slice multiplier
+        auto sliceDuration = superPeriod.pulses.front().end - superPeriod.pulses.front().start;
+        auto sliceMultiplier = 3600 / (int) sliceDuration;
+        printf("Slice multiplier for events is %i (based on a slice duration of %e)\n", sliceMultiplier, sliceDuration);
     
         // Template our output file(s) from the first run
         std::map<int, Nexus> outputFiles;
@@ -95,11 +100,11 @@ bool ModEx::process() {
                         auto id = nxs.eventIndices[k];
                         auto event = nxs.events[k];
                         if (id > 0)
-                            gsl_histogram_increment(destinationNexus.histogram[id], event);
+                            gsl_histogram_accumulate(destinationNexus.histogram[id], event, sliceMultiplier);
                     }
 
                     // Increment the goodframes counter for this pulse
-                    ++(pulseIt->frameCounter);
+                    pulseIt->frameCounter += sliceMultiplier;
                 }
                 else
                     ++pulseIt;
