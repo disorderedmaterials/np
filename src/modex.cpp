@@ -64,7 +64,7 @@ bool ModEx::process() {
                 p.frameCounter = 0;
 
             // Get first and last pulses which this file might contribute to
-            auto beginPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.end > nxs.startSinceEpoch && p.end < nxs.endSinceEpoch; });
+            auto beginPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.end > nxs.startSinceEpoch && p.start < nxs.endSinceEpoch; });
             if (beginPulseIt == superPeriod.pulses.end())
             {
                 printf("!!! No pulses fall into the time range of this file - moving on to the next...\n");
