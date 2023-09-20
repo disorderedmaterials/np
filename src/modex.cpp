@@ -74,7 +74,7 @@ bool ModEx::process() {
 
             // Loop over frames in the Nexus file
             auto pulseIt = beginPulseIt;
-            for (int i=0; i<nxs.frameIndices.size()-1; ++i)
+            for (auto i=0; i<nxs.frameIndices.size()-1; ++i)
             {
                 // Get start, end, and zero for frame
                 auto eventStart = nxs.frameIndices[i];
