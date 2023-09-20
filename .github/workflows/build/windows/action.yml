@@ -37,6 +37,7 @@ runs:
       set -ex
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
       GSL_DIR="$(pwd)/${{ inputs.gsltag }}/mingw64"
+      choco install -y mingw --version=11.2.0 --allow-downgrade
       mkdir build
       cd build
       cmake ../ -G "MinGW Makefiles" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
