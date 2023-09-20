@@ -33,6 +33,11 @@ bool ModEx::process() {
         Period superPeriod;
         if (!createSuperPeriod(superPeriod, cfg.summedNSlices))
             return false;
+
+        // Determine slice multiplier
+        auto sliceDuration = superPeriod.pulses.front().end - superPeriod.pulses.front().start;
+        auto sliceMultiplier = 3600 / (int) sliceDuration;
+        printf("Slice multiplier for events is %i (based on a slice duration of %e)\n", sliceMultiplier, sliceDuration);
     
         // Template our output file(s) from the first run
         std::map<int, Nexus> outputFiles;
@@ -64,7 +69,7 @@ bool ModEx::process() {
                 p.frameCounter = 0;
 
             // Get first and last pulses which this file might contribute to
-            auto beginPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.end > nxs.startSinceEpoch && p.end < nxs.endSinceEpoch; });
+            auto beginPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.end > nxs.startSinceEpoch && p.start < nxs.endSinceEpoch; });
             if (beginPulseIt == superPeriod.pulses.end())
             {
                 printf("!!! No pulses fall into the time range of this file - moving on to the next...\n");
@@ -74,7 +79,7 @@ bool ModEx::process() {
 
             // Loop over frames in the Nexus file
             auto pulseIt = beginPulseIt;
-            for (int i=0; i<nxs.frameIndices.size()-1; ++i)
+            for (auto i=0; i<nxs.frameIndices.size()-1; ++i)
             {
                 // Get start, end, and zero for frame
                 auto eventStart = nxs.frameIndices[i];
@@ -95,11 +100,11 @@ bool ModEx::process() {
                         auto id = nxs.eventIndices[k];
                         auto event = nxs.events[k];
                         if (id > 0)
-                            gsl_histogram_increment(destinationNexus.histogram[id], event);
+                            gsl_histogram_accumulate(destinationNexus.histogram[id], event, sliceMultiplier);
                     }
 
                     // Increment the goodframes counter for this pulse
-                    ++(pulseIt->frameCounter);
+                    pulseIt->frameCounter += sliceMultiplier;
                 }
                 else
                     ++pulseIt;
