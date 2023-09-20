@@ -9,6 +9,10 @@ runs:
   using: "composite"
   steps:
 
+  - name: Install MinGW
+    shell: bash
+    run: choco install -y mingw --version=11.2.0 --allow-downgrade
+
   - name: Collect zstd
     shell: bash
     run: |
