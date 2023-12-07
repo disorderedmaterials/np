@@ -29,7 +29,7 @@ class Nexus {
 
         std::vector<int> eventIndices;
         std::vector<double> events;
-        std::vector<int> frameIndices;
+        std::vector<int> eventsPerFrame;
         std::vector<double> frameOffsets;
         std::vector<double> ranges;
         std::map<int, std::vector<int>> monitors;

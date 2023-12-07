@@ -79,11 +79,11 @@ bool ModEx::process() {
 
             // Loop over frames in the Nexus file
             auto pulseIt = beginPulseIt;
-            for (auto i=0; i<nxs.frameIndices.size()-1; ++i)
+            auto eventStart = 0, eventEnd = 0;
+            for (auto i=0; i<nxs.eventsPerFrame.size(); ++i)
             {
-                // Get start, end, and zero for frame
-                auto eventStart = nxs.frameIndices[i];
-                auto eventEnd = nxs.frameIndices[i+1];
+                // Set new end event index and get zero for frame
+                eventEnd += nxs.eventsPerFrame[i];
                 auto frameZero = nxs.frameOffsets[i] + nxs.startSinceEpoch;
 
                 // If the frame zero is less than the start time of the current pulse, move on
@@ -112,6 +112,9 @@ bool ModEx::process() {
                 // If we have no more pulses, we can stop processing frames
                 if (pulseIt == endPulseIt)
                         break;
+
+		// Update start event index
+                eventStart = eventEnd;
             }
 
             // For each pulse we just added to, increase the goodFrames, and monitors by the correct fractional amount

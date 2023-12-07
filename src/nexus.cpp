@@ -148,17 +148,17 @@ bool Nexus::load(bool advanced) {
             events.resize(eventsDims[0]);
             H5Dread(events_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, events.data());
 
-            // Read in frame indices.
-            H5::DataSet frameIndices_;
-            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_index", frameIndices_))
+            // Read in event counts per frame
+            H5::DataSet eventsPerFrame_;
+            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1/framelog", "events_log"}, "value", eventsPerFrame_))
                 return false;
-            H5::DataSpace frameIndicesSpace = frameIndices_.getSpace();
-            hsize_t frameIndicesNDims = frameIndicesSpace.getSimpleExtentNdims();
-            hsize_t* frameIndicesDims = new hsize_t[frameIndicesNDims];
-            frameIndicesSpace.getSimpleExtentDims(frameIndicesDims);
+            H5::DataSpace eventsPerFrameSpace = eventsPerFrame_.getSpace();
+            hsize_t eventsPerFrameNDims = eventsPerFrameSpace.getSimpleExtentNdims();
+            hsize_t* eventsPerFrameDims = new hsize_t[eventsPerFrameNDims];
+            eventsPerFrameSpace.getSimpleExtentDims(eventsPerFrameDims);
 
-            frameIndices.resize(frameIndicesDims[0]);
-            H5Dread(frameIndices_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameIndices.data());
+            eventsPerFrame.resize(eventsPerFrameDims[0]);
+            H5Dread(eventsPerFrame_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventsPerFrame.data());
 
             // Read in frame offsets.
             H5::DataSet frameOffsets_;
@@ -218,7 +218,6 @@ bool Nexus::load(bool advanced) {
 }
 
 bool Nexus::createHistogram(Pulse &pulse, int epochOffset) {
-    int start, end, id;
     double frameZero, event;
     for (auto spec: spectra) {
         histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
@@ -227,19 +226,21 @@ bool Nexus::createHistogram(Pulse &pulse, int epochOffset) {
 
     goodFrames = 0;
 
-    for (int i=0; i<frameIndices.size()-1; ++i) {
-        start = frameIndices[i];
-        end = frameIndices[i+1];
+    // Loop over frames and use the eventsPerFrame values to establish limits for binning
+    auto start = 0, end = 0;
+    for (auto i=0; i<eventsPerFrame.size(); ++i) {
+        end += eventsPerFrame[i];
         frameZero = frameOffsets[i];
-        if ((frameZero >= (pulse.start-epochOffset)) && (frameZero < (pulse.end-epochOffset))) {
-            for (int k=start; k<end; ++k) {
-                id = eventIndices[k];
+	if ((frameZero >= (pulse.start-epochOffset)) && (frameZero < (pulse.end-epochOffset))) {
+            for (auto k=start; k<end; ++k) {
+                auto id = eventIndices[k];
                 event = events[k];
                 if (id > 0)
                     gsl_histogram_increment(histogram[id], event);
             }
             ++goodFrames;
         }
+	start = end;
     }
 
     std::cout << "There are " << goodFrames << " goodframes!" << std::endl;
@@ -256,13 +257,13 @@ bool Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*>
 int Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
 {
     // Bin events from this Nexus / pulse into the destination histogram bins
-    int nBinned = 0;
-    for (int i=0; i<frameIndices.size()-1; ++i) {
-        auto start = frameIndices[i];
-        auto end = frameIndices[i+1];
+    auto nBinned = 0;
+    auto start = 0, end = 0;
+    for (auto i=0; i<eventsPerFrame.size(); ++i) {
+        end += eventsPerFrame[i];
         auto frameZero = frameOffsets[i];
         if ((frameZero >= (pulse.start-epochOffset)) && (frameZero < (pulse.end-epochOffset))) {
-            for (int k=start; k<end; ++k) {
+            for (auto k=start; k<end; ++k) {
                 auto id = eventIndices[k];
                 auto event = events[k];
                 if (id > 0)
@@ -270,6 +271,7 @@ int Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
             }
             ++nBinned;
         }
+	start = end;
     }
 
     destination.goodFrames += nBinned;
@@ -513,19 +515,22 @@ bool Nexus::writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned in
         return false;
     }
 
-    double event;
-    int idx;
     std::map<unsigned int, std::vector<double>> partitions;
-    for (int i=0; i<events.size(); ++i) {
-        event = events[i];
-        idx = eventIndices[i];
-        if (!idx || idx < lowerSpec || idx > higherSpec)
-            continue;
-        for (int j=0; j<frameIndices.size()-1; ++j) {
-            if ((i>= frameIndices[j]) && (i<frameIndices[j+1])) {
-                partitions[idx].push_back((event*0.000001) + frameOffsets[j]);
-            }
+
+    auto start = 0, end = 0;
+    for (auto i=0; i<eventsPerFrame.size(); ++i) {
+        end += eventsPerFrame[i];
+        auto frameZero = frameOffsets[i];
+
+	// Write event times out for any events occurring within our spectrum range
+        for (auto k=start; k<end; ++k) {
+            auto id = eventIndices[k];
+            if (!id || id < lowerSpec || id > higherSpec)
+                continue;
+
+            partitions[id].push_back((events[k]*0.000001) + frameZero);
         }
+	start = end;
     }
 
     H5::H5File file(outpath, H5F_ACC_TRUNC);
