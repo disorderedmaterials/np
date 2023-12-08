@@ -67,7 +67,7 @@ bool Nexus::load(bool advanced) {
 
         // Read in good frames.
         H5::DataSet goodFrames_;
-        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "raw_frames", goodFrames_))
+        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "good_frames", goodFrames_))
             return false;
         H5::DataSpace goodFramesSpace = goodFrames_.getSpace();
         hsize_t goodFramesNDims = goodFramesSpace.getSimpleExtentNdims();
