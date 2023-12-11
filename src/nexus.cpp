@@ -1,4 +1,4 @@
-#include <nexus.hpp>
+#include "nexus.h"
 
 #include <algorithm>
 #include <ctime>
@@ -33,6 +33,19 @@ bool Nexus::getLeafDataset(H5::H5File file, std::vector<H5std_string> terminals,
     }
 }
 
+int Nexus::totalGoodFrames() const { return totalGoodFrames_; }
+int &Nexus::nProcessedGoodFrames() { return totalGoodFrames_; }
+int Nexus::startSinceEpoch() const { return startSinceEpoch_; }
+int Nexus::endSinceEpoch() const { return endSinceEpoch_; }
+const std::vector<int> &Nexus::eventIndices() const { return eventIndices_; }
+const std::vector<double> &Nexus::events() const { return events_; }
+const std::vector<int> &Nexus::eventsPerFrame() const { return eventsPerFrame_; }
+const std::vector<double> &Nexus::frameOffsets() const { return frameOffsets_; }
+const std::vector<double> &Nexus::ranges() const { return ranges_; }
+const std::map<int, std::vector<int>> &Nexus::monitorCounts() const { return monitorCounts_; }
+std::map<unsigned int, gsl_histogram*> &Nexus::detectorHistograms() { return detectorHistograms_; }
+const std::map<unsigned int, std::vector<double>> &Nexus::partitions() const { return partitions_; }
+
 bool Nexus::load(bool advanced) {
 
     try {
@@ -41,42 +54,42 @@ bool Nexus::load(bool advanced) {
         H5::H5File file = H5::H5File(path, H5F_ACC_RDONLY);
 
         // Read in spectra.
-        H5::DataSet spectra_;
-        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "spectrum_index", spectra_))
+        H5::DataSet h5spectra;
+        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "spectrum_index", h5spectra))
             return false;
-        H5::DataSpace spectraSpace = spectra_.getSpace();
+        H5::DataSpace spectraSpace = h5spectra.getSpace();
         hsize_t spectraNDims = spectraSpace.getSimpleExtentNdims();
         hsize_t* spectraDims = new hsize_t[spectraNDims];
         spectraSpace.getSimpleExtentDims(spectraDims);
 
-        spectra.resize(spectraDims[0]);
-        H5Dread(spectra_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra.data());
+        spectra_.resize(spectraDims[0]);
+        H5Dread(h5spectra.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra_.data());
 
         // Read in raw frames.
-        H5::DataSet rawFrames_;
-        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "raw_frames", rawFrames_))
+        H5::DataSet h5rawFrames;
+        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "raw_frames", h5rawFrames))
             return false;
-        H5::DataSpace rawFramesSpace = rawFrames_.getSpace();
+        H5::DataSpace rawFramesSpace = h5rawFrames.getSpace();
         hsize_t rawFramesNDims = rawFramesSpace.getSimpleExtentNdims();
         hsize_t* rawFramesDims = new hsize_t[rawFramesNDims];
         rawFramesSpace.getSimpleExtentDims(rawFramesDims);
 
         auto rawFramesTemp = new int[(long int) rawFramesDims[0]];
-        H5Dread(rawFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFramesTemp);
-        rawFrames = rawFramesTemp[0];
+        H5Dread(h5rawFrames.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFramesTemp);
+        nRawFrames_ = rawFramesTemp[0];
 
         // Read in good frames.
-        H5::DataSet goodFrames_;
-        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "good_frames", goodFrames_))
+        H5::DataSet h5goodFrames;
+        if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1"}, "good_frames", h5goodFrames))
             return false;
-        H5::DataSpace goodFramesSpace = goodFrames_.getSpace();
+        H5::DataSpace goodFramesSpace = h5goodFrames.getSpace();
         hsize_t goodFramesNDims = goodFramesSpace.getSimpleExtentNdims();
         hsize_t* goodFramesDims = new hsize_t[goodFramesNDims];
         goodFramesSpace.getSimpleExtentDims(goodFramesDims);
 
         auto goodFramesTemp = new int[(long int) goodFramesDims[0]];
-        H5Dread(goodFrames_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
-        goodFrames = goodFramesTemp[0];
+        H5Dread(h5goodFrames.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
+        totalGoodFrames_ = goodFramesTemp[0];
 
         // Read in start time in Unix time.
         hid_t memType = H5Tcopy(H5T_C_S1);
@@ -100,7 +113,7 @@ bool Nexus::load(bool advanced) {
         stime.tm_min = m;
         stime.tm_sec = s;
 
-        startSinceEpoch = (int) mktime(&stime);
+        startSinceEpoch_ = (int) mktime(&stime);
 
         // Read in end time in Unix time.
         H5::DataSet endTime_;
@@ -120,89 +133,88 @@ bool Nexus::load(bool advanced) {
         etime.tm_min = m;
         etime.tm_sec = s;
 
-        endSinceEpoch = (int) mktime(&etime);
+        endSinceEpoch_ = (int) mktime(&etime);
 
         if (advanced) {
 
             // Read in event indices.
-            H5::DataSet eventIndices_;
-            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_id", eventIndices_))
+            H5::DataSet h5eventIndices_;
+            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_id", h5eventIndices_))
                 return false;
-            H5::DataSpace eventIndicesSpace = eventIndices_.getSpace();
+            H5::DataSpace eventIndicesSpace = h5eventIndices_.getSpace();
             hsize_t eventIndicesNDims = eventIndicesSpace.getSimpleExtentNdims();
             hsize_t* eventIndicesDims = new hsize_t[eventIndicesNDims];
             eventIndicesSpace.getSimpleExtentDims(eventIndicesDims);
 
-            eventIndices.resize(eventIndicesDims[0]);
-            H5Dread(eventIndices_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventIndices.data());
+            eventIndices_.resize(eventIndicesDims[0]);
+            H5Dread(h5eventIndices_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventIndices_.data());
 
             // Read in events.
-            H5::DataSet events_;
-            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_offset", events_))
+            H5::DataSet h5events;
+            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_offset", h5events))
                 return false;
-            H5::DataSpace eventsSpace = events_.getSpace();
+            H5::DataSpace eventsSpace = h5events.getSpace();
             hsize_t eventsNDims = eventsSpace.getSimpleExtentNdims();
             hsize_t* eventsDims = new hsize_t[eventsNDims];
             eventsSpace.getSimpleExtentDims(eventsDims);
 
-            events.resize(eventsDims[0]);
-            H5Dread(events_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, events.data());
+            events_.resize(eventsDims[0]);
+            H5Dread(h5events.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, events_.data());
 
             // Read in event counts per frame
-            H5::DataSet eventsPerFrame_;
-            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1/framelog", "events_log"}, "value", eventsPerFrame_))
+            H5::DataSet h5eventsPerFrame;
+            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1/framelog", "events_log"}, "value", h5eventsPerFrame))
                 return false;
-            H5::DataSpace eventsPerFrameSpace = eventsPerFrame_.getSpace();
+            H5::DataSpace eventsPerFrameSpace = h5eventsPerFrame.getSpace();
             hsize_t eventsPerFrameNDims = eventsPerFrameSpace.getSimpleExtentNdims();
             hsize_t* eventsPerFrameDims = new hsize_t[eventsPerFrameNDims];
             eventsPerFrameSpace.getSimpleExtentDims(eventsPerFrameDims);
 
-            eventsPerFrame.resize(eventsPerFrameDims[0]);
-            H5Dread(eventsPerFrame_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventsPerFrame.data());
+            eventsPerFrame_.resize(eventsPerFrameDims[0]);
+            H5Dread(h5eventsPerFrame.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventsPerFrame_.data());
 
             // Read in frame offsets.
-            H5::DataSet frameOffsets_;
-            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_zero", frameOffsets_))
+            H5::DataSet h5frameOffsets;
+            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "detector_1_events"}, "event_time_zero", h5frameOffsets))
                 return false;
-            H5::DataSpace frameOffsetsSpace = frameOffsets_.getSpace();
+            H5::DataSpace frameOffsetsSpace = h5frameOffsets.getSpace();
             hsize_t frameOffsetsNDims = frameOffsetsSpace.getSimpleExtentNdims();
             hsize_t* frameOffsetsDims = new hsize_t[frameOffsetsNDims];
             frameOffsetsSpace.getSimpleExtentDims(frameOffsetsDims);
 
-            frameOffsets.resize(frameOffsetsDims[0]);
-            H5Dread(frameOffsets_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameOffsets.data());
+            frameOffsets_.resize(frameOffsetsDims[0]);
+            H5Dread(h5frameOffsets.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameOffsets_.data());
 
             // Read in bin information.
-            H5::DataSet bins_;
-            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "monitor_1"}, "time_of_flight", bins_))
+            H5::DataSet h5tofbins;
+            if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "monitor_1"}, "time_of_flight", h5tofbins))
                 return false;
-            H5::DataSpace binsSpace = bins_.getSpace();
+            H5::DataSpace binsSpace = h5tofbins.getSpace();
             hsize_t binsNDims = binsSpace.getSimpleExtentNdims();
             hsize_t* binsDims = new hsize_t[binsNDims];
             binsSpace.getSimpleExtentDims(binsDims);
 
-            ranges.resize(binsDims[0]);
-            H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges.data());
+            ranges_.resize(binsDims[0]);
+            H5Dread(h5tofbins.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges_.data());
 
             // Read in monitor data.
-
             int i = 1;
             bool result = true;
             while (true) {
 
-                H5::DataSet monitor;
-                if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(i)}, "data", monitor)) {
+                H5::DataSet h5monitor;
+                if (!Nexus::getLeafDataset(file, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(i)}, "data", h5monitor)) {
                     break;
                 }
-                H5::DataSpace monitorSpace = monitor.getSpace();
+                H5::DataSpace monitorSpace = h5monitor.getSpace();
                 hsize_t monitorNDims = monitorSpace.getSimpleExtentNdims();
                 hsize_t* monitorDims = new hsize_t[monitorNDims];
                 monitorSpace.getSimpleExtentDims(monitorDims);
 
                 std::vector<int> monitorVec;
                 monitorVec.resize(monitorDims[2]);
-                H5Dread(monitor.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorVec.data());
-                monitors[i++] = monitorVec;
+                H5Dread(h5monitor.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorVec.data());
+                monitorCounts_[i++] = monitorVec;
             }
         }
 
@@ -217,39 +229,39 @@ bool Nexus::load(bool advanced) {
 
 }
 
-bool Nexus::createHistogram(Pulse &pulse, int epochOffset) {
+int Nexus::createHistogram(Pulse &pulse, int epochOffset) {
     double frameZero, event;
-    for (auto spec: spectra) {
-        histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
-        gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
+    for (auto spec: spectra_) {
+        detectorHistograms_[spec] = gsl_histogram_alloc(ranges_.size()-1);
+        gsl_histogram_set_ranges(detectorHistograms_[spec], ranges_.data(), ranges_.size());
     }
 
-    goodFrames = 0;
+    auto nFramesProcessed = 0;
 
     // Loop over frames and use the eventsPerFrame values to establish limits for binning
     auto start = 0, end = 0;
-    for (auto i=0; i<eventsPerFrame.size(); ++i) {
-        end += eventsPerFrame[i];
-        frameZero = frameOffsets[i];
+    for (auto i=0; i<eventsPerFrame_.size(); ++i) {
+        end += eventsPerFrame_[i];
+        frameZero = frameOffsets_[i];
 	if ((frameZero >= (pulse.start-epochOffset)) && (frameZero < (pulse.end-epochOffset))) {
             for (auto k=start; k<end; ++k) {
-                auto id = eventIndices[k];
-                event = events[k];
+                auto id = eventIndices_[k];
+                event = events_[k];
                 if (id > 0)
-                    gsl_histogram_increment(histogram[id], event);
+                    gsl_histogram_increment(detectorHistograms_[id], event);
             }
-            ++goodFrames;
+            ++nFramesProcessed;
         }
 	start = end;
     }
 
-    std::cout << "There are " << goodFrames << " goodframes!" << std::endl;
-    return true;
+    std::cout << "There are " << nFramesProcessed << " goodframes!" << std::endl;
+    return nFramesProcessed;
 }
 
-bool Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset) {
+int Nexus::createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram*> &mask, int epochOffset) {
 
-    histogram = mask;
+    detectorHistograms_ = mask;
     return createHistogram(pulse, epochOffset);
     
 }
@@ -259,22 +271,22 @@ int Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
     // Bin events from this Nexus / pulse into the destination histogram bins
     auto nBinned = 0;
     auto start = 0, end = 0;
-    for (auto i=0; i<eventsPerFrame.size(); ++i) {
-        end += eventsPerFrame[i];
-        auto frameZero = frameOffsets[i];
+    for (auto i=0; i<eventsPerFrame_.size(); ++i) {
+        end += eventsPerFrame_[i];
+        auto frameZero = frameOffsets_[i];
         if ((frameZero >= (pulse.start-epochOffset)) && (frameZero < (pulse.end-epochOffset))) {
             for (auto k=start; k<end; ++k) {
-                auto id = eventIndices[k];
-                auto event = events[k];
+                auto id = eventIndices_[k];
+                auto event = events_[k];
                 if (id > 0)
-                    gsl_histogram_increment(destination.histogram[id], event);
+                    gsl_histogram_increment(destination.detectorHistograms_[id], event);
             }
             ++nBinned;
         }
 	start = end;
     }
 
-    destination.goodFrames += nBinned;
+    destination.nProcessedGoodFrames_ += nBinned;
 
     return nBinned;
 }
@@ -282,8 +294,8 @@ int Nexus::binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination)
 void Nexus::addMonitors(double scale, Nexus &destination)
 {
     printf(" ... adding fractional monitors (%f) from current file\n", scale);
-    auto destIt = destination.monitors.begin();
-    for (const auto &pair : monitors) {
+    auto destIt = destination.monitorCounts_.begin();
+    for (const auto &pair : monitorCounts_) {
         auto &destCounts = destIt->second;
         auto &sourceCounts = pair.second;
         for (int i=0; i<sourceCounts.size(); ++i) {
@@ -311,8 +323,8 @@ bool Nexus::output(std::vector<std::string> paths) {
         input.close();
 
         writeCounts(output);
-        writeMonitors(output, monitors);
-        writeGoodFrames(output, goodFrames);
+        writeMonitors(output, monitorCounts_);
+        writeGoodFrames(output, nProcessedGoodFrames_);
         output.close();
         return true;
 
@@ -370,27 +382,27 @@ bool Nexus::createEmpty(std::vector<std::string> paths)
             return false;
 
         // Read in spectra
-        H5::DataSet spectra_;
-        if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "spectrum_index", spectra_))
+        H5::DataSet h5spectra;
+        if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "detector_1"}, "spectrum_index", h5spectra))
             return false;
-        H5::DataSpace spectraSpace = spectra_.getSpace();
+        H5::DataSpace spectraSpace = h5spectra.getSpace();
         hsize_t spectraNDims = spectraSpace.getSimpleExtentNdims();
         hsize_t* spectraDims = new hsize_t[spectraNDims];
         spectraSpace.getSimpleExtentDims(spectraDims);
-        spectra.resize(spectraDims[0]);
-        H5Dread(spectra_.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra.data());
+        spectra_.resize(spectraDims[0]);
+        H5Dread(h5spectra.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra_.data());
         printf("... got spectra.\n");
     
         // Read in bin information.
-        H5::DataSet bins_;
-        if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "monitor_1"}, "time_of_flight", bins_))
+        H5::DataSet h5tofbins;
+        if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "monitor_1"}, "time_of_flight", h5tofbins))
             return false;
-        H5::DataSpace binsSpace = bins_.getSpace();
+        H5::DataSpace binsSpace = h5tofbins.getSpace();
         hsize_t binsNDims = binsSpace.getSimpleExtentNdims();
         hsize_t* binsDims = new hsize_t[binsNDims];
         binsSpace.getSimpleExtentDims(binsDims);
-        ranges.resize(binsDims[0]);
-        H5Dread(bins_.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges.data());
+        ranges_.resize(binsDims[0]);
+        H5Dread(h5tofbins.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, ranges_.data());
         printf("... got ranges.\n");
 
         // Read in monitor data.
@@ -398,27 +410,27 @@ bool Nexus::createEmpty(std::vector<std::string> paths)
         bool result = true;
         while (true) {
 
-            H5::DataSet monitor;
-            if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(i)}, "data", monitor)) {
+            H5::DataSet h5monitor;
+            if (!Nexus::getLeafDataset(input, std::vector<H5std_string> {"raw_data_1", "monitor_" + std::to_string(i)}, "data", h5monitor)) {
                 break;
             }
-            H5::DataSpace monitorSpace = monitor.getSpace();
+            H5::DataSpace monitorSpace = h5monitor.getSpace();
             hsize_t monitorNDims = monitorSpace.getSimpleExtentNdims();
             hsize_t* monitorDims = new hsize_t[monitorNDims];
             monitorSpace.getSimpleExtentDims(monitorDims);
 
             std::vector<int> monitorVec;
             monitorVec.resize(monitorDims[2], 0);
-            monitors[i++] = monitorVec;
+            monitorCounts_[i++] = monitorVec;
         }
 
         // Set up 
-        for (auto spec: spectra) {
-            histogram[spec] = gsl_histogram_alloc(ranges.size()-1);
-            gsl_histogram_set_ranges(histogram[spec], ranges.data(), ranges.size());
+        for (auto spec: spectra_) {
+            detectorHistograms_[spec] = gsl_histogram_alloc(ranges_.size()-1);
+            gsl_histogram_set_ranges(detectorHistograms_[spec], ranges_.data(), ranges_.size());
         }
 
-        goodFrames = 0;
+        nProcessedGoodFrames_ = 0;
 
         input.close();
         //output.close();
@@ -433,15 +445,15 @@ bool Nexus::createEmpty(std::vector<std::string> paths)
 bool Nexus::writeCounts(H5::H5File output) {
 
     // Write out histogram.
-    const int nSpec = spectra.size();
-    const int nBin = ranges.size()-1;
+    const int nSpec = spectra_.size();
+    const int nBin = ranges_.size()-1;
 
     int* buf = new int[1*nSpec*nBin]; // HDF5 expects contiguous memory. This is a pain.
     int i;
     for (int i=0; i<1; ++i)
         for (int j=0; j<nSpec; ++j)
             for (int k=0; k<nBin; ++k) {
-                buf[(i*nSpec+j)*nBin+k] = gsl_histogram_get(histogram[spectra[j]], k);
+                buf[(i*nSpec+j)*nBin+k] = gsl_histogram_get(detectorHistograms_[spectra_[j]], k);
             }
 
     H5::DataSet counts;
@@ -482,7 +494,7 @@ bool Nexus::writeGoodFrames(H5::H5File output, int goodFrames) {
 }
 
 bool Nexus::reduceMonitors(double scale) {
-    for (auto &pair : monitors) {
+    for (auto &pair : monitorCounts_) {
         for (int i=0; i<pair.second.size(); ++i) {
             pair.second[i]= (int) (pair.second[i] * scale);
         }
@@ -518,17 +530,17 @@ bool Nexus::writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned in
     std::map<unsigned int, std::vector<double>> partitions;
 
     auto start = 0, end = 0;
-    for (auto i=0; i<eventsPerFrame.size(); ++i) {
-        end += eventsPerFrame[i];
-        auto frameZero = frameOffsets[i];
+    for (auto i=0; i<eventsPerFrame_.size(); ++i) {
+        end += eventsPerFrame_[i];
+        auto frameZero = frameOffsets_[i];
 
 	// Write event times out for any events occurring within our spectrum range
         for (auto k=start; k<end; ++k) {
-            auto id = eventIndices[k];
+            auto id = eventIndices_[k];
             if (!id || id < lowerSpec || id > higherSpec)
                 continue;
 
-            partitions[id].push_back((events[k]*0.000001) + frameZero);
+            partitions[id].push_back((events_[k]*0.000001) + frameZero);
         }
 	start = end;
     }

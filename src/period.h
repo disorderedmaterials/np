@@ -1,8 +1,8 @@
 #ifndef PERIOD_H
 #define PERIOD_H
 
-#include <pulse.hpp>
-#include "period_definition.hpp"
+#include "pulse.h"
+#include "period_definition.h"
 #include <vector>
 
 

@@ -1,10 +1,10 @@
 #ifndef MODEX_H
 #define MODEX_H
 
-#include "nexus.hpp"
-#include "pulse.hpp"
-#include "period.hpp"
-#include "config.hpp"
+#include "nexus.h"
+#include "pulse.h"
+#include "period.h"
+#include "config.h"
 #include <vector>
 #include <fstream>
 

@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include <config.hpp>
-#include <modex.hpp>
+#include "config.h"
+#include "modex.h"
 
 int main(int argc, char** argv) {
 

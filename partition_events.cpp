@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "nexus.hpp"
+#include "nexus.h"
 
 int main(int argc, char **argv) {
 

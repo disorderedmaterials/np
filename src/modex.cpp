@@ -4,8 +4,8 @@
 #include <sstream>
 #include <memory>
 
-#include <modex.hpp>
-#include <nexus.hpp>
+#include "modex.h"
+#include "nexus.h"
 
 
 ModEx::ModEx(Config cfg_) : cfg(cfg_) {
@@ -62,29 +62,34 @@ bool ModEx::process() {
             // Open the Nexus file ready for use
             Nexus nxs(nxsFileName);
             nxs.load(true);
-            printf("Nexus file has %i goodframes...\n", nxs.goodFrames);
+            printf("Nexus file has %i goodframes...\n", nxs.totalGoodFrames());
 
             // Zero frame counters in all pulses
             for (auto &p : superPeriod.pulses)
                 p.frameCounter = 0;
 
             // Get first and last pulses which this file might contribute to
-            auto beginPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.end > nxs.startSinceEpoch && p.start < nxs.endSinceEpoch; });
+            auto beginPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.end > nxs.startSinceEpoch() && p.start < nxs.endSinceEpoch(); });
             if (beginPulseIt == superPeriod.pulses.end())
             {
                 printf("!!! No pulses fall into the time range of this file - moving on to the next...\n");
                 continue;
             }
-            auto endPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.start > nxs.endSinceEpoch; });
+            auto endPulseIt = std::find_if(superPeriod.pulses.begin(), superPeriod.pulses.end(), [&nxs](const auto &p) { return p.start > nxs.endSinceEpoch(); });
 
             // Loop over frames in the Nexus file
             auto pulseIt = beginPulseIt;
             auto eventStart = 0, eventEnd = 0;
-            for (auto i=0; i<nxs.eventsPerFrame.size(); ++i)
+            const auto &eventsPerFrame = nxs.eventsPerFrame();
+            const auto &eventIndices = nxs.eventIndices();
+            const auto &events = nxs.events();
+            const auto &frameOffsets = nxs.frameOffsets();
+
+            for (auto i=0; i<nxs.eventsPerFrame().size(); ++i)
             {
                 // Set new end event index and get zero for frame
-                eventEnd += nxs.eventsPerFrame[i];
-                auto frameZero = nxs.frameOffsets[i] + nxs.startSinceEpoch;
+                eventEnd += eventsPerFrame[i];
+                auto frameZero = frameOffsets[i] + nxs.startSinceEpoch();
 
                 // If the frame zero is less than the start time of the current pulse, move on
                 if (frameZero < pulseIt->start)
@@ -95,12 +100,13 @@ bool ModEx::process() {
                 {
                     // Grab the destination datafile for this pulse and bin events
                     auto &destinationNexus = outputFiles[pulseIt->sliceIndex];
+                    auto &destinationHistograms = destinationNexus.detectorHistograms();
                     for (int k=eventStart; k<eventEnd; ++k)
                     {
-                        auto id = nxs.eventIndices[k];
-                        auto event = nxs.events[k];
+                        auto id = eventIndices[k];
+                        auto event = events[k];
                         if (id > 0)
-                            gsl_histogram_accumulate(destinationNexus.histogram[id], event, sliceMultiplier);
+                            gsl_histogram_accumulate(destinationHistograms[id], event, sliceMultiplier);
                     }
 
                     // Increment the goodframes counter for this pulse
@@ -113,7 +119,7 @@ bool ModEx::process() {
                 if (pulseIt == endPulseIt)
                         break;
 
-		// Update start event index
+		        // Update start event index
                 eventStart = eventEnd;
             }
 
@@ -123,8 +129,8 @@ bool ModEx::process() {
                 if (it->frameCounter == 0)
                     continue;
                 auto &destinationNexus = outputFiles[it->sliceIndex];
-                destinationNexus.goodFrames += it->frameCounter;
-                nxs.addMonitors((double) it->frameCounter / nxs.goodFrames, destinationNexus);
+                destinationNexus.nProcessedGoodFrames() += it->frameCounter;
+                nxs.addMonitors((double) it->frameCounter / it->frameCounter, destinationNexus);
             }
 
             // If we have no more pulses, we can stop processing nexus files
@@ -138,11 +144,11 @@ bool ModEx::process() {
             auto sliceIndex = data.first + 1;
             auto &nexus = data.second;
 
-            printf("Output nexus for slice %i has %i good frames in total.\n", sliceIndex, nexus.goodFrames);
+            printf("Output nexus for slice %i has %i good frames in total.\n", sliceIndex, nexus.nProcessedGoodFrames());
 
             if (!nexus.output(cfg.nxsDefinitionPaths))
                 return false;
-            diagnosticFile << nexus.getOutpath() << " " << nexus.goodFrames << std::endl;
+            diagnosticFile << nexus.getOutpath() << " " << nexus.nProcessedGoodFrames() << std::endl;
             std::cout << "Finished processing: " << nexus.getOutpath() << std::endl;
         }
     }
@@ -178,8 +184,8 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods) {
     Nexus lastRunNXS(cfg.runs[cfg.runs.size()-1]);
     lastRunNXS.load();
 
-    const int expStart = firstRunNXS.startSinceEpoch;
-    const int expEnd = lastRunNXS.endSinceEpoch;
+    const int expStart = firstRunNXS.startSinceEpoch();
+    const int expEnd = lastRunNXS.endSinceEpoch();
     double startPeriod = double(expStart) + cfg.periodBegin;
     double periodBegin = 0;
 
@@ -243,8 +249,8 @@ bool ModEx::createSuperPeriod(Period &period, int nSlices)
         return false;
 
     // Get limiting times of experiment (seconds since epoch values)
-    const int expStart = firstRunNXS.startSinceEpoch;
-    const int expEnd = lastRunNXS.endSinceEpoch;
+    const int expStart = firstRunNXS.startSinceEpoch();
+    const int expEnd = lastRunNXS.endSinceEpoch();
 
     // Set absolute start time of first period, equal to the experiment start plus first defined pulse time
     double periodStart = double(expStart) + cfg.periodBegin;
@@ -301,7 +307,7 @@ bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses) {
     for (const auto &run : cfg.runs) {
         Nexus nxs(run);
         nxs.load();
-        runBoundaries.push_back(std::make_pair(run, std::make_pair(nxs.startSinceEpoch, nxs.endSinceEpoch)));
+        runBoundaries.push_back(std::make_pair(run, std::make_pair(nxs.startSinceEpoch(), nxs.endSinceEpoch())));
     }
 
         for (auto &pulse : pulses) {
@@ -342,13 +348,12 @@ bool ModEx::processPulse(Pulse &pulse) {
         Nexus nxs = Nexus(pulse.startRun, outpath);
         if (!nxs.load(true))
             return false;
-        if (!nxs.createHistogram(pulse, nxs.startSinceEpoch))
-            return false;
-        if (!nxs.reduceMonitors((double) nxs.goodFrames / (double) nxs.rawFrames))
+        nxs.nProcessedGoodFrames() = nxs.createHistogram(pulse, nxs.startSinceEpoch());
+        if (!nxs.reduceMonitors((double) nxs.nProcessedGoodFrames() / (double) nxs.totalGoodFrames()))
             return false;
         if (!nxs.output(cfg.nxsDefinitionPaths))
             return false;
-        diagnosticFile << outpath << " " << nxs.goodFrames << std::endl;
+        diagnosticFile << outpath << " " << nxs.nProcessedGoodFrames() << std::endl;
         progress = (double) currentPulse / (double) totalPulses;
         progress*=100;
         ++currentPulse;
@@ -374,28 +379,28 @@ bool ModEx::processPulse(Pulse &pulse) {
             return false;
 
         std::cout << pulse.start << " " << pulse.end << std::endl;
-        Pulse firstPulse(pulse.start, startNxs.endSinceEpoch);
-        Pulse secondPulse(endNxs.startSinceEpoch, pulse.end);
+        Pulse firstPulse(pulse.start, startNxs.endSinceEpoch());
+        Pulse secondPulse(endNxs.startSinceEpoch(), pulse.end);
         std::cout << "Pulse duration: " << secondPulse.end - firstPulse.start << std::endl;
-        std::map<int, std::vector<int>> monitors = startNxs.monitors;
+        std::map<int, std::vector<int>> monitors = startNxs.monitorCounts();
         std::cout << "Sum monitors" << std::endl;
         for (auto &pair : monitors) {
             for (int i=0; i<pair.second.size(); ++i) {
-                pair.second[i]+=endNxs.monitors[pair.first][i];
+                pair.second[i]+=endNxs.monitorCounts().at(pair.first)[i];
             }
         }
 
-        if (!startNxs.createHistogram(firstPulse, startNxs.startSinceEpoch))
+        if (!startNxs.createHistogram(firstPulse, startNxs.startSinceEpoch()))
             return false;
-        if (!endNxs.createHistogram(secondPulse, startNxs.histogram, endNxs.startSinceEpoch))
+        if (!endNxs.createHistogram(secondPulse, startNxs.detectorHistograms(), endNxs.startSinceEpoch()))
             return false;
-        int totalGoodFrames = startNxs.goodFrames + endNxs.goodFrames;
-        int totalFrames = startNxs.rawFrames + endNxs.rawFrames;
-        if (!endNxs.reduceMonitors((double) totalGoodFrames / (double) totalFrames))
+        int availableGoodFrames = startNxs.totalGoodFrames() + endNxs.totalGoodFrames();
+        int totalProcessedFrames = startNxs.nProcessedGoodFrames() + endNxs.nProcessedGoodFrames();
+        if (!endNxs.reduceMonitors((double) totalProcessedFrames / (double) availableGoodFrames))
             return false;
         if (!endNxs.output(cfg.nxsDefinitionPaths))
             return false;
-        diagnosticFile << outpath << " " << startNxs.goodFrames + endNxs.goodFrames << std::endl;
+        diagnosticFile << outpath << " " << startNxs.nProcessedGoodFrames() + endNxs.nProcessedGoodFrames() << std::endl;
         progress = (double) currentPulse / (double) totalPulses;
         progress*=100;
         ++currentPulse;
@@ -415,7 +420,7 @@ bool ModEx::epochPulses(std::vector<Pulse> &pulses) {
 
     // Apply offset.
 
-    const int expStart = firstRunNXS.startSinceEpoch;
+    const int expStart = firstRunNXS.startSinceEpoch();
 
     for (int i=0; i<pulses.size(); ++i) {
         pulses[i].start+= expStart;

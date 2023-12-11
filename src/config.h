@@ -3,9 +3,9 @@
 
 #include <string>
 #include <vector>
-#include "period.hpp"
-#include "pulse_definition.hpp"
-#include "pulse.hpp"
+#include "period.h"
+#include "pulse_definition.h"
+#include "pulse.h"
 
 enum ExtrapolationMode {FORWARDS, BACKWARDS, BI_DIRECTIONAL, FORWARDS_SUMMED, NONE};
 

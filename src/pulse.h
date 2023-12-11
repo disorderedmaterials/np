@@ -1,7 +1,7 @@
 #ifndef PULSE_H
 #define PULSE_H
 
-#include "pulse_definition.hpp"
+#include "pulse_definition.h"
 
 class Pulse {
 

@@ -1,7 +1,7 @@
 #ifndef PERIOD_DEFINITION_H
 #define PERIOD_DEFINITION_H
 
-#include <pulse_definition.hpp>
+#include "pulse_definition.h"
 #include <vector>
 
 
