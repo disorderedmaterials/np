@@ -4,15 +4,18 @@
 #include "pulse_definition.h"
 #include <vector>
 
-
-class PeriodDefinition {
+class PeriodDefinition
+{
 
     public:
-        double duration;
-        std::vector<PulseDefinition> pulseDefinitions;
-        PeriodDefinition(double duration_, std::vector<PulseDefinition> pulseDefinitions_) : duration(duration_), pulseDefinitions(pulseDefinitions_) {}  
-        PeriodDefinition() = default;
-        bool isValid();
+    double duration;
+    std::vector<PulseDefinition> pulseDefinitions;
+    PeriodDefinition(double duration_, std::vector<PulseDefinition> pulseDefinitions_)
+        : duration(duration_), pulseDefinitions(pulseDefinitions_)
+    {
+    }
+    PeriodDefinition() = default;
+    bool isValid();
 };
 
 #endif // PERIOD_DEFINITION_H

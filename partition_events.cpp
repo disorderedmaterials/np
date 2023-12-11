@@ -2,10 +2,14 @@
 
 #include "nexus.h"
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-    if (argc < 5) {
-        std::cout << "Usage: partition_events {Nexus file} {lower spectrum} {higher spectrum} {output file}" << std::endl;
+    if (argc < 5)
+    {
+        std::cout << "Usage: partition_events {Nexus file} {lower spectrum} "
+                     "{higher spectrum} {output file}"
+                  << std::endl;
         return -1;
     }
 
