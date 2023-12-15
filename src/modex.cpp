@@ -46,7 +46,7 @@ bool ModEx::process()
         printf("Slice multiplier for events is %i (based on a slice duration of %e)\n", sliceMultiplier, sliceDuration);
 
         // Template our output file(s) from the first run
-        std::map<int, Nexus> outputFiles;
+        std::map<int, NeXuSFile> outputFiles;
         for (auto n = 0; n < cfg.summedNSlices; ++n)
         {
             // std::string outpath = cfg.outputDir + "/sum-" + std::to_string((int)
@@ -58,7 +58,7 @@ bool ModEx::process()
             if (cfg.summedNSlices > 1)
                 ss << "-" << std::setw(3) << std::setfill('0') << (n + 1);
             ss << ".nxs";
-            auto data = outputFiles.emplace(n, Nexus(cfg.runs[0], ss.str()));
+            auto data = outputFiles.emplace(n, NeXuSFile(cfg.runs[0], ss.str()));
             if (!data.first->second.createEmpty(cfg.nxsDefinitionPaths))
                 return false;
         }
@@ -67,7 +67,7 @@ bool ModEx::process()
         for (auto &nxsFileName : cfg.runs)
         {
             // Open the Nexus file ready for use
-            Nexus nxs(nxsFileName);
+            NeXuSFile nxs(nxsFileName);
             nxs.load(true);
             printf("Nexus file has %i goodframes...\n", nxs.totalGoodFrames());
 
@@ -200,9 +200,9 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods)
 {
 
     std::cout << "Extrapolating periods (in seconds since epoch)\n";
-    Nexus firstRunNXS(cfg.runs[0]);
+    NeXuSFile firstRunNXS(cfg.runs[0]);
     firstRunNXS.load();
-    Nexus lastRunNXS(cfg.runs[cfg.runs.size() - 1]);
+    NeXuSFile lastRunNXS(cfg.runs[cfg.runs.size() - 1]);
     lastRunNXS.load();
 
     const int expStart = firstRunNXS.startSinceEpoch();
@@ -260,10 +260,10 @@ bool ModEx::extrapolatePeriods(std::vector<Period> &periods)
 bool ModEx::createSuperPeriod(Period &period, int nSlices)
 {
     std::cout << "Extrapolating periods (in seconds since epoch)\n";
-    Nexus firstRunNXS(cfg.runs[0]);
+    NeXuSFile firstRunNXS(cfg.runs[0]);
     if (!firstRunNXS.load())
         return false;
-    Nexus lastRunNXS(cfg.runs[cfg.runs.size() - 1]);
+    NeXuSFile lastRunNXS(cfg.runs[cfg.runs.size() - 1]);
     if (!lastRunNXS.load())
         return false;
 
@@ -333,7 +333,7 @@ bool ModEx::binPulsesToRuns(std::vector<Pulse> &pulses)
 
     for (const auto &run : cfg.runs)
     {
-        Nexus nxs(run);
+        NeXuSFile nxs(run);
         nxs.load();
         runBoundaries.push_back(std::make_pair(run, std::make_pair(nxs.startSinceEpoch(), nxs.endSinceEpoch())));
     }
@@ -384,7 +384,7 @@ bool ModEx::processPulse(Pulse &pulse)
             outpath = cfg.outputDir + "/" + std::to_string((int)pulse.start) + "-" + pulse.definition.label + ".nxs";
         else
             outpath = cfg.outputDir + "/" + std::to_string((int)pulse.start) + ".nxs";
-        Nexus nxs = Nexus(pulse.startRun, outpath);
+        NeXuSFile nxs = NeXuSFile(pulse.startRun, outpath);
         if (!nxs.load(true))
             return false;
         nxs.nProcessedGoodFrames() = nxs.createHistogram(pulse, nxs.startSinceEpoch());
@@ -410,8 +410,8 @@ bool ModEx::processPulse(Pulse &pulse)
         std::cout << outpath << std::endl;
         std::cout << pulse.startRun << std::endl;
         std::cout << pulse.endRun << std::endl;
-        Nexus startNxs = Nexus(pulse.startRun);
-        Nexus endNxs = Nexus(pulse.endRun, outpath);
+        NeXuSFile startNxs = NeXuSFile(pulse.startRun);
+        NeXuSFile endNxs = NeXuSFile(pulse.endRun, outpath);
 
         if (!startNxs.load(true))
             return false;
@@ -458,7 +458,7 @@ bool ModEx::epochPulses(std::vector<Pulse> &pulses)
     // Assume runs are ordered.
     std::string firstRun = cfg.runs[0];
     // Load the first run.
-    Nexus firstRunNXS(firstRun);
+    NeXuSFile firstRunNXS(firstRun);
     firstRunNXS.load();
 
     // Apply offset.

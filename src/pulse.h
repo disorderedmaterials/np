@@ -1,25 +1,36 @@
-#ifndef PULSE_H
-#define PULSE_H
+#pragma once
 
-#include "pulse_definition.h"
+#include <string>
 
 class Pulse
 {
+    public:
+    Pulse(std::string_view id, double startTime, double duration);
+    Pulse() = default;
+
+    private:
+    // String ID
+    std::string id_;
+    // Start time (seconds since epoch) pulse
+    double startTime_{0};
+    // Duration of the pulse
+    double duration_{0};
+    // Frame counter
+    int frameCounter_{0};
 
     public:
-    PulseDefinition definition;
-    double start;
-    double end;
-    std::string startRun;
-    std::string endRun;
-    int sliceIndex;
-    int frameCounter;
-    Pulse(PulseDefinition &definition_, double start_, double end_, int sliceIndex_ = 0)
-        : definition(definition_), start(start_), end(end_), sliceIndex(sliceIndex_)
-    {
-    }
-    Pulse(double start_, double end_) : start(start_), end(end_) {}
-    Pulse() = default;
+    // Return string ID
+    [[nodiscard]] std::string_view id() const;
+    // Return start time (seconds since epoch) of the pulse
+    [[nodiscard]] double startTime() const;
+    // Return end time (seconds since epoch) of the pulse
+    [[nodiscard]] double endTime() const;
+    // Shift start time by specified delta
+    void shiftStartTime(double delta);
+    // Return duration of the pulse
+    [[nodiscard]] double duration() const;
+    // Return frame counter
+    int frameCounter() const;
+    // Increase frame counter
+    void incrementFrameCounter(int delta = 1);
 };
-
-#endif // PULSE_H

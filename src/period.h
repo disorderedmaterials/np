@@ -1,5 +1,4 @@
-#ifndef PERIOD_H
-#define PERIOD_H
+#pragma once
 
 #include "period_definition.h"
 #include "pulse.h"
@@ -7,18 +6,19 @@
 
 class Period
 {
-
     public:
-    PeriodDefinition definition;
-    double start;
-    double end;
-    std::vector<Pulse> pulses;
-    Period(PeriodDefinition &definition_, double start_, double end_, std::vector<Pulse> pulses_)
-        : definition(definition_), start(start_), end(end_), pulses(pulses_)
+    Period(PeriodDefinition &definition, double startTime, double endTime, std::vector<Pulse> pulses)
+        : definition_(definition), startTime_(startTime), endTime_(endTime), pulses_(pulses)
     {
     }
     Period() = default;
+
+    private:
+    PeriodDefinition definition_;
+    double startTime_;
+    double endTime_;
+    std::vector<Pulse> pulses_;
+
+    public:
     bool isComplete();
 };
-
-#endif // PERIOD_H

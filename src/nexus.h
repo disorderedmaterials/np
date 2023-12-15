@@ -1,21 +1,19 @@
-#ifndef NEXUS_H
-#define NEXUS_H
+#pragma once
 
+#include "pulse.h"
 #include <H5Cpp.h>
 #include <gsl/gsl_histogram.h>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "pulse.h"
-
-class Nexus
+class NeXuSFile
 {
-
     public:
-    Nexus(std::string path_, std::string outpath_) : path(path_), outpath(outpath_) {}
-    Nexus(std::string path_) : path(path_) {}
-    Nexus() = default;
+    NeXuSFile(std::string path_, std::string outpath_);
+    NeXuSFile(std::string path_);
+    NeXuSFile(std::string referenceFileName, std::string newFileName, const std::vector<std::string> &pathsToCopy);
+    NeXuSFile() = default;
 
     private:
     const H5std_string path;
@@ -38,35 +36,29 @@ class Nexus
     std::map<unsigned int, std::vector<double>> partitions_;
 
     public:
-    int totalGoodFrames() const;
-    int &nProcessedGoodFrames();
-    int startSinceEpoch() const;
-    int endSinceEpoch() const;
-    const std::vector<int> &eventIndices() const;
-    const std::vector<double> &events() const;
-    const std::vector<int> &eventsPerFrame() const;
-    const std::vector<double> &frameOffsets() const;
-    const std::vector<double> &ranges() const;
-    const std::map<int, std::vector<int>> &monitorCounts() const;
+    [[nodiscard]] int totalGoodFrames() const;
+    [[nodiscard]] int &nProcessedGoodFrames();
+    [[nodiscard]] int startSinceEpoch() const;
+    [[nodiscard]] int endSinceEpoch() const;
+    [[nodiscard]] const std::vector<int> &eventIndices() const;
+    [[nodiscard]] const std::vector<double> &events() const;
+    [[nodiscard]] const std::vector<int> &eventsPerFrame() const;
+    [[nodiscard]] const std::vector<double> &frameOffsets() const;
+    [[nodiscard]] const std::vector<double> &ranges() const;
+    [[nodiscard]] const std::map<int, std::vector<int>> &monitorCounts() const;
     std::map<unsigned int, gsl_histogram *> &detectorHistograms();
-    const std::map<unsigned int, std::vector<double>> &partitions() const;
+    [[nodiscard]] const std::map<unsigned int, std::vector<double>> &partitions() const;
 
     bool load(bool advanced = false);
     int createHistogram(Pulse &pulse, int epochOffset = 0);
     int createHistogram(Pulse &pulse, std::map<unsigned int, gsl_histogram *> &mask, int epochOffset = 0);
-    int binPulseEvents(Pulse &pulse, int epochOffset, Nexus &destination);
-    void addMonitors(double scale, Nexus &destination);
+    int binPulseEvents(Pulse &pulse, int epochOffset, NeXuSFile &destination);
+    void addMonitors(double scale, NeXuSFile &destination);
     std::string getOutpath();
     bool output(std::vector<std::string> paths);
     bool copy();
     bool copy(H5::H5File in, H5::H5File out, std::vector<std::string> paths);
     bool createEmpty(std::vector<std::string> pathss);
-    bool writeCounts(H5::H5File output);
-    bool writeTotalFrames(H5::H5File output, int frames);
-    bool writeGoodFrames(H5::H5File output, int goodFrames);
     bool reduceMonitors(double scale);
-    bool writeMonitors(H5::H5File output, std::map<int, std::vector<int>> monitors);
     bool writePartitionsWithRelativeTimes(unsigned int lowerSpec, unsigned int upperSpec);
 };
-
-#endif // NEXUS_H

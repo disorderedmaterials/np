@@ -173,19 +173,14 @@ cmake_print_variables(LINK_LIBS)
 
 add_subdirectory(src)
 
-add_executable(modulation_excitation modulation_excitation.cpp)
-target_include_directories(modulation_excitation PRIVATE ${PROJECT_SOURCE_DIR}/src)
-
-add_executable(partition_events partition_events.cpp)
-target_include_directories(partition_events PRIVATE ${PROJECT_SOURCE_DIR}/src)
+add_executable(np np.cpp)
+target_include_directories(np PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 IF(WIN32)
-  target_link_libraries(modulation_excitation PRIVATE nexusprocess ${LINK_LIBS})
-  target_link_libraries(partition_events PRIVATE nexusprocess ${LINK_LIBS})
+  target_link_libraries(np PRIVATE nexusprocess ${LINK_LIBS})
 ELSE(WIN32)
-  target_link_libraries(modulation_excitation PRIVATE nexusprocess ${LINK_LIBS} dl)
-  target_link_libraries(partition_events PRIVATE nexusprocess ${LINK_LIBS} dl)
+  target_link_libraries(np PRIVATE nexusprocess ${LINK_LIBS} dl)
 ENDIF(WIN32)
 
 # Install targets
-install(TARGETS modulation_excitation partition_events RUNTIME DESTINATION bin)
+install(TARGETS np RUNTIME DESTINATION bin)
