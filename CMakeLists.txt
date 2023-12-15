@@ -15,9 +15,21 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Include application support
 include(ExternalProject)
-enable_language(Fortran)
 
 set(CMAKE_MODULE_PATH "${HDF5_DIR}/share/cmake/;${CMAKE_MODULE_PATH}")
+
+# Include Conan Packages
+option(CONAN "Use conan to find dependencies" ON)
+if(CONAN)
+  include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+  conan_basic_setup(TARGETS)
+  include_directories(${CONAN_INCLUDE_DIRS_FMT})
+  list(APPEND LINK_LIBS CONAN_PKG::onetbb)
+else(CONAN)
+  find_package(fmt REQUIRED)
+  find_package(CLI11 REQUIRED)
+  list(APPEND LINK_LIBS $ENV{THREADING_LINK_LIBS})
+endif(CONAN)
 
 option(
   LOCAL_STATIC_GSL
@@ -79,26 +91,16 @@ if(BUILD_HDF)
     INSTALL_DIR "${CMAKE_BINARY_DIR}/3rdparty/"
     BUILD_BYPRODUCTS
       "${CMAKE_BINARY_DIR}/3rdparty/lib/libhdf5.a"
-      "${CMAKE_BINARY_DIR}/3rdparty/lib/libhdf5_fortran.a"
-      "${CMAKE_BINARY_DIR}/3rdparty/lib/libhdf5_f90cstub.a"
     CMAKE_ARGS -DHDF5_BUILD_FORTRAN:bool=True
                 -DHDF5_INSTALL_MOD_FORTRAN:string=STATIC
                 -DHDF5_ENABLE_HDF_SUPPORT:bool=True
                 -DHDF5_ENABLE_Z_LIB_SUPPORT:bool=True
                 -DBUILD_TESTING:bool=False
-                -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}
-                -DCMAKE_Fortran_FLAGS:string=${HDF_FORTRAN_LINK_FLAGS}
                 -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>)
   add_library(hdf5main STATIC IMPORTED GLOBAL)
   set_property(
     TARGET hdf5main PROPERTY IMPORTED_LOCATION
                               "${CMAKE_BINARY_DIR}/3rdparty/lib/libhdf5.a")
-  add_library(hdf5fortran STATIC IMPORTED GLOBAL)
-  set_property(
-    TARGET hdf5fortran
-    PROPERTY IMPORTED_LOCATION
-              "${CMAKE_BINARY_DIR}/3rdparty/lib/libhdf5_fortran.a")
-  add_library(hdf5f90cstub STATIC IMPORTED GLOBAL)
   set_property(
     TARGET hdf5cpp
     PROPERTY IMPORTED_LOCATION
@@ -108,7 +110,7 @@ if(BUILD_HDF)
     TARGET hdf5f90cstub
     PROPERTY IMPORTED_LOCATION
               "${CMAKE_BINARY_DIR}/3rdparty/lib/libhdf5_f90cstub.a")
-  list(APPEND LINK_LIBS "hdf5f90cstub" "hdf5fortran" "hdf5main" "hdf5cpp")
+  list(APPEND LINK_LIBS "hdf5f90cstub" "hdf5main" "hdf5cpp")
 
   # Build SZIP as an external project
   option(BUILD_SZIP "Build SZIP as an external project" OFF)
@@ -132,8 +134,6 @@ if(BUILD_HDF)
                               "${CMAKE_BINARY_DIR}/3rdparty/lib/libszip-static.a")
     list(APPEND LINK_LIBS "sziplib")
     add_dependencies(hdf5main HDF5 szip)
-    add_dependencies(hdf5fortran HDF5 szip)
-    add_dependencies(hdf5f90cstub HDF5 szip)
   else(BUILD_SZIP)
     if(NOT LOCAL_STATIC_HDF5)
       find_package(SZIP REQUIRED)
@@ -142,9 +142,8 @@ if(BUILD_HDF)
   endif(BUILD_SZIP)
 else(BUILD_HDF)
   if(LOCAL_STATIC_HDF5)
-    list(APPEND LINK_LIBS "${HDF5_DIR}/lib/libhdf5_fortran.a"
-          "${HDF5_DIR}/lib/libhdf5_cpp.a"
-          "${HDF5_DIR}/lib/libhdf5_f90cstub.a" "${HDF5_DIR}/lib/libhdf5.a"
+    list(APPEND LINK_LIBS "${HDF5_DIR}/lib/libhdf5_cpp.a"
+          "${HDF5_DIR}/lib/libhdf5.a"
           "${HDF5_DIR}/lib/libszip-static.a")
     if(WIN32)
       list(APPEND LINK_LIBS "${HDF5_DIR}/lib/libzlibstatic.a")

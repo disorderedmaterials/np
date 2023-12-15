@@ -1,0 +1,13 @@
+[requires]
+cli11/1.9.1
+fmt/8.1.1
+gtest/1.10.0
+onetbb/2021.10.0
+onedpl/2021.7.0
+
+[generators]
+cmake
+
+[options]
+fmt:header_only=True
+tbb:shared=True
