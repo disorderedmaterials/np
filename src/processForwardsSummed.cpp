@@ -1,6 +1,6 @@
 #include "nexusFile.h"
-#include "period.h"
 #include "processors.h"
+#include "window.h"
 #include <iomanip>
 #include <sstream>
 
@@ -8,31 +8,31 @@ namespace Processors
 {
 // Perform forwards-summation processing
 bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                           const Pulse &pulseDefinition, int nSlices, double pulseDelta)
+                           const Window &windowDefinition, int nSlices, double pulseDelta)
 {
     /*
-     * From our main pulseDefinition we will continually propagate it forwards in time (by pulseDelta) splitting it into
+     * From our main windowDefinition we will continually propagate it forwards in time (by pulseDelta) splitting it into
      * nSlices and until we go over the end time of the current file.
      */
 
     printf("Processing FORWARDS_SUMMED...\n");
-    printf("Pulse start time is %16.2f\n", pulseDefinition.startTime());
+    printf("Pulse start time is %16.2f\n", windowDefinition.startTime());
 
     // Generate a new set of Pulse "slices" and associated output NeXuS files to sum data in to
-    const auto sliceDuration = pulseDefinition.duration() / nSlices;
-    auto sliceStartTime = pulseDefinition.startTime();
-    std::vector<std::pair<Pulse, NeXuSFile>> slices;
+    const auto sliceDuration = windowDefinition.duration() / nSlices;
+    auto sliceStartTime = windowDefinition.startTime();
+    std::vector<std::pair<Window, NeXuSFile>> slices;
     for (auto i = 0; i < nSlices; ++i)
     {
         std::stringstream outputFileName;
-        outputFileName << outputFilePath << pulseDefinition.id() << "-" << std::to_string((int)pulseDefinition.startTime());
+        outputFileName << outputFilePath << windowDefinition.id() << "-" << std::to_string((int)windowDefinition.startTime());
         if (nSlices > 1)
             outputFileName << "-" << std::setw(3) << std::setfill('0') << (i + 1);
 
         std::stringstream sliceName;
-        sliceName << pulseDefinition.id() << i + 1;
+        sliceName << windowDefinition.id() << i + 1;
 
-        auto &[pulse, nexus] = slices.emplace_back(Pulse(sliceName.str(), sliceStartTime, sliceDuration), NeXuSFile());
+        auto &[window, nexus] = slices.emplace_back(Window(sliceName.str(), sliceStartTime, sliceDuration), NeXuSFile());
 
         nexus.templateFile(inputNeXusFiles[0], outputFileName.str());
 

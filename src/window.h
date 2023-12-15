@@ -2,11 +2,11 @@
 
 #include <string>
 
-class Pulse
+class Window
 {
     public:
-    Pulse(std::string_view id, double startTime, double duration);
-    Pulse() = default;
+    Window(std::string_view id, double startTime, double duration);
+    ~Window() = default;
 
     private:
     // String ID
@@ -21,13 +21,13 @@ class Pulse
     public:
     // Return string ID
     [[nodiscard]] std::string_view id() const;
-    // Return start time (seconds since epoch) of the pulse
+    // Return start time (seconds since epoch) of the window
     [[nodiscard]] double startTime() const;
-    // Return end time (seconds since epoch) of the pulse
+    // Return end time (seconds since epoch) of the window
     [[nodiscard]] double endTime() const;
     // Shift start time by specified delta
     void shiftStartTime(double delta);
-    // Return duration of the pulse
+    // Return duration of the window
     [[nodiscard]] double duration() const;
     // Return frame counter
     int frameCounter() const;

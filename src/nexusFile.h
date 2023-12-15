@@ -1,6 +1,5 @@
 #pragma once
 
-#include "pulse.h"
 #include <H5Cpp.h>
 #include <gsl/gsl_histogram.h>
 #include <map>

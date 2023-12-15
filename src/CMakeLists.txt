@@ -1,10 +1,11 @@
 add_library(nexusprocess
   nexusFile.cpp
   processForwardsSummed.cpp
-  pulse.cpp
+  window.cpp
   nexusFile.h
   processors.h
-  pulse.h
+  window.h
 )
 
-target_include_directories(nexusprocess PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(nexusprocess PRIVATE ${PROJECT_SOURCE_DIR}/src ${CONAN_INCLUDE_DIRS})
+

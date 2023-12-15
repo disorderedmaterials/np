@@ -173,7 +173,7 @@ cmake_print_variables(LINK_LIBS)
 add_subdirectory(src)
 
 add_executable(np np.cpp)
-target_include_directories(np PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(np PRIVATE ${PROJECT_SOURCE_DIR}/src ${CONAN_INCLUDE_DIRS})
 
 IF(WIN32)
   target_link_libraries(np PRIVATE nexusprocess ${LINK_LIBS})
