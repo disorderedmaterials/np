@@ -42,9 +42,9 @@ class NeXuSFile
      */
     private:
     std::vector<int> spectra_;
-    int nRawFrames_{0};
-    int totalGoodFrames_{0};
-    int nProcessedGoodFrames_{0};
+    int nMonitorFrames_{0};
+    int nDetectorFrames_{0};
+    int nGoodFrames_{0};
     int startSinceEpoch_{0};
     int endSinceEpoch_{0};
     std::vector<int> eventIndices_;
@@ -56,10 +56,11 @@ class NeXuSFile
     std::map<unsigned int, gsl_histogram *> detectorHistograms_;
     std::map<unsigned int, std::vector<double>> partitions_;
 
-    private:
     public:
-    [[nodiscard]] int totalGoodFrames() const;
-    [[nodiscard]] int &nProcessedGoodFrames();
+    [[nodiscard]] int nGoodFrames() const;
+    [[nodiscard]] int nMonitorFrames() const;
+    [[nodiscard]] int nDetectorFrames() const;
+    void incrementDetectorFrameCount(int delta = 1);
     [[nodiscard]] int startSinceEpoch() const;
     [[nodiscard]] int endSinceEpoch() const;
     [[nodiscard]] const std::vector<int> &eventIndices() const;
@@ -70,4 +71,13 @@ class NeXuSFile
     [[nodiscard]] const std::map<int, std::vector<int>> &monitorCounts() const;
     std::map<unsigned int, gsl_histogram *> &detectorHistograms();
     [[nodiscard]] const std::map<unsigned int, std::vector<double>> &partitions() const;
+
+    /*
+     * Manipulation
+     */
+    public:
+    // Scale monitors by specified factor
+    void scaleMonitors(double factor);
+    // Scale detectors by specified factor
+    void scaleDetectors(double factor);
 };

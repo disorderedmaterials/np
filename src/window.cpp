@@ -16,9 +16,3 @@ void Window::shiftStartTime(double delta) { startTime_ += delta; }
 
 // Return duration of the pulse
 double Window::duration() const { return duration_; }
-
-// Return frame counter
-int Window::frameCounter() const { return frameCounter_; }
-
-// Increase frame counter
-void Window::incrementFrameCounter(int delta) { frameCounter_ += delta; }

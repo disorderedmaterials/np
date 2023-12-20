@@ -4,21 +4,34 @@
 #include <vector>
 
 // Forward Declarations
-class Pulse;
+class NeXuSFile;
+class Window;
 
 namespace Processors
 {
+// Processing Direction
+enum class ProcessingDirection
+{
+    Forwards
+};
 // Available Processing Modes
 enum class ProcessingMode
 {
-    //    FORWARDS,
-    //    BACKWARDS,
-    //    BI_DIRECTIONAL,
-    FORWARDS_SUMMED
-    // NONE
+    None,
+    // Individual,
+    Summed
+};
+// Available Post-Processing Types
+enum class PostProcessingMode
+{
+    None,
+    ScaleDetectors,
+    ScaleMonitors
 };
 
-// Perform forwards-summation processing
-bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                           const Pulse &pulseDefinition, int nSlices, double pulseDelta);
+// Perform summed processing
+[[nodiscard]] std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::string> &inputNeXusFiles,
+                                                                      std::string_view outputFilePath,
+                                                                      const Window &windowDefinition, int nSlices,
+                                                                      double windowDelta);
 }; // namespace Processors

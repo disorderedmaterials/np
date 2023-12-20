@@ -6,19 +6,20 @@
 
 namespace Processors
 {
-// Perform forwards-summation processing
-bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                           const Window &windowDefinition, int nSlices, double pulseDelta)
+// Perform summed processing
+std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::string> &inputNeXusFiles,
+                                                        std::string_view outputFilePath, const Window &windowDefinition,
+                                                        int nSlices, double windowDelta)
 {
     /*
-     * From our main windowDefinition we will continually propagate it forwards in time (by pulseDelta) splitting it into
+     * From our main windowDefinition we will continually propagate it forwards in time (by the window delta) splitting it into
      * nSlices and until we go over the end time of the current file.
      */
 
-    printf("Processing FORWARDS_SUMMED...\n");
-    printf("Pulse start time is %16.2f\n", windowDefinition.startTime());
+    printf("Processing in summed mode...\n");
+    printf("Window start time is %16.2f\n", windowDefinition.startTime());
 
-    // Generate a new set of Pulse "slices" and associated output NeXuS files to sum data in to
+    // Generate a new set of window "slices" and associated output NeXuS files to sum data in to
     const auto sliceDuration = windowDefinition.duration() / nSlices;
     auto sliceStartTime = windowDefinition.startTime();
     std::vector<std::pair<Window, NeXuSFile>> slices;
@@ -28,6 +29,7 @@ bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std:
         outputFileName << outputFilePath << windowDefinition.id() << "-" << std::to_string((int)windowDefinition.startTime());
         if (nSlices > 1)
             outputFileName << "-" << std::setw(3) << std::setfill('0') << (i + 1);
+        outputFileName << ".nxs";
 
         std::stringstream sliceName;
         sliceName << windowDefinition.id() << i + 1;
@@ -39,7 +41,7 @@ bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std:
         sliceStartTime += sliceDuration;
     }
 
-    // Initialise the slice iterator and Pulse / NeXuSFile references
+    // Initialise the slice iterator and window slice / NeXuSFile references
     auto sliceIt = slices.begin();
 
     // Loop over input Nexus files
@@ -53,7 +55,7 @@ bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std:
         nxs.loadEventData();
         printf("Load times....\n");
         nxs.loadTimes();
-        printf("... file '%s' has %i goodframes and %li events...\n", nxsFileName.c_str(), nxs.totalGoodFrames(),
+        printf("... file '%s' has %i goodframes and %li events...\n", nxsFileName.c_str(), nxs.nGoodFrames(),
                nxs.eventTimes().size());
 
         auto eventStart = 0, eventEnd = 0;
@@ -79,12 +81,12 @@ bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std:
                 {
                     sliceIt = slices.begin();
                     for (auto &&[slice, _unused] : slices)
-                        slice.shiftStartTime(pulseDelta);
-                    printf("Propagated pulse forwards... new start time is %16.2f\n", sliceIt->first.startTime());
+                        slice.shiftStartTime(windowDelta);
+                    printf("Propagated window forwards... new start time is %16.2f\n", sliceIt->first.startTime());
                 }
             }
 
-            // If the frame zero is less than the start time of the current pulse, move on to the next frame
+            // If the frame zero is less than the start time of the current window slice, move on to the next frame
             if (frameZero < sliceIt->first.startTime())
                 continue;
 
@@ -92,7 +94,7 @@ bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std:
             if (frameZero > sliceIt->first.endTime())
                 throw(std::runtime_error("Somebody's done something wrong here....\n"));
 
-            // Grab the destination datafile for this pulse and bin events
+            // Grab the destination datafile for this slice and bin events
             auto &destinationHistograms = sliceIt->second.detectorHistograms();
             for (int k = eventStart; k < eventEnd; ++k)
             {
@@ -101,34 +103,15 @@ bool processForwardsSummed(const std::vector<std::string> &inputNeXusFiles, std:
                     gsl_histogram_accumulate(destinationHistograms[id], eventTimes[k], 1.0);
             }
 
-            // Increment the frame counter for this pulse
-            sliceIt->first.incrementFrameCounter(1);
+            // Increment the frame counter for this slice
+            sliceIt->second.incrementDetectorFrameCount();
 
             // Update start event index
             eventStart = eventEnd;
         }
     }
 
-    // Renormalise counts in slices to match the full monitor counts templated / transferred from the first file
-    for (auto &&[slice, outpuNeXuSFile] : slices)
-    {
-        printf("Slice '%s' (%16.2f -> %16.2f) has %i good frames in total.\n", std::string(slice.id()).c_str(),
-               slice.startTime(), slice.endTime(), slice.frameCounter());
-    }
-
-    // Save output files
-    for (auto &&[slice, outputNeXuSFile] : slices)
-    {
-        printf("Writing data to output NeXuS file '%s' for slice '%s'...\n", outputNeXuSFile.filename().c_str(),
-               std::string(slice.id()).c_str());
-
-        if (!outputNeXuSFile.saveDetectorHistograms())
-            return false;
-        //        diagnosticFile << nexus.getOutpath() << " " << nexus.nProcessedGoodFrames() << std::endl;
-        //        std::cout << "Finished processing: " << nexus.getOutpath() << std::endl;
-    }
-
-    return true;
+    return slices;
 }
 
 } // namespace Processors

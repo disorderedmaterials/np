@@ -174,12 +174,11 @@ add_subdirectory(src)
 
 add_executable(np np.cpp)
 target_include_directories(np PRIVATE ${PROJECT_SOURCE_DIR}/src ${CONAN_INCLUDE_DIRS})
+target_link_libraries(np PRIVATE nexusProcess ${LINK_LIBS})
 
-IF(WIN32)
-  target_link_libraries(np PRIVATE nexusprocess ${LINK_LIBS})
-ELSE(WIN32)
-  target_link_libraries(np PRIVATE nexusprocess ${LINK_LIBS} dl)
-ENDIF(WIN32)
+IF(NOT WIN32)
+  target_link_libraries(np PRIVATE dl)
+ENDIF(NOT WIN32)
 
 # Install targets
 install(TARGETS np RUNTIME DESTINATION bin)

@@ -1,7 +1,7 @@
 #include "nexusFile.h"
 #include <algorithm>
 #include <ctime>
-#include <fstream>
+#include <fmt/core.h>
 #include <iostream>
 
 // Basic paths required when copying / creating a NeXuS file
@@ -99,6 +99,12 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
         gsl_histogram_set_ranges(detectorHistograms_[spec], tofBins_.data(), tofBins_.size());
     }
 
+    // Read in good frames - this will reflect our current monitor frame count since we copied those histograms in full
+    auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
+    auto goodFramesTemp = new int[(long int)goodFramesDimension];
+    H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
+    nMonitorFrames_ = goodFramesTemp[0];
+
     input.close();
     output.close();
 }
@@ -109,17 +115,11 @@ void NeXuSFile::loadFrameCounts()
     // Open our Nexus file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
-    // Read in raw frames
-    auto &&[rawFramesID, rawFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "raw_frames");
-    auto rawFramesTemp = new int[(long int)rawFramesDimension];
-    H5Dread(rawFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, rawFramesTemp);
-    nRawFrames_ = rawFramesTemp[0];
-
     // Read in good frames
     auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
     auto goodFramesTemp = new int[(long int)goodFramesDimension];
     H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
-    totalGoodFrames_ = goodFramesTemp[0];
+    nGoodFrames_ = goodFramesTemp[0];
 
     input.close();
 }
@@ -228,8 +228,10 @@ bool NeXuSFile::saveDetectorHistograms()
  * Data
  */
 
-int NeXuSFile::totalGoodFrames() const { return totalGoodFrames_; }
-int &NeXuSFile::nProcessedGoodFrames() { return totalGoodFrames_; }
+int NeXuSFile::nGoodFrames() const { return nGoodFrames_; }
+int NeXuSFile::nMonitorFrames() const { return nMonitorFrames_; }
+int NeXuSFile::nDetectorFrames() const { return nDetectorFrames_; }
+void NeXuSFile::incrementDetectorFrameCount(int delta) { nDetectorFrames_ += delta; }
 int NeXuSFile::startSinceEpoch() const { return startSinceEpoch_; }
 int NeXuSFile::endSinceEpoch() const { return endSinceEpoch_; }
 const std::vector<int> &NeXuSFile::eventIndices() const { return eventIndices_; }
@@ -240,3 +242,32 @@ const std::vector<double> &NeXuSFile::tofBins() const { return tofBins_; }
 const std::map<int, std::vector<int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
 std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
 const std::map<unsigned int, std::vector<double>> &NeXuSFile::partitions() const { return partitions_; }
+
+/*
+ * Manipulation
+ */
+
+// Scale monitors by specified factor
+void NeXuSFile::scaleMonitors(double factor)
+{
+    for (auto &pair : monitorCounts_)
+    {
+        for (auto &bin : pair.second)
+        {
+            bin *= factor;
+        }
+    }
+
+    nMonitorFrames_ *= factor;
+    fmt::print(" ... New number of effective contributing monitor frames is {}.\n", nMonitorFrames_);
+}
+
+// Scale detectors by specified factor
+void NeXuSFile::scaleDetectors(double factor)
+{
+    for (auto i : spectra_)
+        gsl_histogram_scale(detectorHistograms_[i], factor);
+
+    nDetectorFrames_ *= factor;
+    fmt::print(" ... New number of effective contributing detector frames is {}.\n", nDetectorFrames_);
+}

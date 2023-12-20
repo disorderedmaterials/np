@@ -15,8 +15,6 @@ class Window
     double startTime_{0};
     // Duration of the pulse
     double duration_{0};
-    // Frame counter
-    int frameCounter_{0};
 
     public:
     // Return string ID
@@ -29,8 +27,4 @@ class Window
     void shiftStartTime(double delta);
     // Return duration of the window
     [[nodiscard]] double duration() const;
-    // Return frame counter
-    int frameCounter() const;
-    // Increase frame counter
-    void incrementFrameCounter(int delta = 1);
 };
