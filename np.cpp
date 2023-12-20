@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     std::string windowName_;
     double windowStartTime_{0.0};
     double windowWidth_{0.0};
-    bool absoluteStartTime_{false};
+    bool relativeStartTime_{false};
     // Time between windows
     double windowDelta_{0.0};
     // Number of slices to partition window in to
@@ -41,7 +41,9 @@ int main(int argc, char **argv)
                    "Start time of the window (relative to first input file start time unless --absolute-start is given)")
         ->group("Window Definition");
     app.add_option("-w,--width", windowWidth_, "Window width in seconds)")->group("Window Definition");
-    app.add_flag("--absolute-start", absoluteStartTime_, "Flag that the given window start time is absolute, not relative")
+    app.add_flag(
+           "--relative-start", relativeStartTime_,
+           "Flag that the given window start time is relative to the first run start time, not absolute (seconds since epoch)")
         ->group("Window Definition");
     app.add_option("-d,--delta", windowDelta_, "Time between window occurrences, in seconds)")->group("Window Definition");
     // -- Input Files
@@ -76,7 +78,7 @@ int main(int argc, char **argv)
     }
 
     // Construct the master window definition
-    if (absoluteStartTime_)
+    if (relativeStartTime_)
     {
         // Need to query first NeXuS file to get its start time
         if (inputFiles_.empty())
@@ -86,7 +88,7 @@ int main(int argc, char **argv)
         }
         NeXuSFile firstFile(inputFiles_.front());
         firstFile.loadTimes();
-        fmt::print("Window start time converted to absolute time: {} => {}\n", windowStartTime_,
+        fmt::print("Window start time converted from relative to absolute time: {} => {}\n", windowStartTime_,
                    windowStartTime_ + firstFile.startSinceEpoch());
         windowStartTime_ += firstFile.startSinceEpoch();
     }
