@@ -29,6 +29,9 @@ enum class PostProcessingMode
     ScaleMonitors
 };
 
+// Get Events
+std::map<int, std::vector<double>> getEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
+                                             bool firstOnly = false);
 // Perform summed processing
 [[nodiscard]] std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::string> &inputNeXusFiles,
                                                                       std::string_view outputFilePath,

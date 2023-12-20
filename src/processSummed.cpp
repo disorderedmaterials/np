@@ -49,11 +49,8 @@ std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::s
     {
         // Open the Nexus file ready for use
         NeXuSFile nxs(nxsFileName);
-        printf("Load frame counts...\n");
         nxs.loadFrameCounts();
-        printf("Load event data...\n");
         nxs.loadEventData();
-        printf("Load times....\n");
         nxs.loadTimes();
         printf("... file '%s' has %i goodframes and %li events...\n", nxsFileName.c_str(), nxs.nGoodFrames(),
                nxs.eventTimes().size());

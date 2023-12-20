@@ -2,8 +2,10 @@
 #include "processors.h"
 #include "window.h"
 #include <CLI/App.hpp>
+#include <CLI/Config.hpp>
 #include <CLI/Formatter.hpp>
 #include <fmt/core.h>
+#include <optional>
 #include <vector>
 
 int main(int argc, char **argv)
@@ -27,6 +29,8 @@ int main(int argc, char **argv)
     double windowDelta_{0.0};
     // Number of slices to partition window in to
     int windowSlices_{1};
+    // Target spectrum for event get (optional)
+    std::optional<int> spectrumId_;
 
     // Define and parse CLI arguments
     CLI::App app("NeXus Processor (np), Copyright (C) 2023 Jared Swift and Tristan Youngs.");
@@ -44,6 +48,8 @@ int main(int argc, char **argv)
     app.add_option("-f,--files", inputFiles_, "List of NeXuS files to process")->group("Input Files");
     // -- Output Files
     app.add_option("--output-dir", outputDirectory_, "Output directory for generated NeXuS files.")->group("Output Files");
+    // -- Pre Processing
+    app.add_option("-g,--get", spectrumId_, "Get all events from specified spectrum index")->group("Pre-Processing");
     // -- Processing Modes
     app.add_flag_callback(
            "--summed", [&]() { processingMode_ = Processors::ProcessingMode::Summed; },
@@ -55,13 +61,19 @@ int main(int argc, char **argv)
     app.add_flag_callback(
            "--scale-monitors", [&]() { postProcessingMode_ = Processors::PostProcessingMode::ScaleMonitors; },
            "Scale monitor counts in final output to match the number of frames processed for detectors")
-        ->group("Post Processing");
+        ->group("Post-Processing");
     app.add_flag_callback(
            "--scale-detectors", [&]() { postProcessingMode_ = Processors::PostProcessingMode::ScaleDetectors; },
            "Scale detector counts in final output to match the number of frames used for monitor counts")
-        ->group("Post Processing");
+        ->group("Post-Processing");
 
     CLI11_PARSE(app, argc, argv);
+
+    // Perform pre-processing if requested
+    if (spectrumId_)
+    {
+        Processors::getEvents(inputFiles_, *spectrumId_);
+    }
 
     // Construct the master window definition
     if (absoluteStartTime_)

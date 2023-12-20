@@ -112,6 +112,8 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
 // Load frame counts
 void NeXuSFile::loadFrameCounts()
 {
+    printf("Load frame counts...\n");
+
     // Open our Nexus file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
@@ -127,6 +129,8 @@ void NeXuSFile::loadFrameCounts()
 // Load event data
 void NeXuSFile::loadEventData()
 {
+    printf("Load event data...\n");
+
     // Open our Nexus file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
@@ -160,6 +164,8 @@ void NeXuSFile::loadEventData()
 // Load start/end times
 void NeXuSFile::loadTimes()
 {
+    printf("Load times....\n");
+
     // Open our Nexus file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
