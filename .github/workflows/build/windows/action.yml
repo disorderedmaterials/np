@@ -76,7 +76,7 @@ runs:
       set -ex
       mkdir packages
       mkdir binaries-${{ env.modExVersion }}-windows
-      cp build/np binaries-${{ env.modExVersion }}-windows/
+      cp build/bin/np binaries-${{ env.modExVersion }}-windows/
       7z a packages/binaries-${{ env.modExVersion }}-windows.zip binaries-${{ env.modExVersion }}-windows/
 
   - name: Upload Raw Build Artifacts

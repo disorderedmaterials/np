@@ -54,7 +54,7 @@ runs:
       set -ex
       mkdir packages
       mkdir binaries-${{ env.modExVersion }}-linux
-      cp build/np binaries-${{ env.modExVersion }}-linux/
+      cp build/bin/np binaries-${{ env.modExVersion }}-linux/
       zip -9rv packages/binaries-${{ env.modExVersion }}-linux.zip binaries-${{ env.modExVersion }}-linux/
 
   - name: Upload Package Artifacts

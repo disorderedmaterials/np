@@ -42,7 +42,7 @@ runs:
       set -ex
       mkdir packages
       mkdir binaries-${{ env.modExVersion }}-osx
-      cp build/np binaries-${{ env.modExVersion }}-osx/
+      cp build/bin/np binaries-${{ env.modExVersion }}-osx/
       zip -9rv packages/binaries-${{ env.modExVersion }}-osx.zip binaries-${{ env.modExVersion }}-osx/
 
   - name: Upload Raw Build Artifacts
