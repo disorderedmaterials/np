@@ -24,11 +24,9 @@ if(CONAN)
   include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
   conan_basic_setup(TARGETS)
   include_directories(${CONAN_INCLUDE_DIRS_FMT})
-  list(APPEND LINK_LIBS CONAN_PKG::onetbb)
 else(CONAN)
   find_package(fmt REQUIRED)
   find_package(CLI11 REQUIRED)
-  list(APPEND LINK_LIBS $ENV{THREADING_LINK_LIBS})
 endif(CONAN)
 
 option(
