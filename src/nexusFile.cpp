@@ -228,7 +228,7 @@ bool NeXuSFile::saveModifiedData()
     H5::H5File output = H5::H5File(filename_, H5F_ACC_RDWR);
 
     // Write good frames
-    std::array<int, 1> framesBuffer;
+    std::array<int, 1> framesBuffer{0};
     framesBuffer[0] = nDetectorFrames_;
     auto &&[goodFrames, goodFramesDimension] = NeXuSFile::find1DDataset(output, "raw_data_1", "good_frames");
     goodFrames.write(framesBuffer.data(), H5::PredType::STD_I32LE);
@@ -242,8 +242,8 @@ bool NeXuSFile::saveModifiedData()
     }
 
     // Write detector counts
-    const int nSpec = spectra_.size();
-    const int nTofBins = tofBins_.size() - 1;
+    const auto nSpec = spectra_.size();
+    const auto nTofBins = tofBins_.size() - 1;
 
     auto *countsBuffer = new int[nSpec * nTofBins]; // HDF5 expects contiguous memory. This is a pain.
     for (auto i = 0; i < nSpec; ++i)
