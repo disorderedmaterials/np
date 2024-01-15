@@ -228,7 +228,7 @@ bool NeXuSFile::saveModifiedData()
     H5::H5File output = H5::H5File(filename_, H5F_ACC_RDWR);
 
     // Write good frames
-    std::array<int, 1> framesBuffer{0};
+    std::array<int, 1> framesBuffer;
     framesBuffer[0] = nDetectorFrames_;
     auto &&[goodFrames, goodFramesDimension] = NeXuSFile::find1DDataset(output, "raw_data_1", "good_frames");
     goodFrames.write(framesBuffer.data(), H5::PredType::STD_I32LE);
