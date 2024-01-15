@@ -206,11 +206,25 @@ void NeXuSFile::loadTimes()
     input.close();
 }
 
-// Save detector histograms back to the file
-bool NeXuSFile::saveDetectorHistograms()
+// Save key modified data back to the file
+bool NeXuSFile::saveModifiedData()
 {
-    // Open Nexus file in read only mode.
+    // Open Nexus file in read/write mode.
     H5::H5File output = H5::H5File(filename_, H5F_ACC_RDWR);
+
+    // Write good frames
+    std::array<int, 1> framesBuffer;
+    framesBuffer[0] = nDetectorFrames_;
+    auto &&[goodFrames, goodFramesDimension] = NeXuSFile::find1DDataset(output, "raw_data_1", "good_frames");
+    goodFrames.write(framesBuffer.data(), H5::PredType::STD_I32LE);
+
+    // Write monitors
+    for (auto &&[index, counts] : monitorCounts_)
+    {
+        auto &&[monitorCounts, monitorCountsDimension] =
+            NeXuSFile::find1DDataset(output, "raw_data_1/monitor_" + std::to_string(index), "data");
+        monitorCounts.write(counts.data(), H5::PredType::STD_I32LE);
+    }
 
     // Write detector counts
     const int nSpec = spectra_.size();
@@ -220,7 +234,7 @@ bool NeXuSFile::saveDetectorHistograms()
     for (auto i = 0; i < nSpec; ++i)
         for (auto j = 0; j < nTofBins; ++j)
             countsBuffer[i * nTofBins + j] = gsl_histogram_get(detectorHistograms_[spectra_[i]], j);
-    auto &&[counts, endTimeDimension] = NeXuSFile::find1DDataset(output, "raw_data_1/detector_1", "counts");
+    auto &&[counts, detectorCountsDimension] = NeXuSFile::find1DDataset(output, "raw_data_1/detector_1", "counts");
     counts.write(countsBuffer, H5::PredType::STD_I32LE);
 
     delete[](countsBuffer);

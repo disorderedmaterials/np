@@ -34,8 +34,8 @@ class NeXuSFile
     void loadEventData();
     // Load start/end times
     void loadTimes();
-    // Save detector histograms back to the file
-    bool saveDetectorHistograms();
+    // Save key modified data back to the file
+    bool saveModifiedData();
 
     /*
      * Data

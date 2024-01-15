@@ -139,7 +139,7 @@ int main(int argc, char **argv)
         printf("Writing data to output NeXuS file '%s' for slice '%s'...\n", outputNeXuSFile.filename().c_str(),
                std::string(slice.id()).c_str());
 
-        if (!outputNeXuSFile.saveDetectorHistograms())
+        if (!outputNeXuSFile.saveModifiedData())
             fmt::print("!! Error saving file '{}'.", outputNeXuSFile.filename());
 
         //        diagnosticFile << nexus.getOutpath() << " " << nexus.nProcessedGoodFrames() << std::endl;
