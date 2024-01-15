@@ -99,6 +99,21 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
         gsl_histogram_set_ranges(detectorHistograms_[spec], tofBins_.data(), tofBins_.size());
     }
 
+    // Read in monitor data - start from index 1 and end when we fail to find the named dataset with this suffix
+    auto i = 1;
+    while (true)
+    {
+        auto &&[monitorSpectrum, monitorSpectrumDimension] =
+            NeXuSFile::find1DDataset(input, "/raw_data_1/monitor_" + std::to_string(i), "data");
+        if (monitorSpectrum.getId() <= 0)
+            break;
+
+        monitorCounts_[i].resize(tofBinsDimension);
+        H5Dread(monitorSpectrum.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorCounts_[i].data());
+
+        ++i;
+    }
+
     // Read in good frames - this will reflect our current monitor frame count since we copied those histograms in full
     auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
     auto goodFramesTemp = new int[(long int)goodFramesDimension];
