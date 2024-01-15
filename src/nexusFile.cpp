@@ -285,9 +285,9 @@ const std::map<unsigned int, std::vector<double>> &NeXuSFile::partitions() const
 // Scale monitors by specified factor
 void NeXuSFile::scaleMonitors(double factor)
 {
-    for (auto &pair : monitorCounts_)
+    for (auto &&[index, counts] : monitorCounts_)
     {
-        for (auto &bin : pair.second)
+        for (auto &bin : counts)
         {
             bin *= factor;
         }
@@ -300,8 +300,14 @@ void NeXuSFile::scaleMonitors(double factor)
 // Scale detectors by specified factor
 void NeXuSFile::scaleDetectors(double factor)
 {
+    auto oldSum = 0, newSum = 0;
     for (auto i : spectra_)
+    {
+        oldSum += gsl_histogram_sum(detectorHistograms_[i]);
         gsl_histogram_scale(detectorHistograms_[i], factor);
+        newSum += gsl_histogram_sum(detectorHistograms_[i]);
+    }
+    fmt::print(" ... Old counts was {}, now scaled to {} (ratio = {}).\n", oldSum, newSum, double(oldSum) / double(newSum));
 
     nDetectorFrames_ *= factor;
     fmt::print(" ... New number of effective contributing detector frames is {}.\n", nDetectorFrames_);
