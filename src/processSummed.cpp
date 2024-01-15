@@ -83,25 +83,25 @@ std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::s
                 }
             }
 
-            // If the frame zero is less than the start time of the current window slice, move on to the next frame
-            if (frameZero < sliceIt->first.startTime())
-                continue;
-
-            // Sanity check!
-            if (frameZero > sliceIt->first.endTime())
-                throw(std::runtime_error("Somebody's done something wrong here....\n"));
-
-            // Grab the destination datafile for this slice and bin events
-            auto &destinationHistograms = sliceIt->second.detectorHistograms();
-            for (int k = eventStart; k < eventEnd; ++k)
+            // If this frame zero is greater than or equal to the start time of the current window slice we can process events
+            if (frameZero >= sliceIt->first.startTime())
             {
-                auto id = eventIndices[k];
-                if (id > 0)
-                    gsl_histogram_accumulate(destinationHistograms[id], eventTimes[k], 1.0);
-            }
+                // Sanity check!
+                if (frameZero > sliceIt->first.endTime())
+                    throw(std::runtime_error("Somebody's done something wrong here....\n"));
 
-            // Increment the frame counter for this slice
-            sliceIt->second.incrementDetectorFrameCount();
+                // Grab the destination datafile for this slice and bin events
+                auto &destinationHistograms = sliceIt->second.detectorHistograms();
+                for (int k = eventStart; k < eventEnd; ++k)
+                {
+                    auto id = eventIndices[k];
+                    if (id > 0)
+                        gsl_histogram_accumulate(destinationHistograms[id], eventTimes[k], 1.0);
+                }
+
+                // Increment the frame counter for this slice
+                sliceIt->second.incrementDetectorFrameCount();
+            }
 
             // Update start event index
             eventStart = eventEnd;
