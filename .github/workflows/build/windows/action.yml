@@ -23,12 +23,14 @@ runs:
 
   - name: Install MinGW
     shell: bash
-    run: choco install -y mingw --version=11.2.0 --allow-downgrade
+    run: |
+      choco install -y mingw --version=11.2.0 --allow-downgrade
+      # Forcibly remove the system MinGW
+      rm -rf /c/mingw64
 
   - name: Setup Conan Profile
     shell: bash
     run: |
-      which gcc.exe
       export PATH="$(python3 -m site --user-base)/bin:$PATH"
       conan profile new default --detect
       conan profile update settings.compiler="gcc" default
