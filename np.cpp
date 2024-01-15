@@ -109,7 +109,6 @@ int main(int argc, char **argv)
     }
 
     // Perform post-processing if requested.
-    // //counts in slices to match the full monitor counts templated / transferred from the first file
     double factor = 0.0;
     for (auto &&[slice, outputNeXuSFile] : outputs)
     {
