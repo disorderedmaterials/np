@@ -2,12 +2,20 @@ name: Build
 description: Build Windows artifacts
 
 inputs:
+  pythonVersion:
+    type: string
+    default: 3.9
   gsltag:
     default: gsl-2.7.1
 
 runs:
   using: "composite"
   steps:
+
+ - name: Setup Python
+    uses: actions/setup-python@v4
+    with:
+      python-version: ${{ env.pythonVersion }}
 
   - name: Install Python Dependencies
     shell: bash
