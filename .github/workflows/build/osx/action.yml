@@ -12,6 +12,11 @@ runs:
       brew update-reset
       brew install ninja gsl
 
+  - name: Install Python Dependencies
+    shell: bash
+    run: |
+      pip3 install --user conan==1.*
+
   - name: Download HDF5 Artifacts
     shell: bash
     run: |
@@ -22,10 +27,12 @@ runs:
     shell: bash
     run: |
       set -ex
+      export PATH="$(python3 -m site --user-base)/bin:$PATH"
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
       GSL_DIR="/usr/local/Cellar/gsl/2.7.1"
-      mkdir build
-      cd build
+      mkdir build && cd build
+
+      conan install ../
       cmake ../ -G Ninja -DCMAKE_Fortran_COMPILER:string="gfortran-11" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
       ninja
 
@@ -35,8 +42,7 @@ runs:
       set -ex
       mkdir packages
       mkdir binaries-${{ env.modExVersion }}-osx
-      cp build/modulation_excitation binaries-${{ env.modExVersion }}-osx/
-      cp build/partition_events binaries-${{ env.modExVersion }}-osx/
+      cp build/bin/np binaries-${{ env.modExVersion }}-osx/
       zip -9rv packages/binaries-${{ env.modExVersion }}-osx.zip binaries-${{ env.modExVersion }}-osx/
 
   - name: Upload Raw Build Artifacts

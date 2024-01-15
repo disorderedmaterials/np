@@ -2,6 +2,9 @@ name: Build
 description: Build Windows artifacts
 
 inputs:
+  pythonVersion:
+    type: string
+    default: 3.9
   gsltag:
     default: gsl-2.7.1
 
@@ -9,9 +12,30 @@ runs:
   using: "composite"
   steps:
 
+  - name: Setup Python
+    uses: actions/setup-python@v4
+    with:
+      python-version: ${{ inputs.pythonVersion }}
+
+  - name: Install Python Dependencies
+    shell: bash
+    run: pip3 install conan==1.*
+
   - name: Install MinGW
     shell: bash
-    run: choco install -y mingw --version=11.2.0 --allow-downgrade
+    run: |
+      choco install -y mingw --version=11.2.0 --allow-downgrade
+      # Forcibly remove the system MinGW
+      rm -rf /c/mingw64
+
+  - name: Setup Conan Profile
+    shell: bash
+    run: |
+      export PATH="$(python3 -m site --user-base)/bin:$PATH"
+      conan profile new default --detect
+      conan profile update settings.compiler="gcc" default
+      conan profile update settings.compiler.version=11 default
+      conan profile update settings.compiler.libcxx=libstdc++11 default
 
   - name: Collect zstd
     shell: bash
@@ -41,10 +65,14 @@ runs:
       set -ex
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
       GSL_DIR="$(pwd)/${{ inputs.gsltag }}/mingw64"
-      mkdir build
-      cd build
+      mkdir build && cd build
+      conan install ../
       cmake ../ -G "MinGW Makefiles" -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
       cmake --build . --config Release
+      cd ../
+
+      mkdir deploy && cd deploy
+      conan install ../ -g deploy
 
   - name: Create Zip
     shell: bash
@@ -52,8 +80,7 @@ runs:
       set -ex
       mkdir packages
       mkdir binaries-${{ env.modExVersion }}-windows
-      cp build/modulation_excitation binaries-${{ env.modExVersion }}-windows/
-      cp build/partition_events binaries-${{ env.modExVersion }}-windows/
+      cp build/bin/np binaries-${{ env.modExVersion }}-windows/
       7z a packages/binaries-${{ env.modExVersion }}-windows.zip binaries-${{ env.modExVersion }}-windows/
 
   - name: Upload Raw Build Artifacts

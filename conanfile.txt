@@ -1,0 +1,9 @@
+[requires]
+cli11/1.9.1
+fmt/8.1.1
+
+[generators]
+cmake
+
+[options]
+fmt:header_only=True

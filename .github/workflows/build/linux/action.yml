@@ -15,6 +15,11 @@ runs:
       sudo apt-get update -q
       sudo apt-get install ninja-build
 
+  - name: Install Python Dependencies
+    shell: bash
+    run: |
+      pip3 install --user conan==1.*
+
   - name: Download HDF5 Artifacts
     shell: bash
     run: |
@@ -38,8 +43,8 @@ runs:
       set -ex
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
       GSL_DIR="/tmp/gsl"
-      mkdir build
-      cd build
+      mkdir build && cd build
+      conan install ../
       cmake ../ -G Ninja -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
       ninja
 
@@ -49,8 +54,7 @@ runs:
       set -ex
       mkdir packages
       mkdir binaries-${{ env.modExVersion }}-linux
-      cp build/modulation_excitation binaries-${{ env.modExVersion }}-linux/
-      cp build/partition_events binaries-${{ env.modExVersion }}-linux/
+      cp build/bin/np binaries-${{ env.modExVersion }}-linux/
       zip -9rv packages/binaries-${{ env.modExVersion }}-linux.zip binaries-${{ env.modExVersion }}-linux/
 
   - name: Upload Package Artifacts
