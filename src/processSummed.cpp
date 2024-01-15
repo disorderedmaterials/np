@@ -19,27 +19,8 @@ std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::s
     printf("Processing in summed mode...\n");
     printf("Window start time is %16.2f\n", windowDefinition.startTime());
 
-    // Generate a new set of window "slices" and associated output NeXuS files to sum data in to
-    const auto sliceDuration = windowDefinition.duration() / nSlices;
-    auto sliceStartTime = windowDefinition.startTime();
-    std::vector<std::pair<Window, NeXuSFile>> slices;
-    for (auto i = 0; i < nSlices; ++i)
-    {
-        std::stringstream outputFileName;
-        outputFileName << outputFilePath << windowDefinition.id() << "-" << std::to_string((int)windowDefinition.startTime());
-        if (nSlices > 1)
-            outputFileName << "-" << std::setw(3) << std::setfill('0') << (i + 1);
-        outputFileName << ".nxs";
-
-        std::stringstream sliceName;
-        sliceName << windowDefinition.id() << i + 1;
-
-        auto &[window, nexus] = slices.emplace_back(Window(sliceName.str(), sliceStartTime, sliceDuration), NeXuSFile());
-
-        nexus.templateFile(inputNeXusFiles[0], outputFileName.str());
-
-        sliceStartTime += sliceDuration;
-    }
+    // Generate a new set of window "slices" and associated output NeXuS files to sum data into
+    auto slices = prepareSlices(windowDefinition, nSlices, inputNeXusFiles[0], outputFilePath);
 
     // Initialise the slice iterator and window slice / NeXuSFile references
     auto sliceIt = slices.begin();

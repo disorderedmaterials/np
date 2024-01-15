@@ -1,6 +1,7 @@
 add_library(nexusProcess
   getEvents.cpp
   nexusFile.cpp
+  processCommon.cpp
   processSummed.cpp
   window.cpp
   nexusFile.h
