@@ -15,11 +15,11 @@ runs:
   - name: Setup Python
     uses: actions/setup-python@v4
     with:
-      python-version: ${{ env.pythonVersion }}
+      python-version: ${{ inputs.pythonVersion }}
 
   - name: Install Python Dependencies
     shell: bash
-    run: pip3 install --user conan==1.*
+    run: pip3 install conan==1.*
 
   - name: Install MinGW
     shell: bash
