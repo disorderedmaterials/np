@@ -83,7 +83,7 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
     H5Pclose(lcpl_id);
 
     // Read in detector spectra information
-    auto &&[spectraID, spectraDimension] = NeXuSFile::find1DDataset(input, "/raw_data_1/detector_1", "spectrum_index");
+    auto &&[spectraID, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
     spectra_.resize(spectraDimension);
     H5Dread(spectraID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra_.data());
 
