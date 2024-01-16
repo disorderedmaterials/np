@@ -70,6 +70,18 @@ int main(int argc, char **argv)
 
     CLI11_PARSE(app, argc, argv);
 
+    // Sanity check
+    if (windowWidth_ > windowDelta_)
+    {
+        fmt::print("Error: Window width is greater than window delta.\n");
+        return 1;
+    }
+    if (windowSlices_ < 1)
+    {
+        fmt::print("Error: Invalid number of window slices provided ({}).\n", windowSlices_);
+        return 1;
+    }
+
     // Perform pre-processing if requested
     if (spectrumId_)
     {
