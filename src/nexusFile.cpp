@@ -27,6 +27,7 @@ NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename
 {
     if (loadEvents)
     {
+        fmt::print("Loading event data from file '{}'...\n", filename_);
         loadFrameCounts();
         loadEventData();
         loadTimes();

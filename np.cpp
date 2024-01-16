@@ -56,8 +56,32 @@ int main(int argc, char **argv)
     app.add_option("-g,--get", spectrumId_, "Get all events from specified spectrum index")->group("Pre-Processing");
     // -- Processing Modes
     app.add_flag_callback(
-           "--summed", [&]() { processingMode_ = Processors::ProcessingMode::Summed; },
-           "Sum window occurrences instead of treating them individually")
+           "--summed",
+           [&]()
+           {
+               if (processingMode_ == Processors::ProcessingMode::None)
+                   processingMode_ = Processors::ProcessingMode::Summed;
+               else
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+           },
+           "Sum windows / slices over all files and output NeXuS files per-slice")
+        ->group("Processing");
+    app.add_flag_callback(
+           "--individual",
+           [&]()
+           {
+               if (processingMode_ == Processors::ProcessingMode::None)
+                   processingMode_ = Processors::ProcessingMode::Individual;
+               else
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+           },
+           "Output NeXuS files for each window / slice")
         ->group("Processing");
     app.add_option("-l,--slices", windowSlices_, "Number of slices to split window definition in to (default = 1, no slicing)")
         ->group("Processing");
@@ -114,6 +138,9 @@ int main(int argc, char **argv)
     {
         case (Processors::ProcessingMode::None):
             fmt::print("No processing mode specified. We are done.\n");
+            break;
+        case (Processors::ProcessingMode::Individual):
+            Processors::processIndividual(inputFiles_, outputDirectory_, window, windowSlices_, windowDelta_);
             break;
         case (Processors::ProcessingMode::Summed):
             Processors::processSummed(inputFiles_, outputDirectory_, window, windowSlices_, windowDelta_);

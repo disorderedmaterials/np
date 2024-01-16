@@ -13,7 +13,7 @@ namespace Processors
 enum class ProcessingMode
 {
     None,
-    // Individual,
+    Individual,
     Summed
 };
 
@@ -54,6 +54,9 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
 // Get Events
 std::map<int, std::vector<double>> getEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
                                              bool firstOnly = false);
+// Perform individual processing
+void processIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                       const Window &windowDefinition, int nSlices, double windowDelta);
 // Perform summed processing
 void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
                    const Window &windowDefinition, int nSlices, double windowDelta);

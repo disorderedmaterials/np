@@ -31,7 +31,7 @@ std::vector<std::pair<Window, NeXuSFile>> prepareSlices(const Window &window, in
     for (auto i = 0; i < nSlices; ++i)
     {
         std::stringstream outputFileName;
-        outputFileName << outputFilePath << window.id();
+        outputFileName << outputFilePath << window.id() << "-" << std::to_string(int(window.startTime()));
         if (nSlices > 1)
             outputFileName << "-" << std::setw(3) << std::setfill('0') << (i + 1);
         outputFileName << ".nxs";
