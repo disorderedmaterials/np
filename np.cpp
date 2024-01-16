@@ -43,7 +43,7 @@ int main(int argc, char **argv)
            "--relative-start", relativeStartTime_,
            "Flag that the given window start time is relative to the first run start time, not absolute (seconds since epoch)")
         ->group("Window Definition");
-    app.add_option("-d,--delta", windowDelta_, "Time between window occurrences, in seconds)")
+    app.add_option("-d,--delta", windowDelta_, "Time between window occurrences, in seconds")
         ->group("Window Definition")
         ->required();
     app.add_option("--offset", windowOffset_, "Time after start time, in seconds, that the window begins.")
