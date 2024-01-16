@@ -9,11 +9,6 @@ class Window;
 
 namespace Processors
 {
-// Processing Direction
-enum class ProcessingDirection
-{
-    Forwards
-};
 // Available Processing Modes
 enum class ProcessingMode
 {
@@ -21,6 +16,15 @@ enum class ProcessingMode
     // Individual,
     Summed
 };
+
+// Processing Direction
+enum class ProcessingDirection
+{
+    Forwards
+};
+// Processing direction
+extern Processors::ProcessingDirection processingDirection_;
+
 // Available Post-Processing Types
 enum class PostProcessingMode
 {
@@ -28,6 +32,8 @@ enum class PostProcessingMode
     ScaleDetectors,
     ScaleMonitors
 };
+// Selected post-processing mode
+extern Processors::PostProcessingMode postProcessingMode_;
 
 /*
  * Common Functions
@@ -36,6 +42,10 @@ enum class PostProcessingMode
 // Prepare slices for specified Window
 std::vector<std::pair<Window, NeXuSFile>> prepareSlices(const Window &window, int nSlices, std::string templatingSourceFilename,
                                                         std::string_view outputFilePath);
+// Perform any post-processing required
+void postProcess(std::vector<std::pair<Window, NeXuSFile>> &slices);
+// Write slice data
+void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
 
 /*
  * Processors
@@ -45,8 +55,6 @@ std::vector<std::pair<Window, NeXuSFile>> prepareSlices(const Window &window, in
 std::map<int, std::vector<double>> getEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
                                              bool firstOnly = false);
 // Perform summed processing
-[[nodiscard]] std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::string> &inputNeXusFiles,
-                                                                      std::string_view outputFilePath,
-                                                                      const Window &windowDefinition, int nSlices,
-                                                                      double windowDelta);
+void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                   const Window &windowDefinition, int nSlices, double windowDelta);
 }; // namespace Processors

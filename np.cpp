@@ -16,10 +16,6 @@ int main(int argc, char **argv)
     std::string outputDirectory_;
     // Processing mode
     Processors::ProcessingMode processingMode_ = Processors::ProcessingMode::None;
-    // Post-processing mode
-    Processors::PostProcessingMode postProcessingMode_ = Processors::PostProcessingMode::None;
-    // Processing direction
-    Processors::ProcessingDirection processingDirection_ = Processors::ProcessingDirection::Forwards;
     // Window definition
     std::string windowName_;
     double windowStartTime_{0.0};
@@ -64,11 +60,11 @@ int main(int argc, char **argv)
         ->group("Processing");
     // -- Post Processing
     app.add_flag_callback(
-           "--scale-monitors", [&]() { postProcessingMode_ = Processors::PostProcessingMode::ScaleMonitors; },
+           "--scale-monitors", [&]() { Processors::postProcessingMode_ = Processors::PostProcessingMode::ScaleMonitors; },
            "Scale monitor counts in final output to match the number of frames processed for detectors")
         ->group("Post-Processing");
     app.add_flag_callback(
-           "--scale-detectors", [&]() { postProcessingMode_ = Processors::PostProcessingMode::ScaleDetectors; },
+           "--scale-detectors", [&]() { Processors::postProcessingMode_ = Processors::PostProcessingMode::ScaleDetectors; },
            "Scale detector counts in final output to match the number of frames used for monitor counts")
         ->group("Post-Processing");
 
@@ -98,55 +94,17 @@ int main(int argc, char **argv)
     Window window(windowName_, windowStartTime_, windowWidth_);
 
     // Perform processing
-    std::vector<std::pair<Window, NeXuSFile>> outputs;
     switch (processingMode_)
     {
         case (Processors::ProcessingMode::None):
             fmt::print("No processing mode specified. We are done.\n");
             break;
         case (Processors::ProcessingMode::Summed):
-            outputs = Processors::processSummed(inputFiles_, outputDirectory_, window, windowSlices_, windowDelta_);
+            Processors::processSummed(inputFiles_, outputDirectory_, window, windowSlices_, windowDelta_);
             break;
         default:
             throw(std::runtime_error("Unhandled processing mode.\n"));
     }
 
-    // Perform post-processing if requested.
-    double factor = 0.0;
-    for (auto &&[slice, outputNeXuSFile] : outputs)
-    {
-        fmt::print("Output '{}' ({} -> {}) has {} detector frames and {} monitor frames.\n", std::string(slice.id()).c_str(),
-                   slice.startTime(), slice.endTime(), outputNeXuSFile.nDetectorFrames(), outputNeXuSFile.nMonitorFrames());
-        switch (postProcessingMode_)
-        {
-            case (Processors::PostProcessingMode::None):
-                break;
-            case (Processors::PostProcessingMode::ScaleMonitors):
-                factor = (double)outputNeXuSFile.nDetectorFrames() / (double)outputNeXuSFile.nMonitorFrames();
-                fmt::print(" --> Scaling monitors by processed detector-to-monitor frame ratio ({}).\n", factor);
-                outputNeXuSFile.scaleMonitors(factor);
-                break;
-            case (Processors::PostProcessingMode::ScaleDetectors):
-                factor = (double)outputNeXuSFile.nMonitorFrames() / (double)outputNeXuSFile.nDetectorFrames();
-                fmt::print(" --> Scaling monitors by processed monitor-to-detector frame ratio ({}).\n", factor);
-                outputNeXuSFile.scaleDetectors(factor);
-                break;
-            default:
-                throw(std::runtime_error("Unhandled post processing mode.\n"));
-        }
-    }
-
-    // Save output files
-    for (auto &&[slice, outputNeXuSFile] : outputs)
-    {
-        printf("Writing data to output NeXuS file '%s' for slice '%s'...\n", outputNeXuSFile.filename().c_str(),
-               std::string(slice.id()).c_str());
-
-        if (!outputNeXuSFile.saveModifiedData())
-            fmt::print("!! Error saving file '{}'.", outputNeXuSFile.filename());
-
-        //        diagnosticFile << nexus.getOutpath() << " " << nexus.nProcessedGoodFrames() << std::endl;
-        //        std::cout << "Finished processing: " << nexus.getOutpath() << std::endl;
-    }
     return 0;
 }

@@ -1,15 +1,13 @@
 #include "nexusFile.h"
 #include "processors.h"
 #include "window.h"
-#include <iomanip>
-#include <sstream>
+#include <stdexcept>
 
 namespace Processors
 {
 // Perform summed processing
-std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::string> &inputNeXusFiles,
-                                                        std::string_view outputFilePath, const Window &windowDefinition,
-                                                        int nSlices, double windowDelta)
+void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                   const Window &windowDefinition, int nSlices, double windowDelta)
 {
     /*
      * From our main windowDefinition we will continually propagate it forwards in time (by the window delta) splitting it into
@@ -84,7 +82,11 @@ std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::s
         }
     }
 
-    return slices;
+    // Perform post-processing
+    postProcess(slices);
+
+    // Save slices
+    saveSlices(slices);
 }
 
 } // namespace Processors
