@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     // Processing mode
     Processors::ProcessingMode processingMode_ = Processors::ProcessingMode::None;
     // Window definition
-    std::string windowName_;
+    std::string windowName_{"np_output"};
     double windowStartTime_{0.0};
     double windowWidth_{0.0};
     double windowOffset_{0.0};
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     app.add_option("--offset", windowOffset_, "Time after start time, in seconds, that the window begins.")
         ->group("Window Definition");
     // -- Input Files
-    app.add_option("-f,--files", inputFiles_, "List of NeXuS files to process")->group("Input Files");
+    app.add_option("-f,--files", inputFiles_, "List of NeXuS files to process")->group("Input Files")->required();
     // -- Output Files
     app.add_option("--output-dir", outputDirectory_, "Output directory for generated NeXuS files.")->group("Output Files");
     // -- Pre Processing
