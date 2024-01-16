@@ -9,7 +9,7 @@
 class NeXuSFile
 {
     public:
-    NeXuSFile(std::string filename = "");
+    NeXuSFile(std::string filename = "", bool loadEvents = false);
     ~NeXuSFile() = default;
 
     /*

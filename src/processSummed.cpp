@@ -28,21 +28,16 @@ std::vector<std::pair<Window, NeXuSFile>> processSummed(const std::vector<std::s
     // Loop over input Nexus files
     for (auto &nxsFileName : inputNeXusFiles)
     {
-        // Open the Nexus file ready for use
-        NeXuSFile nxs(nxsFileName);
-        nxs.loadFrameCounts();
-        nxs.loadEventData();
-        nxs.loadTimes();
-        printf("... file '%s' has %i goodframes and %li events...\n", nxsFileName.c_str(), nxs.nGoodFrames(),
-               nxs.eventTimes().size());
+        // Open the NeXuS file and get its event data
+        NeXuSFile nxs(nxsFileName, true);
 
-        auto eventStart = 0, eventEnd = 0;
         const auto &eventsPerFrame = nxs.eventsPerFrame();
         const auto &eventIndices = nxs.eventIndices();
         const auto &eventTimes = nxs.eventTimes();
         const auto &frameOffsets = nxs.frameOffsets();
 
         // Loop over frames in the Nexus file
+        auto eventStart = 0, eventEnd = 0;
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
         {
             // Set new end event index and get zero for frame
