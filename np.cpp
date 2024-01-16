@@ -20,6 +20,7 @@ int main(int argc, char **argv)
     std::string windowName_;
     double windowStartTime_{0.0};
     double windowWidth_{0.0};
+    double windowOffset_{0.0};
     bool relativeStartTime_{false};
     // Time between windows
     double windowDelta_{0.0};
@@ -45,6 +46,8 @@ int main(int argc, char **argv)
     app.add_option("-d,--delta", windowDelta_, "Time between window occurrences, in seconds)")
         ->group("Window Definition")
         ->required();
+    app.add_option("--offset", windowOffset_, "Time after start time, in seconds, that the window begins.")
+        ->group("Window Definition");
     // -- Input Files
     app.add_option("-f,--files", inputFiles_, "List of NeXuS files to process")->group("Input Files");
     // -- Output Files
@@ -71,9 +74,9 @@ int main(int argc, char **argv)
     CLI11_PARSE(app, argc, argv);
 
     // Sanity check
-    if (windowWidth_ > windowDelta_)
+    if ((windowWidth_ + windowOffset_) > windowDelta_)
     {
-        fmt::print("Error: Window width is greater than window delta.\n");
+        fmt::print("Error: Window width (including any optional offset) is greater than window delta.\n");
         return 1;
     }
     if (windowSlices_ < 1)
@@ -99,11 +102,12 @@ int main(int argc, char **argv)
         }
         NeXuSFile firstFile(inputFiles_.front());
         firstFile.loadTimes();
-        fmt::print("Window start time converted from relative to absolute time: {} => {}\n", windowStartTime_,
-                   windowStartTime_ + firstFile.startSinceEpoch());
+        fmt::print("Window start time converted from relative to absolute time: {} => {} (= {} + {})\n", windowStartTime_,
+                   windowStartTime_ + firstFile.startSinceEpoch(), firstFile.startSinceEpoch(), windowStartTime_);
         windowStartTime_ += firstFile.startSinceEpoch();
     }
-    Window window(windowName_, windowStartTime_, windowWidth_);
+    Window window(windowName_, windowStartTime_ + windowOffset_, windowWidth_);
+    fmt::print("Window start time (including any offset) is {}.\n", window.startTime());
 
     // Perform processing
     switch (processingMode_)

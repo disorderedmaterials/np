@@ -15,7 +15,6 @@ void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_
      */
 
     printf("Processing in summed mode...\n");
-    printf("Window start time is %16.2f\n", windowDefinition.startTime());
 
     // Generate a new set of window "slices" and associated output NeXuS files to sum data into
     auto slices = prepareSlices(windowDefinition, nSlices, inputNeXusFiles[0], outputFilePath);
