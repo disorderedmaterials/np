@@ -23,7 +23,17 @@ std::vector<std::string> neXuSBasicPaths_ = {"/raw_data_1/title",
                                              "/raw_data_1/monitor_9/data",
                                              "/raw_data_1/detector_1/counts"};
 
-NeXuSFile::NeXuSFile(std::string filename) : filename_(filename) {}
+NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename)
+{
+    if (loadEvents)
+    {
+        fmt::print("Loading event data from file '{}'...\n", filename_);
+        loadFrameCounts();
+        loadEventData();
+        loadTimes();
+        fmt::print("... file '{}' has {} goodframes and {} events...\n", filename_, nGoodFrames_, eventTimes_.size());
+    }
+}
 
 /*
  * I/O

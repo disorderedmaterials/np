@@ -1,26 +1,26 @@
 #include "nexusFile.h"
 #include "processors.h"
 #include "window.h"
+#include <fmt/core.h>
 #include <stdexcept>
 
 namespace Processors
 {
 // Perform summed processing
-void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                   const Window &windowDefinition, int nSlices, double windowDelta)
+void processIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                       const Window &windowDefinition, int nSlices, double windowDelta)
 {
     /*
      * From our main windowDefinition we will continually propagate it forwards in time (by the window delta) splitting it into
      * nSlices and until we go over the end time of the current file.
      */
 
-    printf("Processing in SUMMED mode...\n");
+    fmt::print("Processing in INDIVIDUAL mode...\n");
 
-    // Generate a new set of window "slices" and associated output NeXuS files to sum data into
-    auto slices = prepareSlices(windowDefinition, nSlices, inputNeXusFiles[0], outputFilePath);
-
-    // Initialise the slice iterator and window slice / NeXuSFile references
-    auto sliceIt = slices.begin();
+    // Copy the master window definition since we will be modifying it
+    auto window = windowDefinition;
+    std::vector<std::pair<Window, NeXuSFile>> slices;
+    auto sliceIt = slices.end();
 
     // Loop over input Nexus files
     for (auto &nxsFileName : inputNeXusFiles)
@@ -42,18 +42,36 @@ void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_
             auto frameZero = frameOffsets[frameIndex] + nxs.startSinceEpoch();
 
             // If the current slice end time is less than the frame zero, iterate the slices.
-            while (sliceIt->first.endTime() < frameZero)
+            while (sliceIt != slices.end() && sliceIt->first.endTime() < frameZero)
             {
                 sliceIt++;
 
                 // If we have run out of slices propagate the set forward.
                 if (sliceIt == slices.end())
                 {
-                    sliceIt = slices.begin();
-                    for (auto &&[slice, _unused] : slices)
-                        slice.shiftStartTime(windowDelta);
+                    // Save current data
+                    postProcess(slices);
+                    saveSlices(slices);
+
+                    // Empty current slices
+                    slices.clear();
+                    sliceIt = slices.end();
+                }
+            }
+
+            // Do we need to generate new window / slices?
+            if (slices.empty())
+            {
+                // Set new window start time
+                while (window.endTime() < frameZero)
+                {
+                    window.shiftStartTime(windowDelta);
                     printf("Propagated window forwards... new start time is %16.2f\n", sliceIt->first.startTime());
                 }
+
+                // Create the new slices
+                slices = prepareSlices(window, nSlices, inputNeXusFiles[0], outputFilePath);
+                sliceIt = slices.begin();
             }
 
             // If this frame zero is greater than or equal to the start time of the current window slice we can process events
@@ -81,10 +99,8 @@ void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_
         }
     }
 
-    // Perform post-processing
+    // Perform post-processing on any slices we still have and save
     postProcess(slices);
-
-    // Save slices
     saveSlices(slices);
 }
 
