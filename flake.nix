@@ -16,8 +16,7 @@
           fmt_8
           fmt_8.dev
           gsl
-          hdf5
-          hdf5.dev
+          hdf5-cpp.dev
           ninja
           zlib
         ];
@@ -42,17 +41,10 @@
           ccls
           cmake-format
           cmake-language-server
-          conan
           distcc
           gdb
           valgrind
         ]);
-        shellHook = ''
-          export HDF5_ROOT=${pkgs.hdf5.dev}
-          export XDG_DATA_DIRS=$GSETTINGS_SCHEMAS_PATH:$XDG_DATA_DIRS
-          export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [pkgs.mesa.drivers]}:${pkgs.lib.makeSearchPathOutput "lib" "lib/vdpau" [pkgs.libvdpau]}:${pkgs.lib.makeLibraryPath [pkgs.libglvnd]}"''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          export
-        '';
         CMAKE_CXX_COMPILER_LAUNCHER = "${pkgs.ccache}/bin/ccache";
         CMAKE_CXX_FLAGS_DEBUG = "-g -O0";
         CXXL = "${pkgs.stdenv.cc.cc.lib}";
@@ -74,10 +66,10 @@
           buildInputs = base_libs pkgs;
           nativeBuildInputs = [ pkgs.wrapGAppsHook ];
 
-          cmakeFlags = [ "-G Ninja -DCONAN:bool=Off -DHDF5_ROOT=${pkgs.hdf5.dev}"];
+          cmakeFlags = [ "-G Ninja -DCONAN:bool=Off" ];
           installPhase = ''
             mkdir -p $out/bin
-            mv bin/* $out/bin/
+            mv np $out/bin/
           '';
 
           meta = with pkgs.lib; {
