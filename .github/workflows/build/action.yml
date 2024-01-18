@@ -9,6 +9,10 @@ runs:
     if: runner.os == 'Linux'
     uses: "./.github/workflows/build/linux"
 
+  - name: Build (Nix)
+    if: runner.os == 'Linux'
+    uses: "./.github/workflows/build/nix"
+
   - name: Build (OSX)
     if: runner.os == 'MacOS'
     uses: "./.github/workflows/build/osx"

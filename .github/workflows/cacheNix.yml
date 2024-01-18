@@ -1,0 +1,24 @@
+name: Generate Nix Caches
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - 'develop'
+    paths:
+    - 'flake.lock'
+
+jobs:
+
+  CacheNix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup
+        uses: "./.github/workflows/setup"
+      - name: "Build (Cache Only) (ubuntu-latest)"
+        uses: "./.github/workflows/build"
+        with:
+          cacheOnly: true
+
