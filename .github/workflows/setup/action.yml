@@ -4,7 +4,7 @@ runs:
   using: "composite"
   steps:
 
-  - name: Set Environment
+  - name: Set Dependency Versions
     shell: bash
     run: |
       set -ex
@@ -23,3 +23,7 @@ runs:
       echo "npMajorVersion=${NP_MAJOR}" >> ${GITHUB_ENV}
       echo "npMinorVersion=${NP_MINOR}" >> ${GITHUB_ENV}
       echo "npPatchVersion=${NP_PATCH}" >> ${GITHUB_ENV}
+
+      SHORT_HASH=$(git rev-parse --short HEAD)
+      echo "Current short hash is ${SHORT_HASH}"
+      echo "npShortHash=${SHORT_HASH}" >> ${GITHUB_ENV}
