@@ -9,6 +9,17 @@ runs:
     run: |
       set -ex
       echo "hdf5tag=hdf5-1_10_7" >> ${GITHUB_ENV}
-      MODEXVERSION=`grep "#define MODEX_VERSION" version.h | sed "s/.*\"\(.*\)\"/\1/g"`
-      echo "modExVersion=${MODEXVERSION}" >> ${GITHUB_ENV}
 
+  - name: Get code version
+    shell: bash
+    run: |
+      set -ex
+      NP_MAJOR=`grep 'set(VERSION_MAJOR' ./CMakeLists.txt | sed -e 's/set(VERSION_MAJOR \"\([0-9a-z\.]\+\)\")/\1/g'`
+      NP_MINOR=`grep 'set(VERSION_MINOR' ./CMakeLists.txt | sed -e 's/set(VERSION_MINOR \"\([0-9a-z\.]\+\)\")/\1/g'`
+      NP_PATCH=`grep 'set(VERSION_PATCH' ./CMakeLists.txt | sed -e 's/set(VERSION_PATCH \"\([0-9a-z\.]\+\)\")/\1/g'`
+      NP_VERSION="${NP_MAJOR}.${NP_MINOR}.${NP_PATCH}"
+      echo "np code version is ${NP_VERSION}"
+      echo "npVersion=${NP_VERSION}" >> ${GITHUB_ENV}
+      echo "npMajorVersion=${NP_MAJOR}" >> ${GITHUB_ENV}
+      echo "npMinorVersion=${NP_MINOR}" >> ${GITHUB_ENV}
+      echo "npPatchVersion=${NP_PATCH}" >> ${GITHUB_ENV}

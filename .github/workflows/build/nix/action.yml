@@ -1,0 +1,61 @@
+name: Build
+description: Build on Linux via nix
+
+inputs:
+  cacheOnly:
+    type: boolean
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Free Space
+    shell: bash
+    run: |
+      set -ex
+      df -mh .
+      sudo rm -rf /usr/share/dotnet
+      sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      df -mh .
+
+  - name: Install nix
+    uses: "./.github/workflows/get-nix"
+
+  - name: Cache Nix Store
+    uses: actions/cache@v3
+    id: nix-cache
+    with:
+      path: /tmp/nixcache
+      key: ${{ runner.os }}-${{ env.nixHash }}-nix-cache
+
+  - name: Import Nix Store Cache
+    if: "steps.nix-cache.outputs.cache-hit == 'true'"
+    shell: bash
+    run: |
+      nix-store --import < /tmp/nixcache
+      sudo rm -rf /tmp/nixcache
+
+  - name: Build
+    shell: bash
+    run: |
+      set -ex
+
+      # Build Singularity target
+      nix build -L .#singularity
+
+      # Assemble artifacts
+      mkdir nix-packages
+      cp -v result nix-packages/np-${{ env.npVersion }}.sif
+
+  - name: Export Nix Store Cache
+    if: ${{ inputs.cacheOnly == 'true' }}
+    shell: bash
+    run: nix-store --export $(find /nix/store -maxdepth 1 -name '*-*') > /tmp/nixcache
+
+  - name: Upload Package Artifacts
+    if: ${{ inputs.cacheOnly == 'false' }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: nix-packages
+      path: ${{ github.workspace }}/nix-packages

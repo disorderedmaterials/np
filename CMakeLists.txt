@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
-project(modex)
+project(np)
 include(CMakePrintHelpers)
 
 
-set(DESCRIPTION "ModEx")
-set(AUTHOR "Jared Swift")
+set(DESCRIPTION "NeXuS Processor")
+set(AUTHOR "Jared Swift and Tristan Youngs")
 set(VERSION_MAJOR "0")
-set(VERSION_MINOR "1")
+set(VERSION_MINOR "2")
 set(VERSION_PATCH "0")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
