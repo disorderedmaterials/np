@@ -25,10 +25,6 @@ runs:
       merge-multiple: true
       path: ${{ github.workspace }}/packages
 
-  - name: Test
-    shell: bash
-    run: ls -R packages/
-
   - name: Publish on GitHub (Release)
     if: ${{ inputs.publish == 'true' && inputs.isRelease == 'true' }}
     shell: bash
