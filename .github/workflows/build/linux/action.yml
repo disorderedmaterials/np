@@ -53,12 +53,12 @@ runs:
     run: |
       set -ex
       mkdir packages
-      mkdir binaries-${{ env.modExVersion }}-linux
-      cp build/bin/np binaries-${{ env.modExVersion }}-linux/
-      zip -9rv packages/binaries-${{ env.modExVersion }}-linux.zip binaries-${{ env.modExVersion }}-linux/
+      mkdir binaries-${{ env.npVersion }}-linux
+      cp build/bin/np binaries-${{ env.npVersion }}-linux/
+      zip -9rv packages/binaries-${{ env.npVersion }}-linux.zip binaries-${{ env.npVersion }}-linux/
 
   - name: Upload Package Artifacts
     uses: actions/upload-artifact@v3
     with:
-      name: packages
+      name: packages-linux
       path: ${{ github.workspace }}/packages
