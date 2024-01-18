@@ -4,7 +4,7 @@ runs:
   using: "composite"
   steps:
 
-  - name: Set Environment
+  - name: Set Dependency Versions
     shell: bash
     run: |
       set -ex
@@ -14,12 +14,16 @@ runs:
     shell: bash
     run: |
       set -ex
-      NP_MAJOR=`grep 'set(VERSION_MAJOR' ./CMakeLists.txt | sed -e 's/set(VERSION_MAJOR \"\([0-9a-z\.]\+\)\")/\1/g'`
-      NP_MINOR=`grep 'set(VERSION_MINOR' ./CMakeLists.txt | sed -e 's/set(VERSION_MINOR \"\([0-9a-z\.]\+\)\")/\1/g'`
-      NP_PATCH=`grep 'set(VERSION_PATCH' ./CMakeLists.txt | sed -e 's/set(VERSION_PATCH \"\([0-9a-z\.]\+\)\")/\1/g'`
+      NP_MAJOR=`grep "set(VERSION_MAJOR" ./CMakeLists.txt | sed "s/.*\"\([0-9]*\)\".*/\1/g"`
+      NP_MINOR=`grep "set(VERSION_MINOR" ./CMakeLists.txt | sed "s/.*\"\([0-9]*\)\".*/\1/g"`
+      NP_PATCH=`grep "set(VERSION_PATCH" ./CMakeLists.txt | sed "s/.*\"\([0-9]*\)\".*/\1/g"`
       NP_VERSION="${NP_MAJOR}.${NP_MINOR}.${NP_PATCH}"
       echo "np code version is ${NP_VERSION}"
       echo "npVersion=${NP_VERSION}" >> ${GITHUB_ENV}
       echo "npMajorVersion=${NP_MAJOR}" >> ${GITHUB_ENV}
       echo "npMinorVersion=${NP_MINOR}" >> ${GITHUB_ENV}
       echo "npPatchVersion=${NP_PATCH}" >> ${GITHUB_ENV}
+
+      SHORT_HASH=$(git rev-parse --short HEAD)
+      echo "Current short hash is ${SHORT_HASH}"
+      echo "npShortHash=${SHORT_HASH}" >> ${GITHUB_ENV}

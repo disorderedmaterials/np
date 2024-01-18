@@ -57,5 +57,5 @@ runs:
     if: ${{ inputs.cacheOnly == 'false' }}
     uses: actions/upload-artifact@v4
     with:
-      name: nix-packages
+      name: packages-nix
       path: ${{ github.workspace }}/nix-packages
