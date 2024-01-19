@@ -84,7 +84,7 @@ runs:
       7z a packages/binaries-${{ env.npVersion }}-windows.zip binaries-${{ env.npVersion }}-windows/
 
   - name: Upload Raw Build Artifacts
-    uses: actions/upload-artifact@v3
+    uses: actions/upload-artifact@v4
     with:
       name: packages-win
       path: ${{ github.workspace }}/packages

@@ -58,7 +58,7 @@ runs:
       zip -9rv packages/binaries-${{ env.npVersion }}-linux.zip binaries-${{ env.npVersion }}-linux/
 
   - name: Upload Package Artifacts
-    uses: actions/upload-artifact@v3
+    uses: actions/upload-artifact@v4
     with:
       name: packages-linux
       path: ${{ github.workspace }}/packages

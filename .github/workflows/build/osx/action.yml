@@ -46,7 +46,7 @@ runs:
       zip -9rv packages/binaries-${{ env.npVersion }}-osx.zip binaries-${{ env.npVersion }}-osx/
 
   - name: Upload Raw Build Artifacts
-    uses: actions/upload-artifact@v3
+    uses: actions/upload-artifact@v4
     with:
       name: packages-osx
       path: ${{ github.workspace }}/packages
