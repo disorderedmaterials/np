@@ -45,6 +45,8 @@ int main(int argc, char **argv)
     app.add_option("-d,--delta", windowDelta_, "Time between window occurrences, in seconds")->group("Window Definition");
     app.add_option("--offset", windowOffset_, "Time after start time, in seconds, that the window begins.")
         ->group("Window Definition");
+    app.add_option("-l,--slices", windowSlices_, "Number of slices to split window definition in to (default = 1, no slicing)")
+        ->group("Window Definition");
     // -- Input Files
     app.add_option("-f,--files", inputFiles_, "List of NeXuS files to process")->group("Input Files")->required();
     // -- Output Files
@@ -79,8 +81,6 @@ int main(int argc, char **argv)
                }
            },
            "Output NeXuS files for each window / slice")
-        ->group("Processing");
-    app.add_option("-l,--slices", windowSlices_, "Number of slices to split window definition in to (default = 1, no slicing)")
         ->group("Processing");
     // -- Post Processing
     app.add_flag_callback(
