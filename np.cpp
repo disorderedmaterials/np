@@ -149,13 +149,13 @@ int main(int argc, char **argv)
             fmt::print("Window start time (including any offset) is {}.\n", windowStartTime_ + windowOffset_);
 
             if (processingMode_ == Processors::ProcessingMode::PartitionEventsIndividual)
-                Processors::processIndividual(inputFiles_, outputDirectory_,
-                                              {windowName_, windowStartTime_ + windowOffset_, windowWidth_}, windowSlices_,
-                                              windowDelta_);
+                Processors::partitionEventsIndividual(inputFiles_, outputDirectory_,
+                                                      {windowName_, windowStartTime_ + windowOffset_, windowWidth_},
+                                                      windowSlices_, windowDelta_);
             else
-                Processors::processSummed(inputFiles_, outputDirectory_,
-                                          {windowName_, windowStartTime_ + windowOffset_, windowWidth_}, windowSlices_,
-                                          windowDelta_);
+                Processors::partitionEventsSummed(inputFiles_, outputDirectory_,
+                                                  {windowName_, windowStartTime_ + windowOffset_, windowWidth_}, windowSlices_,
+                                                  windowDelta_);
             break;
         default:
             throw(std::runtime_error("Unhandled processing mode.\n"));

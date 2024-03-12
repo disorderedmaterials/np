@@ -55,10 +55,10 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
 // Get Events
 std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
                                               bool firstOnly = false);
-// Perform individual processing
-void processIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                       const Window &windowDefinition, int nSlices, double windowDelta);
-// Perform summed processing
-void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                   const Window &windowDefinition, int nSlices, double windowDelta);
+// Partition events into individual windows / slices
+void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                               const Window &windowDefinition, int nSlices, double windowDelta);
+// Partition events into summed windows / slices
+void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                           const Window &windowDefinition, int nSlices, double windowDelta);
 }; // namespace Processors

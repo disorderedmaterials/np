@@ -1,20 +1,21 @@
 #include "nexusFile.h"
 #include "processors.h"
 #include "window.h"
+#include <fmt/core.h>
 #include <stdexcept>
 
 namespace Processors
 {
-// Perform summed processing
-void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                   const Window &windowDefinition, int nSlices, double windowDelta)
+// Partition events into summed windows / slices
+void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                           const Window &windowDefinition, int nSlices, double windowDelta)
 {
     /*
      * From our main windowDefinition we will continually propagate it forwards in time (by the window delta) splitting it into
      * nSlices and until we go over the end time of the current file.
      */
 
-    printf("Processing in SUMMED mode...\n");
+    fmt::print("Partitioning events in summed windows/slices...\n");
 
     // Generate a new set of window "slices" and associated output NeXuS files to sum data into
     auto slices = prepareSlices(windowDefinition, nSlices, inputNeXusFiles[0], outputFilePath);

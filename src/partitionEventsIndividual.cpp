@@ -6,16 +6,16 @@
 
 namespace Processors
 {
-// Perform summed processing
-void processIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                       const Window &windowDefinition, int nSlices, double windowDelta)
+// Partition events into individual windows / slices
+void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                               const Window &windowDefinition, int nSlices, double windowDelta)
 {
     /*
      * From our main windowDefinition we will continually propagate it forwards in time (by the window delta) splitting it into
      * nSlices and until we go over the end time of the current file.
      */
 
-    fmt::print("Processing in INDIVIDUAL mode...\n");
+    fmt::print("Partitioning events into individual windows/slices...\n");
 
     // Copy the master window definition since we will be modifying it
     auto window = windowDefinition;

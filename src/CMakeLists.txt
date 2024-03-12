@@ -1,9 +1,9 @@
 add_library(nexusProcess
-  getEvents.cpp
+  dumpEvents.cpp
   nexusFile.cpp
+  partitionEventsIndividual.cpp
+  partitionEventsSummed.cpp
   processCommon.cpp
-  processIndividual.cpp
-  processSummed.cpp
   window.cpp
   nexusFile.h
   processors.h
