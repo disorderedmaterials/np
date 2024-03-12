@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     // Number of slices to partition window in to
     int windowSlices_{1};
     // Target spectrum for event get (optional)
-    std::optional<int> spectrumId_;
+    int spectrumId_;
 
     // Define and parse CLI arguments
     CLI::App app("NeXuS Processor (np), Copyright (C) 2024 Jared Swift and Tristan Youngs.");
@@ -51,9 +51,22 @@ int main(int argc, char **argv)
     app.add_option("-f,--files", inputFiles_, "List of NeXuS files to process")->group("Input Files")->required();
     // -- Output Files
     app.add_option("--output-dir", outputDirectory_, "Output directory for generated NeXuS files.")->group("Output Files");
-    // -- Pre Processing
-    app.add_option("-g,--get", spectrumId_, "Get all events from specified spectrum index")->group("Pre-Processing");
     // -- Processing Modes
+    app.add_option_function<int>(
+           "--dump-events",
+           [&](int specId)
+           {
+               if (processingMode_ == Processors::ProcessingMode::None)
+                   processingMode_ = Processors::ProcessingMode::DumpEvents;
+               else
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               spectrumId_ = specId;
+           },
+           "Dump all events from specified spectrum index")
+        ->group("Processing");
     app.add_flag_callback(
            "--summed",
            [&]()
@@ -94,17 +107,14 @@ int main(int argc, char **argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    // Perform pre-processing if requested
-    if (spectrumId_)
-    {
-        Processors::getEvents(inputFiles_, *spectrumId_);
-    }
-
     // Perform processing
     switch (processingMode_)
     {
         case (Processors::ProcessingMode::None):
             fmt::print("No processing mode specified. We are done.\n");
+            break;
+        case (Processors::ProcessingMode::DumpEvents):
+            Processors::getEvents(inputFiles_, spectrumId_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):

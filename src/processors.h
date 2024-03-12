@@ -13,6 +13,7 @@ namespace Processors
 enum class ProcessingMode
 {
     None,
+    DumpEvents,
     PartitionEventsIndividual,
     PartitionEventsSummed
 };
