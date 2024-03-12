@@ -6,15 +6,14 @@
 
 namespace Processors
 {
-// Get events from specified spectrum, returning seconds since epoch for each
-std::map<int, std::vector<double>> getEvents(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly)
+// Dump events from specified spectrum, returning seconds since epoch for each
+std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly)
 {
     /*
      * Dump all events for the specified detector spectrum
      */
 
-    printf("Get events...\n");
-    fmt::print("Target detector spectrum is {}\n", spectrumId);
+    fmt::print("Dumping all events from detector spectrum {}...\n", spectrumId);
 
     std::map<int, std::vector<double>> eventMap;
     std::optional<double> lastSecondsSinceEpoch;

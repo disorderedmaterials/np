@@ -114,7 +114,7 @@ int main(int argc, char **argv)
             fmt::print("No processing mode specified. We are done.\n");
             break;
         case (Processors::ProcessingMode::DumpEvents):
-            Processors::getEvents(inputFiles_, spectrumId_);
+            Processors::dumpEvents(inputFiles_, spectrumId_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):

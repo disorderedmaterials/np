@@ -53,8 +53,8 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
  */
 
 // Get Events
-std::map<int, std::vector<double>> getEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
-                                             bool firstOnly = false);
+std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
+                                              bool firstOnly = false);
 // Perform individual processing
 void processIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
                        const Window &windowDefinition, int nSlices, double windowDelta);
