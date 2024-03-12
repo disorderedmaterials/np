@@ -13,8 +13,8 @@ namespace Processors
 enum class ProcessingMode
 {
     None,
-    Individual,
-    Summed
+    PartitionEventsIndividual,
+    PartitionEventsSummed
 };
 
 // Processing Direction

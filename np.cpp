@@ -60,7 +60,7 @@ int main(int argc, char **argv)
            [&]()
            {
                if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::Summed;
+                   processingMode_ = Processors::ProcessingMode::PartitionEventsSummed;
                else
                {
                    fmt::print("Error: Multiple processing modes given.\n");
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
            [&]()
            {
                if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::Individual;
+                   processingMode_ = Processors::ProcessingMode::PartitionEventsIndividual;
                else
                {
                    fmt::print("Error: Multiple processing modes given.\n");
@@ -97,41 +97,11 @@ int main(int argc, char **argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    // Sanity check
-    if ((windowWidth_ + windowOffset_) > windowDelta_)
-    {
-        fmt::print("Error: Window width (including any optional offset) is greater than window delta.\n");
-        return 1;
-    }
-    if (windowSlices_ < 1)
-    {
-        fmt::print("Error: Invalid number of window slices provided ({}).\n", windowSlices_);
-        return 1;
-    }
-
     // Perform pre-processing if requested
     if (spectrumId_)
     {
         Processors::getEvents(inputFiles_, *spectrumId_);
     }
-
-    // Construct the master window definition
-    if (relativeStartTime_)
-    {
-        // Need to query first NeXuS file to get its start time
-        if (inputFiles_.empty())
-        {
-            fmt::print("Error: Need at least one input NeXuS file.");
-            return 1;
-        }
-        NeXuSFile firstFile(inputFiles_.front());
-        firstFile.loadTimes();
-        fmt::print("Window start time converted from relative to absolute time: {} => {} (= {} + {})\n", windowStartTime_,
-                   windowStartTime_ + firstFile.startSinceEpoch(), firstFile.startSinceEpoch(), windowStartTime_);
-        windowStartTime_ += firstFile.startSinceEpoch();
-    }
-    Window window(windowName_, windowStartTime_ + windowOffset_, windowWidth_);
-    fmt::print("Window start time (including any offset) is {}.\n", window.startTime());
 
     // Perform processing
     switch (processingMode_)
@@ -139,11 +109,46 @@ int main(int argc, char **argv)
         case (Processors::ProcessingMode::None):
             fmt::print("No processing mode specified. We are done.\n");
             break;
-        case (Processors::ProcessingMode::Individual):
-            Processors::processIndividual(inputFiles_, outputDirectory_, window, windowSlices_, windowDelta_);
-            break;
-        case (Processors::ProcessingMode::Summed):
-            Processors::processSummed(inputFiles_, outputDirectory_, window, windowSlices_, windowDelta_);
+        case (Processors::ProcessingMode::PartitionEventsIndividual):
+        case (Processors::ProcessingMode::PartitionEventsSummed):
+            // Sanity check
+            if ((windowWidth_ + windowOffset_) > windowDelta_)
+            {
+                fmt::print("Error: Window width (including any optional offset) is greater than window delta.\n");
+                return 1;
+            }
+            if (windowSlices_ < 1)
+            {
+                fmt::print("Error: Invalid number of window slices provided ({}).\n", windowSlices_);
+                return 1;
+            }
+
+            // Construct the master window definition
+            if (relativeStartTime_)
+            {
+                // Need to query first NeXuS file to get its start time
+                if (inputFiles_.empty())
+                {
+                    fmt::print("Error: Need at least one input NeXuS file.");
+                    return 1;
+                }
+                NeXuSFile firstFile(inputFiles_.front());
+                firstFile.loadTimes();
+                fmt::print("Window start time converted from relative to absolute time: {} => {} (= {} + {})\n",
+                           windowStartTime_, windowStartTime_ + firstFile.startSinceEpoch(), firstFile.startSinceEpoch(),
+                           windowStartTime_);
+                windowStartTime_ += firstFile.startSinceEpoch();
+            }
+            fmt::print("Window start time (including any offset) is {}.\n", windowStartTime_ + windowOffset_);
+
+            if (processingMode_ == Processors::ProcessingMode::PartitionEventsIndividual)
+                Processors::processIndividual(inputFiles_, outputDirectory_,
+                                              {windowName_, windowStartTime_ + windowOffset_, windowWidth_}, windowSlices_,
+                                              windowDelta_);
+            else
+                Processors::processSummed(inputFiles_, outputDirectory_,
+                                          {windowName_, windowStartTime_ + windowOffset_, windowWidth_}, windowSlices_,
+                                          windowDelta_);
             break;
         default:
             throw(std::runtime_error("Unhandled processing mode.\n"));
