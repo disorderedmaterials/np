@@ -5,13 +5,13 @@
 
 namespace Processors
 {
-void DumpMonitor(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly)
+void DumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex, bool firstOnly)
 {
     /*
-     * Dump histograms for the specified monitor spectrum
+     * Dump histograms for the specified monitor index
      */
 
-    fmt::print("Dumping histogram for monitor spectrum {}...\n", spectrumId);
+    fmt::print("Dumping histogram for monitor index {}...\n", monitorIndex);
 
     // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
@@ -21,11 +21,11 @@ void DumpMonitor(const std::vector<std::string> &inputNeXusFiles, int spectrumId
         nxs.loadMonitorCounts();
 
         // Open the output file
-        std::ofstream output(fmt::format("{}.mon.{}", nxsFileName, spectrumId).c_str());
+        std::ofstream output(fmt::format("{}.mon.{}", nxsFileName, monitorIndex).c_str());
         output << "# TCB/usec   Counts\n";
         auto bin = 0;
-        const auto &counts = nxs.monitorCounts().at(spectrumId);
-        for (auto tof : nxs.tofBins())
+        const auto &counts = nxs.monitorCounts().at(monitorIndex);
+        for (auto tof : nxs.tofBoundaries())
         {
             output << fmt::format("{}  {}\n", tof, counts[bin++]);
         }

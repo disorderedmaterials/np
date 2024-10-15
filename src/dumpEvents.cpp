@@ -7,13 +7,14 @@
 namespace Processors
 {
 // Dump events from specified spectrum, returning seconds since epoch for each
-std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly)
+std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorIndex,
+                                              bool firstOnly)
 {
     /*
      * Dump all events for the specified detector spectrum
      */
 
-    fmt::print("Dumping all events from detector spectrum {}...\n", spectrumId);
+    fmt::print("Dumping all events from detector index {}...\n", detectorIndex);
 
     std::map<int, std::vector<double>> eventMap;
     std::optional<double> lastSecondsSinceEpoch;
@@ -32,6 +33,7 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         const auto &eventIndices = nxs.eventIndices();
         const auto &eventTimes = nxs.eventTimes();
         const auto &frameOffsets = nxs.frameOffsets();
+        const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
 
         // Loop over frames in the Nexus file
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)

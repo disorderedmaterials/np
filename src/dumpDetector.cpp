@@ -5,13 +5,13 @@
 
 namespace Processors
 {
-void DumpDetector(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly)
+void DumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool firstOnly)
 {
     /*
-     * Dump histograms for the specified detector spectrum
+     * Dump histograms for the specified detector index
      */
 
-    fmt::print("Dumping histogram for detector spectrum {}...\n", spectrumId);
+    fmt::print("Dumping histogram for detector index {}...\n", detectorIndex);
 
     // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
@@ -20,12 +20,14 @@ void DumpDetector(const std::vector<std::string> &inputNeXusFiles, int spectrumI
         NeXuSFile nxs(nxsFileName);
         nxs.loadDetectorCounts();
 
+        const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
+
         // Open the output file
-        std::ofstream output(fmt::format("{}.det.{}", nxsFileName, spectrumId).c_str());
-        output << "# TCB/usec   Counts\n";
+        std::ofstream output(fmt::format("{}.det.{}", nxsFileName, detectorIndex).c_str());
+        output << fmt::format("# TCB/usec   Counts  [detector index {}, spectrum index = {}]\n", detectorIndex, spectrumId);
         auto bin = 0;
         const auto &counts = nxs.detectorCounts().at(spectrumId);
-        for (auto tof : nxs.tofBins())
+        for (auto tof : nxs.tofBoundaries())
         {
             output << fmt::format("{}  {}\n", tof, counts[bin++]);
         }

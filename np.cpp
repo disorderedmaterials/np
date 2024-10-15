@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     // Number of slices to partition window in to
     int windowSlices_{1};
     // Target spectrum for event get (optional)
-    int spectrumId_;
+    int targetIndex_;
 
     // Define and parse CLI arguments
     CLI::App app("NeXuS Processor (np), Copyright (C) 2024 Jared Swift and Tristan Youngs.");
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
-               spectrumId_ = specId;
+               targetIndex_ = specId;
            },
            "Dump all events from specified spectrum index")
         ->group("Processing");
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
-               spectrumId_ = specId;
+               targetIndex_ = specId;
            },
            "Dump specified detector histogram")
         ->group("Processing");
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
-               spectrumId_ = specId;
+               targetIndex_ = specId;
            },
            "Dump specified monitor histogram")
         ->group("Processing");
@@ -144,13 +144,13 @@ int main(int argc, char **argv)
             fmt::print("No processing mode specified. We are done.\n");
             break;
         case (Processors::ProcessingMode::DumpEvents):
-            Processors::dumpEvents(inputFiles_, spectrumId_);
+            Processors::dumpEvents(inputFiles_, targetIndex_);
             break;
         case (Processors::ProcessingMode::DumpDetector):
-            Processors::DumpDetector(inputFiles_, spectrumId_);
+            Processors::DumpDetector(inputFiles_, targetIndex_);
             break;
         case (Processors::ProcessingMode::DumpMonitor):
-            Processors::DumpMonitor(inputFiles_, spectrumId_);
+            Processors::DumpMonitor(inputFiles_, targetIndex_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):
