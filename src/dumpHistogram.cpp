@@ -1,8 +1,7 @@
 #include "nexusFile.h"
 #include "processors.h"
-#include "window.h"
 #include <fmt/core.h>
-#include <optional>
+#include <fstream>
 
 namespace Processors
 {
@@ -13,56 +12,25 @@ void dumpHistogram(const std::vector<std::string> &inputNeXusFiles, int spectrum
      * Dump all events for the specified detector spectrum
      */
 
-    fmt::print("Dumping histogram from detector spectrum {}...\n", spectrumId);
-
-    std::map<int, std::vector<double>> eventMap;
-    std::optional<double> lastSecondsSinceEpoch;
+    fmt::print("Dumping histogram for detector spectrum {}...\n", spectrumId);
 
     // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
     {
-        // Open the Nexus file ready for use
+        // Open the NeXuS file and load in detector counts
         NeXuSFile nxs(nxsFileName);
         nxs.loadDetectorCounts();
 
-        auto eventStart = 0, eventEnd = 0;
-        const auto &eventsPerFrame = nxs.eventsPerFrame();
-        const auto &eventIndices = nxs.eventIndices();
-        const auto &eventTimes = nxs.eventTimes();
-        const auto &frameOffsets = nxs.frameOffsets();
-
-        // Loop over frames in the Nexus file
-        for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
+        // Open the output file
+        std::ofstream output(fmt::format("{}.{}", nxsFileName, spectrumId).c_str());
+        auto bin = 0;
+        const auto &counts = nxs.detectorCounts().at(spectrumId);
+        for (auto tof : nxs.tofBins())
         {
-            // Set new end event index and get zero for frame
-            eventEnd += eventsPerFrame[frameIndex];
-            auto frameZero = frameOffsets[frameIndex];
-
-            for (auto k = eventStart; k < eventEnd; ++k)
-            {
-                if (eventIndices[k] == spectrumId)
-                {
-                    auto eMicroSeconds = eventTimes[k];
-                    auto eSeconds = eMicroSeconds * 0.000001;
-                    auto eSecondsSinceEpoch = eSeconds + frameZero + nxs.startSinceEpoch();
-                    if (lastSecondsSinceEpoch)
-                        fmt::print("{:20.6f}  {:20.10f}  {:20.5f}  {}\n", eMicroSeconds, eSeconds + frameZero,
-                                   eSecondsSinceEpoch, eSecondsSinceEpoch - *lastSecondsSinceEpoch);
-                    else
-                        fmt::print("{:20.6f}  {:20.10f}  {:20.5f}\n", eMicroSeconds, eSeconds + frameZero, eSecondsSinceEpoch);
-                    eventMap[spectrumId].push_back(eSecondsSinceEpoch);
-                    lastSecondsSinceEpoch = eSecondsSinceEpoch;
-                    if (firstOnly)
-                        return eventMap;
-                }
-            }
-
-            // Update start event index
-            eventStart = eventEnd;
+            output << fmt::format("{}  {}\n", tof, counts[bin++]);
         }
+        output.close();
     }
-
-    return eventMap;
 }
 
 } // namespace Processors

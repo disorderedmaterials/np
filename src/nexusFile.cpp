@@ -25,6 +25,33 @@ std::vector<std::string> neXuSBasicPaths_ = {"/raw_data_1/title",
 
 NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename)
 {
+    // Open input NeXuS file in read only mode.
+    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
+
+    // Read in detector spectra information
+    auto &&[spectraID, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
+    spectra_.resize(spectraDimension);
+    H5Dread(spectraID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra_.data());
+
+    // Read in TOF bin information.
+    auto &&[tofBinsID, tofBinsDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/monitor_1", "time_of_flight");
+    tofBins_.resize(tofBinsDimension);
+    H5Dread(tofBinsID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBins_.data());
+
+    // Set up detector histograms and straight counts vectors
+    for (auto spec : spectra_)
+    {
+        // For event re-binning
+        detectorHistograms_[spec] = gsl_histogram_alloc(tofBins_.size() - 1);
+        gsl_histogram_set_ranges(detectorHistograms_[spec], tofBins_.data(), tofBins_.size());
+
+        // For histogram manipulation
+        detectorCounts_[spec].resize(tofBins_.size() - 1);
+        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
+    }
+
+    input.close();
+
     if (loadEvents)
     {
         fmt::print("Loading event data from file '{}'...\n", filename_);
@@ -33,6 +60,13 @@ NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename
         loadTimes();
         fmt::print("... file '{}' has {} goodframes and {} events...\n", filename_, nGoodFrames_, eventTimes_.size());
     }
+}
+
+NeXuSFile::~NeXuSFile()
+{
+    // Free GSL histograms
+    for (auto &[specId, histogram] : detectorHistograms_)
+        gsl_histogram_free(histogram);
 }
 
 /*
@@ -93,27 +127,17 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
     H5Pclose(ocpl_id);
     H5Pclose(lcpl_id);
 
-    // Read in detector spectra information
-    auto &&[spectraID, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
-    spectra_.resize(spectraDimension);
-    H5Dread(spectraID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra_.data());
+    input.close();
+    output.close();
+}
 
-    // Read in TOF bin information.
-    auto &&[tofBinsID, tofBinsDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/monitor_1", "time_of_flight");
-    tofBins_.resize(tofBinsDimension);
-    H5Dread(tofBinsID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBins_.data());
+// Load in monitor histograms
+void NeXuSFile::loadMonitorCounts()
+{
+    printf("Load monitor counts...\n");
 
-    // Set up detector histograms and straight counts vectors
-    for (auto spec : spectra_)
-    {
-        // For event re-binning
-        detectorHistograms_[spec] = gsl_histogram_alloc(tofBins_.size() - 1);
-        gsl_histogram_set_ranges(detectorHistograms_[spec], tofBins_.data(), tofBins_.size());
-
-        // For histogram manipulation
-        detectorCounts_[spec].resize(tofBins_.size() - 1);
-        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
-    }
+    // Open our NeXuS file in read only mode.
+    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Read in monitor data - start from index 1 and end when we fail to find the named dataset with this suffix
     auto i = 1;
@@ -124,20 +148,20 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
         if (monitorSpectrum.getId() <= 0)
             break;
 
-        monitorCounts_[i].resize(tofBinsDimension);
+        monitorCounts_[i].resize(tofBins_.size());
         H5Dread(monitorSpectrum.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorCounts_[i].data());
 
         ++i;
     }
 
-    // Read in good frames - this will reflect our current monitor frame count since we copied those histograms in full
+    // Read in number of good frames - this will reflect our current monitor frame count since we copied those histograms in
+    // full
     auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
     auto goodFramesTemp = new int[(long int)goodFramesDimension];
     H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
     nMonitorFrames_ = goodFramesTemp[0];
 
     input.close();
-    output.close();
 }
 
 // Load frame counts
@@ -240,7 +264,7 @@ void NeXuSFile::loadTimes()
 // Load detector counts from the file
 void NeXuSFile::loadDetectorCounts()
 {
-    printf("Load detector events....\n");
+    printf("Load detector counts....\n");
 
     // Open our Nexus file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
@@ -253,8 +277,11 @@ void NeXuSFile::loadDetectorCounts()
     auto &&[counts, detectorCountsDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "counts");
     H5Dread(counts.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, countsBuffer.data());
     for (auto i = 0; i < nSpec; ++i)
+    {
+        auto &counts = detectorCounts_[spectra_[i]];
         for (auto j = 0; j < nTofBins; ++j)
-            gsl_histogram_se(detectorHistograms_[spectra_[i]], j); countsBuffer[i * nTofBins + j]
+            counts[j] = countsBuffer[i * nTofBins + j];
+    }
 }
 
 // Save key modified data back to the file
@@ -311,6 +338,7 @@ const std::vector<int> &NeXuSFile::eventsPerFrame() const { return eventsPerFram
 const std::vector<double> &NeXuSFile::frameOffsets() const { return frameOffsets_; }
 const std::vector<double> &NeXuSFile::tofBins() const { return tofBins_; }
 const std::map<int, std::vector<int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
+const std::map<unsigned int, std::vector<int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
 std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
 const std::map<unsigned int, std::vector<double>> &NeXuSFile::partitions() const { return partitions_; }
 

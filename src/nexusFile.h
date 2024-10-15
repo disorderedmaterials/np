@@ -10,7 +10,7 @@ class NeXuSFile
 {
     public:
     NeXuSFile(std::string filename = "", bool loadEvents = false);
-    ~NeXuSFile() = default;
+    ~NeXuSFile();
 
     /*
      * I/O
@@ -26,8 +26,10 @@ class NeXuSFile
     public:
     // Return filename
     std::string filename() const;
-    // Template basic paths from the referenceFile, and make ready for histogram binning
+    // Template basic paths from the referenceFile
     void templateFile(std::string referenceFile, std::string outputFile);
+    // Load in monitor histograms
+    void loadMonitorCounts();
     // Load frame counts
     void loadFrameCounts();
     // Load event data
@@ -72,6 +74,7 @@ class NeXuSFile
     [[nodiscard]] const std::vector<double> &frameOffsets() const;
     [[nodiscard]] const std::vector<double> &tofBins() const;
     [[nodiscard]] const std::map<int, std::vector<int>> &monitorCounts() const;
+    [[nodiscard]] const std::map<unsigned int, std::vector<int>> &detectorCounts() const;
     std::map<unsigned int, gsl_histogram *> &detectorHistograms();
     [[nodiscard]] const std::map<unsigned int, std::vector<double>> &partitions() const;
 
