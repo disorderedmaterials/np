@@ -22,7 +22,7 @@ void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, 
     std::vector<std::pair<Window, NeXuSFile>> slices;
     auto sliceIt = slices.end();
 
-    // Loop over input Nexus files
+    // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
     {
         // Open the NeXuS file and get its event data

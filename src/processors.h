@@ -13,6 +13,7 @@ namespace Processors
 enum class ProcessingMode
 {
     None,
+    DumpHistogram,
     DumpEvents,
     PartitionEventsIndividual,
     PartitionEventsSummed
@@ -55,6 +56,8 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
 // Get Events
 std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
                                               bool firstOnly = false);
+// Dump histogram from specified spectrum
+void dumpHistogram(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly = false);
 // Partition events into individual windows / slices
 void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
                                const Window &windowDefinition, int nSlices, double windowDelta);

@@ -1,5 +1,6 @@
 add_library(nexusProcess
   dumpEvents.cpp
+  dumpHistogram.cpp
   nexusFile.cpp
   partitionEventsIndividual.cpp
   partitionEventsSummed.cpp

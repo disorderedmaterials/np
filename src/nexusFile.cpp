@@ -67,7 +67,7 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
 {
     filename_ = outputFile;
 
-    // Open input Nexus file in read only mode.
+    // Open input NeXuS file in read only mode.
     H5::H5File input = H5::H5File(referenceFile, H5F_ACC_RDONLY);
 
     // Create new Nexus file for output.
@@ -103,11 +103,16 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
     tofBins_.resize(tofBinsDimension);
     H5Dread(tofBinsID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBins_.data());
 
-    // Set up detector histograms
+    // Set up detector histograms and straight counts vectors
     for (auto spec : spectra_)
     {
+        // For event re-binning
         detectorHistograms_[spec] = gsl_histogram_alloc(tofBins_.size() - 1);
         gsl_histogram_set_ranges(detectorHistograms_[spec], tofBins_.data(), tofBins_.size());
+
+        // For histogram manipulation
+        detectorCounts_[spec].resize(tofBins_.size() - 1);
+        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
     }
 
     // Read in monitor data - start from index 1 and end when we fail to find the named dataset with this suffix
@@ -140,7 +145,7 @@ void NeXuSFile::loadFrameCounts()
 {
     printf("Load frame counts...\n");
 
-    // Open our Nexus file in read only mode.
+    // Open our NeXuS file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Read in good frames
@@ -157,7 +162,7 @@ void NeXuSFile::loadEventData()
 {
     printf("Load event data...\n");
 
-    // Open our Nexus file in read only mode.
+    // Open our NeXuS file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Read in event indices.
@@ -192,7 +197,7 @@ void NeXuSFile::loadTimes()
 {
     printf("Load times....\n");
 
-    // Open our Nexus file in read only mode.
+    // Open our NeXuS file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Read in start time in Unix time.
@@ -230,6 +235,26 @@ void NeXuSFile::loadTimes()
     endSinceEpoch_ = (int)mktime(&etime);
 
     input.close();
+}
+
+// Load detector counts from the file
+void NeXuSFile::loadDetectorCounts()
+{
+    printf("Load detector events....\n");
+
+    // Open our Nexus file in read only mode.
+    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
+
+    const auto nSpec = spectra_.size();
+    const auto nTofBins = tofBins_.size() - 1;
+
+    std::vector<int> countsBuffer;
+    countsBuffer.resize(nSpec * nTofBins); // HDF5 expects contiguous memory. This is a pain.
+    auto &&[counts, detectorCountsDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "counts");
+    H5Dread(counts.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, countsBuffer.data());
+    for (auto i = 0; i < nSpec; ++i)
+        for (auto j = 0; j < nTofBins; ++j)
+            gsl_histogram_se(detectorHistograms_[spectra_[i]], j); countsBuffer[i * nTofBins + j]
 }
 
 // Save key modified data back to the file

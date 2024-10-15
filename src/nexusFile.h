@@ -34,6 +34,8 @@ class NeXuSFile
     void loadEventData();
     // Load start/end times
     void loadTimes();
+    // Load detector counts from the file
+    void loadDetectorCounts();
     // Save key modified data back to the file
     bool saveModifiedData();
 
@@ -53,6 +55,7 @@ class NeXuSFile
     std::vector<double> frameOffsets_;
     std::vector<double> tofBins_;
     std::map<int, std::vector<int>> monitorCounts_;
+    std::map<unsigned int, std::vector<int>> detectorCounts_;
     std::map<unsigned int, gsl_histogram *> detectorHistograms_;
     std::map<unsigned int, std::vector<double>> partitions_;
 

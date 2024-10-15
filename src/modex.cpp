@@ -63,7 +63,7 @@ bool ModEx::process()
                 return false;
         }
 
-        // Loop over input Nexus files
+        // Loop over input NeXuS files
         for (auto &nxsFileName : cfg.runs)
         {
             // Open the Nexus file ready for use

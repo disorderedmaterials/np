@@ -23,7 +23,7 @@ void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std:
     // Initialise the slice iterator and window slice / NeXuSFile references
     auto sliceIt = slices.begin();
 
-    // Loop over input Nexus files
+    // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
     {
         // Open the NeXuS file and get its event data

@@ -67,6 +67,21 @@ int main(int argc, char **argv)
            },
            "Dump all events from specified spectrum index")
         ->group("Processing");
+    app.add_option_function<int>(
+           "--dump-histogram",
+           [&](int specId)
+           {
+               if (processingMode_ == Processors::ProcessingMode::None)
+                   processingMode_ = Processors::ProcessingMode::DumpHistogram;
+               else
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               spectrumId_ = specId;
+           },
+           "Dump specified histogram index")
+        ->group("Processing");
     app.add_flag_callback(
            "--summed",
            [&]()
@@ -115,6 +130,9 @@ int main(int argc, char **argv)
             break;
         case (Processors::ProcessingMode::DumpEvents):
             Processors::dumpEvents(inputFiles_, spectrumId_);
+            break;
+        case (Processors::ProcessingMode::DumpHistogram):
+            Processors::dumpHistogram(inputFiles_, spectrumId_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):

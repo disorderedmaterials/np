@@ -18,7 +18,7 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
     std::map<int, std::vector<double>> eventMap;
     std::optional<double> lastSecondsSinceEpoch;
 
-    // Loop over input Nexus files
+    // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
     {
         // Open the Nexus file ready for use
