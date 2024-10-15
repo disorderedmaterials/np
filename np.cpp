@@ -80,7 +80,22 @@ int main(int argc, char **argv)
                }
                spectrumId_ = specId;
            },
-           "Dump specified histogram index")
+           "Dump specified detector histogram")
+        ->group("Processing");
+    app.add_option_function<int>(
+           "--dump-monitor",
+           [&](int specId)
+           {
+               if (processingMode_ == Processors::ProcessingMode::None)
+                   processingMode_ = Processors::ProcessingMode::DumpMonitor;
+               else
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               spectrumId_ = specId;
+           },
+           "Dump specified monitor histogram")
         ->group("Processing");
     app.add_flag_callback(
            "--summed",
@@ -133,6 +148,9 @@ int main(int argc, char **argv)
             break;
         case (Processors::ProcessingMode::DumpDetector):
             Processors::DumpDetector(inputFiles_, spectrumId_);
+            break;
+        case (Processors::ProcessingMode::DumpMonitor):
+            Processors::DumpMonitor(inputFiles_, spectrumId_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):

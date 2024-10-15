@@ -25,6 +25,8 @@ std::vector<std::string> neXuSBasicPaths_ = {"/raw_data_1/title",
 
 NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename)
 {
+    fmt::print("Opening NeXuS file '{}'...\n", filename_);
+
     // Open input NeXuS file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
@@ -32,6 +34,7 @@ NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename
     auto &&[spectraID, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
     spectra_.resize(spectraDimension);
     H5Dread(spectraID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, spectra_.data());
+    fmt::print("... total number of detector spectra is {}.\n", spectra_.size());
 
     // Read in TOF bin information.
     auto &&[tofBinsID, tofBinsDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/monitor_1", "time_of_flight");
@@ -54,7 +57,7 @@ NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename
 
     if (loadEvents)
     {
-        fmt::print("Loading event data from file '{}'...\n", filename_);
+        fmt::print("... Loading event data...\n");
         loadFrameCounts();
         loadEventData();
         loadTimes();

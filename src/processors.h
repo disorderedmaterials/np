@@ -15,6 +15,7 @@ enum class ProcessingMode
     None,
     DumpDetector,
     DumpEvents,
+    DumpMonitor,
     PartitionEventsIndividual,
     PartitionEventsSummed
 };
@@ -56,8 +57,10 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
 // Get Events
 std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
                                               bool firstOnly = false);
-// Dump histogram from specified spectrum
+// Dump detector histogram
 void DumpDetector(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly = false);
+// Dump monitor histogram
+void DumpMonitor(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly = false);
 // Partition events into individual windows / slices
 void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
                                const Window &windowDefinition, int nSlices, double windowDelta);
