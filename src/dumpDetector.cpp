@@ -6,7 +6,7 @@
 namespace Processors
 {
 // Dump histogram from specified spectrum
-void dumpHistogram(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly)
+void DumpDetector(const std::vector<std::string> &inputNeXusFiles, int spectrumId, bool firstOnly)
 {
     /*
      * Dump all events for the specified detector spectrum

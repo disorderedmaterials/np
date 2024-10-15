@@ -96,7 +96,7 @@ std::pair<H5::DataSet, long int> NeXuSFile::find1DDataset(H5::H5File file, H5std
 // Return filename
 std::string NeXuSFile::filename() const { return filename_; }
 
-// Template basic paths from the referenceFile, and make ready for histogram binning
+// Template basic paths from the referenceFile
 void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
 {
     filename_ = outputFile;

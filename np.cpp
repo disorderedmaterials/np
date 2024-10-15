@@ -68,11 +68,11 @@ int main(int argc, char **argv)
            "Dump all events from specified spectrum index")
         ->group("Processing");
     app.add_option_function<int>(
-           "--dump-histogram",
+           "--dump-detector",
            [&](int specId)
            {
                if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::DumpHistogram;
+                   processingMode_ = Processors::ProcessingMode::DumpDetector;
                else
                {
                    fmt::print("Error: Multiple processing modes given.\n");
@@ -131,8 +131,8 @@ int main(int argc, char **argv)
         case (Processors::ProcessingMode::DumpEvents):
             Processors::dumpEvents(inputFiles_, spectrumId_);
             break;
-        case (Processors::ProcessingMode::DumpHistogram):
-            Processors::dumpHistogram(inputFiles_, spectrumId_);
+        case (Processors::ProcessingMode::DumpDetector):
+            Processors::DumpDetector(inputFiles_, spectrumId_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):
