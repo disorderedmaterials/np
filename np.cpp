@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     // -- Processing Modes
     app.add_option_function<int>(
            "--dump-events",
-           [&](int specId)
+           [&](int id)
            {
                if (processingMode_ == Processors::ProcessingMode::None)
                    processingMode_ = Processors::ProcessingMode::DumpEvents;
@@ -63,13 +63,13 @@ int main(int argc, char **argv)
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
-               targetIndex_ = specId;
+               targetIndex_ = id;
            },
            "Dump all events from specified spectrum index")
         ->group("Processing");
     app.add_option_function<int>(
            "--dump-detector",
-           [&](int specId)
+           [&](int id)
            {
                if (processingMode_ == Processors::ProcessingMode::None)
                    processingMode_ = Processors::ProcessingMode::DumpDetector;
@@ -78,13 +78,13 @@ int main(int argc, char **argv)
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
-               targetIndex_ = specId;
+               targetIndex_ = id;
            },
            "Dump specified detector histogram")
         ->group("Processing");
     app.add_option_function<int>(
            "--dump-monitor",
-           [&](int specId)
+           [&](int id)
            {
                if (processingMode_ == Processors::ProcessingMode::None)
                    processingMode_ = Processors::ProcessingMode::DumpMonitor;
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
-               targetIndex_ = specId;
+               targetIndex_ = id;
            },
            "Dump specified monitor histogram")
         ->group("Processing");
