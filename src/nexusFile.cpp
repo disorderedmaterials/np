@@ -113,7 +113,7 @@ void NeXuSFile::loadBasicData()
     etime.tm_sec = s;
     endSinceEpoch_ = (int)mktime(&etime);
     fmt::print("... run ended at {} ({} s since epoch).\n", charBuffer, endSinceEpoch_);
-    fmt::print("... run duration was {} s.\n", endSinceEpoch_ - startSinceEpoch_);
+    fmt::print("... literal run duration was {} s.\n", endSinceEpoch_ - startSinceEpoch_);
 
     // Read in detector spectra information
     auto &&[detSpecIndices, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
