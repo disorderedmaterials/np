@@ -171,7 +171,6 @@ int main(int argc, char **argv)
                     return 1;
                 }
                 NeXuSFile firstFile(inputFiles_.front());
-                firstFile.loadTimes();
                 fmt::print("Window start time converted from relative to absolute time: {} => {} (= {} + {})\n",
                            windowStartTime_, windowStartTime_ + firstFile.startSinceEpoch(), firstFile.startSinceEpoch(),
                            windowStartTime_);

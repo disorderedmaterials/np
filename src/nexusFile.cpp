@@ -27,43 +27,13 @@ NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename
 {
     fmt::print("Opening NeXuS file '{}'...\n", filename_);
 
-    // Open input NeXuS file in read only mode.
-    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
-
-    // Read in detector spectra information
-    auto &&[detSpecIndices, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
-    detectorSpectrumIndices_.resize(spectraDimension);
-    H5Dread(detSpecIndices.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, detectorSpectrumIndices_.data());
-    fmt::print("... total number of detector spectra is {}.\n", detectorSpectrumIndices_.size());
-    nMonitorSpectra_ = detectorSpectrumIndices_.front() - 1;
-    fmt::print("... inferred number of monitor spectra is {}.\n", nMonitorSpectra_);
-
-    // Read in TOF boundary information.
-    auto &&[tofBoundariesID, tofBoundariesDimension] =
-        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "time_of_flight");
-    tofBoundaries_.resize(tofBoundariesDimension);
-    H5Dread(tofBoundariesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBoundaries_.data());
-
-    // Set up detector histograms and straight counts vectors
-    for (auto spec : detectorSpectrumIndices_)
-    {
-        // For event re-binning
-        detectorHistograms_[spec] = gsl_histogram_alloc(tofBoundaries_.size() - 1);
-        gsl_histogram_set_ranges(detectorHistograms_[spec], tofBoundaries_.data(), tofBoundaries_.size());
-
-        // For histogram manipulation
-        detectorCounts_[spec].resize(tofBoundaries_.size() - 1);
-        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
-    }
-
-    input.close();
+    loadBasicData();
 
     if (loadEvents)
     {
         fmt::print("... Loading event data...\n");
         loadFrameCounts();
         loadEventData();
-        loadTimes();
         fmt::print("... file '{}' has {} goodframes and {} events...\n", filename_, nGoodFrames_, eventTimes_.size());
     }
 }
@@ -101,6 +71,77 @@ std::pair<H5::DataSet, long int> NeXuSFile::find1DDataset(H5::H5File file, H5std
 
 // Return filename
 std::string NeXuSFile::filename() const { return filename_; }
+
+// Load basic information from the NeXuS file
+void NeXuSFile::loadBasicData()
+{
+    // Open input NeXuS file in read only mode.
+    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
+
+    // Read in start time in Unix time.
+    hid_t memType = H5Tcopy(H5T_C_S1);
+    H5Tset_size(memType, UCHAR_MAX);
+    char timeBuffer[UCHAR_MAX];
+    int y = 0, M = 0, d = 0, h = 0, m = 0, s = 0;
+
+    auto &&[startTimeID, startTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "start_time");
+    H5Dread(startTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timeBuffer);
+
+    sscanf(timeBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
+    std::tm stime = {0};
+    stime.tm_year = y - 1900;
+    stime.tm_mon = M - 1;
+    stime.tm_mday = d;
+    stime.tm_hour = h;
+    stime.tm_min = m;
+    stime.tm_sec = s;
+    startSinceEpoch_ = (int)mktime(&stime);
+    fmt::print("... run started at {} ({} s since epoch).\n", timeBuffer, startSinceEpoch_);
+
+    // Read in end time in Unix time.
+    auto &&[endTimeID, endTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "end_time");
+    H5Dread(endTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timeBuffer);
+
+    sscanf(timeBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
+    std::tm etime = {0};
+    etime.tm_year = y - 1900;
+    etime.tm_mon = M - 1;
+    etime.tm_mday = d;
+    etime.tm_hour = h;
+    etime.tm_min = m;
+    etime.tm_sec = s;
+    endSinceEpoch_ = (int)mktime(&etime);
+    fmt::print("... run ended at {} ({} s since epoch).\n", timeBuffer, endSinceEpoch_);
+    fmt::print("... run duration was {} s.\n", endSinceEpoch_ - startSinceEpoch_);
+
+    // Read in detector spectra information
+    auto &&[detSpecIndices, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
+    detectorSpectrumIndices_.resize(spectraDimension);
+    H5Dread(detSpecIndices.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, detectorSpectrumIndices_.data());
+    fmt::print("... total number of detector spectra is {}.\n", detectorSpectrumIndices_.size());
+    nMonitorSpectra_ = detectorSpectrumIndices_.front() - 1;
+    fmt::print("... inferred number of monitor spectra is {}.\n", nMonitorSpectra_);
+
+    // Read in TOF boundary information.
+    auto &&[tofBoundariesID, tofBoundariesDimension] =
+        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "time_of_flight");
+    tofBoundaries_.resize(tofBoundariesDimension);
+    H5Dread(tofBoundariesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBoundaries_.data());
+
+    // Set up detector histograms and straight counts vectors
+    for (auto spec : detectorSpectrumIndices_)
+    {
+        // For event re-binning
+        detectorHistograms_[spec] = gsl_histogram_alloc(tofBoundaries_.size() - 1);
+        gsl_histogram_set_ranges(detectorHistograms_[spec], tofBoundaries_.data(), tofBoundaries_.size());
+
+        // For histogram manipulation
+        detectorCounts_[spec].resize(tofBoundaries_.size() - 1);
+        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
+    }
+
+    input.close();
+}
 
 // Template basic paths from the referenceFile
 void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
@@ -213,51 +254,6 @@ void NeXuSFile::loadEventData()
         NeXuSFile::find1DDataset(input, "raw_data_1/detector_1_events", "event_time_zero");
     frameOffsets_.resize(frameOffsetsDimension);
     H5Dread(frameOffsetsID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameOffsets_.data());
-
-    input.close();
-}
-
-// Load start/end times
-void NeXuSFile::loadTimes()
-{
-    printf("Load times....\n");
-
-    // Open our NeXuS file in read only mode.
-    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
-
-    // Read in start time in Unix time.
-    hid_t memType = H5Tcopy(H5T_C_S1);
-    H5Tset_size(memType, UCHAR_MAX);
-    char timeBuffer[UCHAR_MAX];
-    int y = 0, M = 0, d = 0, h = 0, m = 0, s = 0;
-
-    auto &&[startTimeID, startTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "start_time");
-    H5Dread(startTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timeBuffer);
-
-    sscanf(timeBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
-    std::tm stime = {0};
-    stime.tm_year = y - 1900;
-    stime.tm_mon = M - 1;
-    stime.tm_mday = d;
-    stime.tm_hour = h;
-    stime.tm_min = m;
-    stime.tm_sec = s;
-    startSinceEpoch_ = (int)mktime(&stime);
-
-    // Read in end time in Unix time.
-    auto &&[endTimeID, endTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "end_time");
-    H5Dread(endTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timeBuffer);
-
-    sscanf(timeBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
-    std::tm etime = {0};
-    etime.tm_year = y - 1900;
-    etime.tm_mon = M - 1;
-    etime.tm_mday = d;
-    etime.tm_hour = h;
-    etime.tm_min = m;
-    etime.tm_sec = s;
-
-    endSinceEpoch_ = (int)mktime(&etime);
 
     input.close();
 }

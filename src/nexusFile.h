@@ -26,6 +26,8 @@ class NeXuSFile
     public:
     // Return filename
     std::string filename() const;
+    // Load basic information from the NeXuS file
+    void loadBasicData();
     // Template basic paths from the referenceFile
     void templateFile(std::string referenceFile, std::string outputFile);
     // Load in monitor histograms
@@ -34,8 +36,6 @@ class NeXuSFile
     void loadFrameCounts();
     // Load event data
     void loadEventData();
-    // Load start/end times
-    void loadTimes();
     // Load detector counts from the file
     void loadDetectorCounts();
     // Save key modified data back to the file
