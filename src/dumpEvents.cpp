@@ -3,6 +3,7 @@
 #include "window.h"
 #include <fmt/core.h>
 #include <optional>
+#include <fstream>
 
 namespace Processors
 {
@@ -35,6 +36,9 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         const auto &frameOffsets = nxs.frameOffsets();
         const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
 
+        std::ofstream output(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
+        output << fmt::format("# event(us)  event(relative)  epoch(s)  delta(s)");
+
         // Loop over frames in the Nexus file
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
         {
@@ -50,10 +54,10 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
                     auto eSeconds = eMicroSeconds * 0.000001;
                     auto eSecondsSinceEpoch = eSeconds + frameZero + nxs.startSinceEpoch();
                     if (lastSecondsSinceEpoch)
-                        fmt::print("{:20.6f}  {:20.10f}  {:20.5f}  {}\n", eMicroSeconds, eSeconds + frameZero,
+                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {}\n", eMicroSeconds, eSeconds + frameZero,
                                    eSecondsSinceEpoch, eSecondsSinceEpoch - *lastSecondsSinceEpoch);
                     else
-                        fmt::print("{:20.6f}  {:20.10f}  {:20.5f}\n", eMicroSeconds, eSeconds + frameZero, eSecondsSinceEpoch);
+                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}\n", eMicroSeconds, eSeconds + frameZero, eSecondsSinceEpoch);
                     eventMap[spectrumId].push_back(eSecondsSinceEpoch);
                     lastSecondsSinceEpoch = eSecondsSinceEpoch;
                     if (firstOnly)
@@ -64,6 +68,8 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
             // Update start event index
             eventStart = eventEnd;
         }
+
+        output.close();
     }
 
     return eventMap;
