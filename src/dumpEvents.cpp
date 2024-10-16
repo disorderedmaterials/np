@@ -26,7 +26,6 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         // Open the Nexus file ready for use
         NeXuSFile nxs(nxsFileName);
         nxs.loadEventData();
-        fmt::print("... file '{}' has {} events...\n", nxsFileName, nxs.eventTimes().size());
 
         auto eventStart = 0, eventEnd = 0;
         const auto &eventsPerFrame = nxs.eventsPerFrame();
@@ -34,6 +33,7 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         const auto &eventTimes = nxs.eventTimes();
         const auto &frameOffsets = nxs.frameOffsets();
         const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
+        fmt::print("NeXuS file spectrum ID for detector index {} is {}.\n", detectorIndex, spectrumId);
 
         std::ofstream output(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
         output << fmt::format("# event(us)  event(relative)  epoch(s)  delta(s)");

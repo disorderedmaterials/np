@@ -321,7 +321,7 @@ const std::vector<double> &NeXuSFile::eventTimes() const { return eventTimes_; }
 const std::vector<int> &NeXuSFile::eventsPerFrame() const { return eventsPerFrame_; }
 const std::vector<double> &NeXuSFile::frameOffsets() const { return frameOffsets_; }
 const std::vector<double> &NeXuSFile::tofBoundaries() const { return tofBoundaries_; }
-const int NeXuSFile::spectrumForDetector(int detectorId) const { return detectorSpectrumIndices_[detectorId - 1]; }
+const int NeXuSFile::spectrumForDetector(int detectorId) const { return detectorSpectrumIndices_.at(detectorId - 1); }
 const std::map<int, std::vector<int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
 const std::map<unsigned int, std::vector<int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
 std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
