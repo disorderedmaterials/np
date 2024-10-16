@@ -9,7 +9,7 @@
 class NeXuSFile
 {
     public:
-    NeXuSFile(std::string filename = "", bool loadEvents = false);
+    NeXuSFile(std::string filename = "");
     ~NeXuSFile();
 
     /*
@@ -32,8 +32,6 @@ class NeXuSFile
     void templateFile(std::string referenceFile, std::string outputFile);
     // Load in monitor histograms
     void loadMonitorCounts();
-    // Load frame counts
-    void loadFrameCounts();
     // Load event data
     void loadEventData();
     // Load detector counts from the file

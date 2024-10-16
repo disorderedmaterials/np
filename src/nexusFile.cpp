@@ -23,18 +23,13 @@ std::vector<std::string> neXuSBasicPaths_ = {"/raw_data_1/title",
                                              "/raw_data_1/monitor_9/data",
                                              "/raw_data_1/detector_1/counts"};
 
-NeXuSFile::NeXuSFile(std::string filename, bool loadEvents) : filename_(filename)
+NeXuSFile::NeXuSFile(std::string filename) : filename_(filename)
 {
-    fmt::print("Opening NeXuS file '{}'...\n", filename_);
-
-    loadBasicData();
-
-    if (loadEvents)
+    if (!filename_.empty())
     {
-        fmt::print("... Loading event data...\n");
-        loadFrameCounts();
-        loadEventData();
-        fmt::print("... file '{}' has {} goodframes and {} events...\n", filename_, nGoodFrames_, eventTimes_.size());
+        fmt::print("Opening NeXuS file '{}'...\n", filename_);
+
+        loadBasicData();
     }
 }
 
@@ -140,6 +135,13 @@ void NeXuSFile::loadBasicData()
         std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
     }
 
+    // Read in good frames
+    auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
+    auto goodFramesTemp = new int[(long int)goodFramesDimension];
+    H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
+    nGoodFrames_ = goodFramesTemp[0];
+    fmt::print("... there were {} good frames.\n", nGoodFrames_);
+
     input.close();
 }
 
@@ -206,27 +208,10 @@ void NeXuSFile::loadMonitorCounts()
     input.close();
 }
 
-// Load frame counts
-void NeXuSFile::loadFrameCounts()
-{
-    printf("Load frame counts...\n");
-
-    // Open our NeXuS file in read only mode.
-    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
-
-    // Read in good frames
-    auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
-    auto goodFramesTemp = new int[(long int)goodFramesDimension];
-    H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
-    nGoodFrames_ = goodFramesTemp[0];
-
-    input.close();
-}
-
 // Load event data
 void NeXuSFile::loadEventData()
 {
-    printf("Load event data...\n");
+    printf("Loading event data...\n");
 
     // Open our NeXuS file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
@@ -254,6 +239,8 @@ void NeXuSFile::loadEventData()
         NeXuSFile::find1DDataset(input, "raw_data_1/detector_1_events", "event_time_zero");
     frameOffsets_.resize(frameOffsetsDimension);
     H5Dread(frameOffsetsID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameOffsets_.data());
+
+    fmt::print("... there are {} events...\n", eventTimes_.size());
 
     input.close();
 }

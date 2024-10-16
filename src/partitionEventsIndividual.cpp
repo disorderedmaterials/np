@@ -26,7 +26,8 @@ void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, 
     for (auto &nxsFileName : inputNeXusFiles)
     {
         // Open the NeXuS file and get its event data
-        NeXuSFile nxs(nxsFileName, true);
+        NeXuSFile nxs(nxsFileName);
+        nxs.loadEventData();
 
         const auto &eventsPerFrame = nxs.eventsPerFrame();
         const auto &eventIndices = nxs.eventIndices();
