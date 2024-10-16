@@ -142,10 +142,10 @@ int main(int argc, char **argv)
             Processors::dumpEvents(inputFiles_, targetIndex_);
             break;
         case (Processors::ProcessingMode::DumpDetector):
-            Processors::DumpDetector(inputFiles_, targetIndex_);
+            Processors::dumpDetector(inputFiles_, targetIndex_);
             break;
         case (Processors::ProcessingMode::DumpMonitor):
-            Processors::DumpMonitor(inputFiles_, targetIndex_);
+            Processors::dumpMonitor(inputFiles_, targetIndex_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):

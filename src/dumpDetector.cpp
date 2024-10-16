@@ -5,7 +5,7 @@
 
 namespace Processors
 {
-void DumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool firstOnly)
+void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool firstOnly)
 {
     /*
      * Dump histograms for the specified detector index

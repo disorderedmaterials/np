@@ -5,7 +5,7 @@
 
 namespace Processors
 {
-void DumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex, bool firstOnly)
+void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex, bool firstOnly)
 {
     /*
      * Dump histograms for the specified monitor index

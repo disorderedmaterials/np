@@ -58,9 +58,9 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
 std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorIndex,
                                               bool firstOnly = false);
 // Dump detector histogram
-void DumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool firstOnly = false);
+void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool firstOnly = false);
 // Dump monitor histogram
-void DumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex, bool firstOnly = false);
+void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex, bool firstOnly = false);
 // Partition events into individual windows / slices
 void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
                                const Window &windowDefinition, int nSlices, double windowDelta);
