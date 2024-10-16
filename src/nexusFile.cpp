@@ -70,19 +70,25 @@ std::string NeXuSFile::filename() const { return filename_; }
 // Load basic information from the NeXuS file
 void NeXuSFile::loadBasicData()
 {
+    hid_t memType = H5Tcopy(H5T_C_S1);
+    H5Tset_size(memType, UCHAR_MAX);
+    char charBuffer[UCHAR_MAX];
+
     // Open input NeXuS file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
+    // Get the run title
+    auto &&[titleID, titleDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "title");
+    H5Dread(titleID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, charBuffer);
+    fmt::print("... run title was '{}'\n", charBuffer);
+
     // Read in start time in Unix time.
-    hid_t memType = H5Tcopy(H5T_C_S1);
-    H5Tset_size(memType, UCHAR_MAX);
-    char timeBuffer[UCHAR_MAX];
     int y = 0, M = 0, d = 0, h = 0, m = 0, s = 0;
 
     auto &&[startTimeID, startTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "start_time");
-    H5Dread(startTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timeBuffer);
+    H5Dread(startTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, charBuffer);
 
-    sscanf(timeBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
+    sscanf(charBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
     std::tm stime = {0};
     stime.tm_year = y - 1900;
     stime.tm_mon = M - 1;
@@ -91,13 +97,13 @@ void NeXuSFile::loadBasicData()
     stime.tm_min = m;
     stime.tm_sec = s;
     startSinceEpoch_ = (int)mktime(&stime);
-    fmt::print("... run started at {} ({} s since epoch).\n", timeBuffer, startSinceEpoch_);
+    fmt::print("... run started at {} ({} s since epoch).\n", charBuffer, startSinceEpoch_);
 
     // Read in end time in Unix time.
     auto &&[endTimeID, endTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "end_time");
-    H5Dread(endTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, timeBuffer);
+    H5Dread(endTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, charBuffer);
 
-    sscanf(timeBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
+    sscanf(charBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
     std::tm etime = {0};
     etime.tm_year = y - 1900;
     etime.tm_mon = M - 1;
@@ -106,7 +112,7 @@ void NeXuSFile::loadBasicData()
     etime.tm_min = m;
     etime.tm_sec = s;
     endSinceEpoch_ = (int)mktime(&etime);
-    fmt::print("... run ended at {} ({} s since epoch).\n", timeBuffer, endSinceEpoch_);
+    fmt::print("... run ended at {} ({} s since epoch).\n", charBuffer, endSinceEpoch_);
     fmt::print("... run duration was {} s.\n", endSinceEpoch_ - startSinceEpoch_);
 
     // Read in detector spectra information
