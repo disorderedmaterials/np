@@ -56,13 +56,12 @@ int main(int argc, char **argv)
            "--dump-events",
            [&](int id)
            {
-               if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::DumpEvents;
-               else
+               if (processingMode_ != Processors::ProcessingMode::None)
                {
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
+               processingMode_ = Processors::ProcessingMode::DumpEvents;
                targetIndex_ = id;
            },
            "Dump all events from specified spectrum index")
@@ -71,13 +70,12 @@ int main(int argc, char **argv)
            "--dump-detector",
            [&](int id)
            {
-               if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::DumpDetector;
-               else
+               if (processingMode_ != Processors::ProcessingMode::None)
                {
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
+               processingMode_ = Processors::ProcessingMode::DumpDetector;
                targetIndex_ = id;
            },
            "Dump specified detector histogram")
@@ -86,13 +84,12 @@ int main(int argc, char **argv)
            "--dump-monitor",
            [&](int id)
            {
-               if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::DumpMonitor;
-               else
+               if (processingMode_ != Processors::ProcessingMode::None)
                {
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
+               processingMode_ = Processors::ProcessingMode::DumpMonitor;
                targetIndex_ = id;
            },
            "Dump specified monitor histogram")
@@ -101,13 +98,12 @@ int main(int argc, char **argv)
            "--summed",
            [&]()
            {
-               if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::PartitionEventsSummed;
-               else
+               if (processingMode_ != Processors::ProcessingMode::None)
                {
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
+               processingMode_ = Processors::ProcessingMode::PartitionEventsSummed;
            },
            "Sum windows / slices over all files and output NeXuS files per-slice")
         ->group("Processing");
@@ -115,13 +111,12 @@ int main(int argc, char **argv)
            "--individual",
            [&]()
            {
-               if (processingMode_ == Processors::ProcessingMode::None)
-                   processingMode_ = Processors::ProcessingMode::PartitionEventsIndividual;
-               else
+               if (processingMode_ != Processors::ProcessingMode::None)
                {
                    fmt::print("Error: Multiple processing modes given.\n");
                    throw(CLI::RuntimeError());
                }
+               processingMode_ = Processors::ProcessingMode::PartitionEventsIndividual;
            },
            "Output NeXuS files for each window / slice")
         ->group("Processing");
