@@ -34,7 +34,7 @@ void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, 
         const auto &eventTimes = nxs.eventTimes();
         const auto &frameOffsets = nxs.frameOffsets();
 
-        // Loop over frames in the Nexus file
+        // Loop over frames in the NeXuS file
         auto eventStart = 0, eventEnd = 0;
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
         {

@@ -153,7 +153,7 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
     // Open input NeXuS file in read only mode.
     H5::H5File input = H5::H5File(referenceFile, H5F_ACC_RDONLY);
 
-    // Create new Nexus file for output.
+    // Create new NeXuS file for output.
     H5::H5File output = H5::H5File(filename_, H5F_ACC_TRUNC);
 
     printf("Templating file '%s' to '%s'...\n", referenceFile.c_str(), filename_.c_str());
@@ -250,7 +250,7 @@ void NeXuSFile::loadDetectorCounts()
 {
     printf("Load detector counts....\n");
 
-    // Open our Nexus file in read only mode.
+    // Open our NeXuS file in read only mode.
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     const auto nSpec = detectorSpectrumIndices_.size();
@@ -271,7 +271,7 @@ void NeXuSFile::loadDetectorCounts()
 // Save key modified data back to the file
 bool NeXuSFile::saveModifiedData()
 {
-    // Open Nexus file in read/write mode.
+    // Open NeXuS file in read/write mode.
     H5::H5File output = H5::H5File(filename_, H5F_ACC_RDWR);
 
     // Write good frames

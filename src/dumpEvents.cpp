@@ -23,7 +23,7 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
     // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
     {
-        // Open the Nexus file ready for use
+        // Open the NeXuS file ready for use
         NeXuSFile nxs(nxsFileName);
         nxs.loadEventData();
 
@@ -38,7 +38,7 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         std::ofstream output(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
         output << fmt::format("# event(us)  event(relative)  epoch(s)  delta(s)");
 
-        // Loop over frames in the Nexus file
+        // Loop over frames in the NeXuS file
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
         {
             // Set new end event index and get zero for frame
