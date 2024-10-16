@@ -136,7 +136,9 @@ int main(int argc, char **argv)
     switch (processingMode_)
     {
         case (Processors::ProcessingMode::None):
-            fmt::print("No processing mode specified. We are done.\n");
+            fmt::print("No processing mode specified. Basic data from files will be shown.\n");
+            for (const auto &file : inputFiles_)
+                NeXuSFile nxs(file);
             break;
         case (Processors::ProcessingMode::DumpEvents):
             Processors::dumpEvents(inputFiles_, targetIndex_);
