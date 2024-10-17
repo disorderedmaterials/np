@@ -36,7 +36,7 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         fmt::print("NeXuS file spectrum ID for detector index {} is {}.\n", detectorIndex, spectrumId);
 
         std::ofstream output(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
-        output << fmt::format("# event(us)  event(relative)  epoch(s)  delta(s)");
+        output << fmt::format("# frame_offset(us)  start_time_offset(s)  epoch_offset(s)  delta(s)");
 
         // Loop over frames in the NeXuS file
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
