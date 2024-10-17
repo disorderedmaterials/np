@@ -5,7 +5,7 @@
 
 namespace Processors
 {
-void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex, bool firstOnly)
+void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex)
 {
     /*
      * Dump histograms for the specified monitor index
@@ -22,7 +22,7 @@ void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorInd
 
         // Open the output file
         std::ofstream output(fmt::format("{}.mon.{}", nxsFileName, monitorIndex).c_str());
-        output << "# TCB/usec   Counts\n";
+        output << "# TCB/us   Counts\n";
         auto bin = 0;
         const auto &counts = nxs.monitorCounts().at(monitorIndex);
         for (auto tof : nxs.tofBoundaries())

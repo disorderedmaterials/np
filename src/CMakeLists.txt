@@ -1,8 +1,8 @@
 add_library(
   nexusProcess
   dumpDetector.cpp
-  dumpEvents.cpp
   dumpMonitor.cpp
+  getEvents.cpp
   nexusFile.cpp
   partitionEventsIndividual.cpp
   partitionEventsSummed.cpp

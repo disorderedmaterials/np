@@ -64,7 +64,21 @@ int main(int argc, char **argv)
                processingMode_ = Processors::ProcessingMode::DumpEvents;
                targetIndex_ = id;
            },
-           "Dump all events from specified spectrum index")
+           "Dump all events for specified detector index")
+        ->group("Processing");
+    app.add_option_function<int>(
+           "--print-events",
+           [&](int id)
+           {
+               if (processingMode_ != Processors::ProcessingMode::None)
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               processingMode_ = Processors::ProcessingMode::PrintEvents;
+               targetIndex_ = id;
+           },
+           "Print all events for specified detector index")
         ->group("Processing");
     app.add_option_function<int>(
            "--dump-detector",
@@ -141,7 +155,9 @@ int main(int argc, char **argv)
                 NeXuSFile nxs(file);
             break;
         case (Processors::ProcessingMode::DumpEvents):
-            Processors::dumpEvents(inputFiles_, targetIndex_);
+        case (Processors::ProcessingMode::PrintEvents):
+            Processors::dumpEventTimesEpoch(inputFiles_, targetIndex_,
+                                            processingMode_ == Processors::ProcessingMode::PrintEvents);
             break;
         case (Processors::ProcessingMode::DumpDetector):
             Processors::dumpDetector(inputFiles_, targetIndex_);

@@ -5,7 +5,7 @@
 
 namespace Processors
 {
-void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool firstOnly)
+void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex)
 {
     /*
      * Dump histograms for the specified detector index
@@ -24,7 +24,7 @@ void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorI
 
         // Open the output file
         std::ofstream output(fmt::format("{}.det.{}", nxsFileName, detectorIndex).c_str());
-        output << fmt::format("# TCB/usec   Counts  [detector index {}, spectrum index = {}]\n", detectorIndex, spectrumId);
+        output << fmt::format("# TCB/us   Counts  [detector index {}, spectrum index = {}]\n", detectorIndex, spectrumId);
         auto bin = 0;
         const auto &counts = nxs.detectorCounts().at(spectrumId);
         for (auto tof : nxs.tofBoundaries())

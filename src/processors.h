@@ -17,7 +17,8 @@ enum class ProcessingMode
     DumpEvents,
     DumpMonitor,
     PartitionEventsIndividual,
-    PartitionEventsSummed
+    PartitionEventsSummed,
+    PrintEvents
 };
 
 // Processing Direction
@@ -54,13 +55,12 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
  * Processors
  */
 
-// Get Events
-std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorIndex,
-                                              bool firstOnly = false);
+// Dump all events for the specified detector spectrum, returning seconds since epoch for each
+void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool toStdOut = false);
 // Dump detector histogram
-void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool firstOnly = false);
+void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex);
 // Dump monitor histogram
-void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex, bool firstOnly = false);
+void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex);
 // Partition events into individual windows / slices
 void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
                                const Window &windowDefinition, int nSlices, double windowDelta);

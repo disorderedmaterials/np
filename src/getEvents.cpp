@@ -3,22 +3,18 @@
 #include "window.h"
 #include <fmt/core.h>
 #include <fstream>
+#include <iostream>
 #include <optional>
 
 namespace Processors
 {
-// Dump events from specified spectrum, returning seconds since epoch for each
-std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &inputNeXusFiles, int detectorIndex,
-                                              bool firstOnly)
+void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool toStdOut)
 {
     /*
-     * Dump all events for the specified detector spectrum
+     * Get all events for the specified detector spectrum, returning seconds since epoch for each
      */
 
-    fmt::print("Dumping all events from detector index {}...\n", detectorIndex);
-
-    std::map<int, std::vector<double>> eventMap;
-    std::optional<double> lastSecondsSinceEpoch;
+    fmt::print("Retrieving all events from detector index {}...\n", detectorIndex);
 
     // Loop over input NeXuS files
     for (auto &nxsFileName : inputNeXusFiles)
@@ -27,6 +23,7 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         NeXuSFile nxs(nxsFileName);
         nxs.loadEventData();
 
+        std::optional<double> lastSecondsSinceEpoch;
         auto eventStart = 0, eventEnd = 0;
         const auto &eventsPerFrame = nxs.eventsPerFrame();
         const auto &eventIndices = nxs.eventIndices();
@@ -35,8 +32,14 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
         const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
         fmt::print("NeXuS file spectrum ID for detector index {} is {}.\n", detectorIndex, spectrumId);
 
-        std::ofstream output(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
-        output << fmt::format("# frame_offset(us)  start_time_offset(s)  epoch_offset(s)  delta(s)");
+        std::ofstream fileOutput;
+
+        if (!toStdOut)
+            fileOutput.open(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
+
+        std::ostream &output = toStdOut ? std::cout : fileOutput;
+        output << fmt::format("# {:20s}  {:20s}  {:20s}  {}\n", "frame_offset(us)", "start_time_offset(s)", "epoch_offset(s)",
+                              "delta(s)");
 
         // Loop over frames in the NeXuS file
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
@@ -58,10 +61,8 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
                     else
                         output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}\n", eMicroSeconds, eSeconds + frameZero,
                                               eSecondsSinceEpoch);
-                    eventMap[spectrumId].push_back(eSecondsSinceEpoch);
+
                     lastSecondsSinceEpoch = eSecondsSinceEpoch;
-                    if (firstOnly)
-                        return eventMap;
                 }
             }
 
@@ -69,10 +70,9 @@ std::map<int, std::vector<double>> dumpEvents(const std::vector<std::string> &in
             eventStart = eventEnd;
         }
 
-        output.close();
+        if (!toStdOut)
+            fileOutput.close();
     }
-
-    return eventMap;
 }
 
 } // namespace Processors
