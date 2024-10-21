@@ -35,12 +35,13 @@ int main(int argc, char **argv)
     app.add_option("-n,--name", windowName_, "Name of the window, used as a prefix to all output files")
         ->group("Window Definition");
     app.add_option("-s,--start", windowStartTime_,
-                   "Start time of the window (relative to first input file start time unless --absolute-start is given)")
+                   "Absolute start time of the window (i.e. seconds since epoch). Specify --relative-time if using a time "
+                   "relative to the run start.")
         ->group("Window Definition");
     app.add_option("-w,--width", windowWidth_, "Window width in seconds)")->group("Window Definition");
-    app.add_flag(
-           "--relative-start", relativeStartTime_,
-           "Flag that the given window start time is relative to the first run start time, not absolute (seconds since epoch)")
+    app.add_flag("--relative-start", relativeStartTime_,
+                 "Flag that the given window start time is relative to the first run start time rather than absolute (seconds "
+                 "since epoch)")
         ->group("Window Definition");
     app.add_option("-d,--delta", windowDelta_, "Time between window occurrences, in seconds")->group("Window Definition");
     app.add_option("--offset", windowOffset_, "Time after start time, in seconds, that the window begins.")
