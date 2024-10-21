@@ -27,7 +27,7 @@ void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std:
     for (auto &nxsFileName : inputNeXusFiles)
     {
         // Open the NeXuS file and get its event data
-        NeXuSFile nxs(nxsFileName);
+        NeXuSFile nxs(nxsFileName, true);
         nxs.loadEventData();
 
         const auto &eventsPerFrame = nxs.eventsPerFrame();

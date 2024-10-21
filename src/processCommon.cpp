@@ -48,7 +48,7 @@ std::vector<std::pair<Window, NeXuSFile>> prepareSlices(const Window &window, in
         auto &[newWin, nexus] =
             slices.emplace_back(Window(sliceName.str(), sliceStartTime, sliceDuration), NeXuSFile(outputFileName.str()));
         nexus.loadBasicData();
-        nexus.prepareSpectraSpace(true);
+        nexus.prepareSpectraSpace();
 
         sliceStartTime += sliceDuration;
     }
