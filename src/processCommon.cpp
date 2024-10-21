@@ -49,6 +49,7 @@ std::vector<std::pair<Window, NeXuSFile>> prepareSlices(const Window &window, in
             slices.emplace_back(Window(sliceName.str(), sliceStartTime, sliceDuration), NeXuSFile(outputFileName.str()));
         nexus.loadBasicData();
         nexus.prepareSpectraSpace();
+        nexus.loadMonitorCounts();
 
         sliceStartTime += sliceDuration;
     }
