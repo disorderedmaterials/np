@@ -11,7 +11,7 @@ class NeXuSFile
     public:
     NeXuSFile(std::string filename = "", bool printInfo = false);
     void operator=(NeXuSFile &source);
-    NeXuSFile(NeXuSFile &source);
+    NeXuSFile(const NeXuSFile &source);
     NeXuSFile(NeXuSFile &&source);
     ~NeXuSFile();
     // Clear all data and arrays

@@ -37,7 +37,7 @@ NeXuSFile::NeXuSFile(std::string filename, bool printInfo) : filename_(filename)
 
 void NeXuSFile::operator=(NeXuSFile &source) { copy(source); }
 
-NeXuSFile::NeXuSFile(NeXuSFile &source) { copy(source); }
+NeXuSFile::NeXuSFile(const NeXuSFile &source) { copy(source); }
 
 NeXuSFile::NeXuSFile(NeXuSFile &&source)
 {
