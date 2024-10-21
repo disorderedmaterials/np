@@ -18,6 +18,7 @@ void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorInd
     {
         // Open the NeXuS file and load in monitor counts
         NeXuSFile nxs(nxsFileName);
+        nxs.prepareSpectraSpace();
         nxs.loadMonitorCounts();
 
         // Open the output file

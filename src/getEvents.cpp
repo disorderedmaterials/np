@@ -21,6 +21,7 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
     {
         // Open the NeXuS file ready for use
         NeXuSFile nxs(nxsFileName);
+        nxs.prepareSpectraSpace();
         nxs.loadEventData();
 
         std::optional<double> lastSecondsSinceEpoch;

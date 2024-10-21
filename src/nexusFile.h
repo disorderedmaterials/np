@@ -9,8 +9,15 @@
 class NeXuSFile
 {
     public:
-    NeXuSFile(std::string filename = "");
+    NeXuSFile(std::string filename = "", bool printInfo = false);
+    void operator=(NeXuSFile &source);
+    NeXuSFile(NeXuSFile &source);
+    NeXuSFile(NeXuSFile &&source);
     ~NeXuSFile();
+    // Clear all data and arrays
+    void clear();
+    // Copy data from specified source
+    void copy(const NeXuSFile &source, bool deepCopyHistograms = true);
 
     /*
      * I/O
@@ -27,9 +34,11 @@ class NeXuSFile
     // Return filename
     std::string filename() const;
     // Load basic information from the NeXuS file
-    void loadBasicData();
-    // Template basic paths from the referenceFile
-    void templateFile(std::string referenceFile, std::string outputFile);
+    void loadBasicData(bool printInfo = false);
+    // Template a new NeXusFile from that specified
+    static void templateTo(std::string sourceFilename, std::string newFilename);
+    // Prepare spectra storage, including loading TOF boundaries etc.
+    void prepareSpectraSpace(bool printInfo = false);
     // Load in monitor histograms
     void loadMonitorCounts();
     // Load event data
@@ -58,7 +67,6 @@ class NeXuSFile
     std::map<int, std::vector<int>> monitorCounts_;
     std::map<unsigned int, std::vector<int>> detectorCounts_;
     std::map<unsigned int, gsl_histogram *> detectorHistograms_;
-    std::map<unsigned int, std::vector<double>> partitions_;
 
     public:
     [[nodiscard]] int nGoodFrames() const;
@@ -76,7 +84,6 @@ class NeXuSFile
     [[nodiscard]] const std::map<int, std::vector<int>> &monitorCounts() const;
     [[nodiscard]] const std::map<unsigned int, std::vector<int>> &detectorCounts() const;
     std::map<unsigned int, gsl_histogram *> &detectorHistograms();
-    [[nodiscard]] const std::map<unsigned int, std::vector<double>> &partitions() const;
 
     /*
      * Manipulation

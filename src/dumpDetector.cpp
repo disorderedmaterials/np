@@ -18,6 +18,7 @@ void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorI
     {
         // Open the NeXuS file and load in detector counts
         NeXuSFile nxs(nxsFileName);
+        nxs.prepareSpectraSpace();
         nxs.loadDetectorCounts();
 
         const auto spectrumId = nxs.spectrumForDetector(detectorIndex);

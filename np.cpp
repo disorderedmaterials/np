@@ -153,7 +153,10 @@ int main(int argc, char **argv)
         case (Processors::ProcessingMode::None):
             fmt::print("No processing mode specified. Basic data from files will be shown.\n");
             for (const auto &file : inputFiles_)
-                NeXuSFile nxs(file);
+            {
+                NeXuSFile nxs(file, true);
+                nxs.prepareSpectraSpace(true);
+            }
             break;
         case (Processors::ProcessingMode::DumpEvents):
         case (Processors::ProcessingMode::PrintEvents):

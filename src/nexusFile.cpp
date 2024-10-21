@@ -9,10 +9,10 @@
 std::vector<std::string> neXuSBasicPaths_ = {"/raw_data_1/title",
                                              "/raw_data_1/user_1/name",
                                              "/raw_data_1/start_time",
+                                             "/raw_data_1/end_time",
                                              "/raw_data_1/good_frames",
                                              "/raw_data_1/raw_frames",
                                              "/raw_data_1/monitor_1/data",
-                                             "/raw_data_1/monitor_1/time_of_flight",
                                              "/raw_data_1/monitor_2/data",
                                              "/raw_data_1/monitor_3/data",
                                              "/raw_data_1/monitor_4/data",
@@ -21,23 +21,87 @@ std::vector<std::string> neXuSBasicPaths_ = {"/raw_data_1/title",
                                              "/raw_data_1/monitor_7/data",
                                              "/raw_data_1/monitor_8/data",
                                              "/raw_data_1/monitor_9/data",
-                                             "/raw_data_1/detector_1/counts"};
+                                             "/raw_data_1/detector_1/counts",
+                                             "/raw_data_1/detector_1/spectrum_index",
+                                             "/raw_data_1/detector_1/time_of_flight"};
 
-NeXuSFile::NeXuSFile(std::string filename) : filename_(filename)
+NeXuSFile::NeXuSFile(std::string filename, bool printInfo) : filename_(filename)
 {
     if (!filename_.empty())
     {
         fmt::print("Opening NeXuS file '{}'...\n", filename_);
 
-        loadBasicData();
+        loadBasicData(printInfo);
     }
 }
 
-NeXuSFile::~NeXuSFile()
+void NeXuSFile::operator=(NeXuSFile &source) { copy(source); }
+
+NeXuSFile::NeXuSFile(NeXuSFile &source) { copy(source); }
+
+NeXuSFile::NeXuSFile(NeXuSFile &&source)
 {
+    // Copy data, but don't deep copy histograms (just copy pointers)
+    copy(source, false);
+
+    // Clear the detectorHistograms_ map here so we don't try to delete the histograms (which we just copied the pointers for)
+    source.detectorHistograms_.clear();
+
+    source.clear();
+}
+
+NeXuSFile::~NeXuSFile() { clear(); }
+
+// Copy data from specified source
+void NeXuSFile::copy(const NeXuSFile &source, bool deepCopyHistograms)
+{
+    filename_ = source.filename_;
+    detectorSpectrumIndices_ = source.detectorSpectrumIndices_;
+    nMonitorSpectra_ = source.nMonitorSpectra_;
+    nMonitorFrames_ = source.nMonitorFrames_;
+    nDetectorFrames_ = source.nDetectorFrames_;
+    nGoodFrames_ = source.nGoodFrames_;
+    startSinceEpoch_ = source.startSinceEpoch_;
+    endSinceEpoch_ = source.endSinceEpoch_;
+    eventIndices_ = source.eventIndices_;
+    eventTimes_ = source.eventTimes_;
+    eventsPerFrame_ = source.eventsPerFrame_;
+    frameOffsets_ = source.frameOffsets_;
+    tofBoundaries_ = source.tofBoundaries_;
+    monitorCounts_ = source.monitorCounts_;
+    detectorCounts_ = source.detectorCounts_;
+    if (deepCopyHistograms)
+    {
+        detectorHistograms_.clear();
+        for (auto &[specId, histogram] : detectorHistograms_)
+            detectorHistograms_[specId] = gsl_histogram_clone(histogram);
+    }
+    else
+        detectorHistograms_ = source.detectorHistograms_;
+}
+
+// Clear all data and arrays
+void NeXuSFile::clear()
+{
+    filename_ = {};
+    detectorSpectrumIndices_.clear();
+    nMonitorSpectra_ = 0;
+    nMonitorFrames_ = 0;
+    nDetectorFrames_ = 0;
+    nGoodFrames_ = 0;
+    startSinceEpoch_ = 0;
+    endSinceEpoch_ = 0;
+    eventIndices_.clear();
+    eventTimes_.clear();
+    eventsPerFrame_.clear();
+    frameOffsets_.clear();
+    tofBoundaries_.clear();
+    monitorCounts_.clear();
+    detectorCounts_.clear();
     // Free GSL histograms
     for (auto &[specId, histogram] : detectorHistograms_)
         gsl_histogram_free(histogram);
+    detectorHistograms_.clear();
 }
 
 /*
@@ -68,7 +132,7 @@ std::pair<H5::DataSet, long int> NeXuSFile::find1DDataset(H5::H5File file, H5std
 std::string NeXuSFile::filename() const { return filename_; }
 
 // Load basic information from the NeXuS file
-void NeXuSFile::loadBasicData()
+void NeXuSFile::loadBasicData(bool printInfo)
 {
     hid_t memType = H5Tcopy(H5T_C_S1);
     H5Tset_size(memType, UCHAR_MAX);
@@ -80,7 +144,8 @@ void NeXuSFile::loadBasicData()
     // Get the run title
     auto &&[titleID, titleDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "title");
     H5Dread(titleID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, charBuffer);
-    fmt::print("... run title was '{}'\n", charBuffer);
+    if (printInfo)
+        fmt::print("... run title was '{}'\n", charBuffer);
 
     // Read in start time in Unix time.
     int y = 0, M = 0, d = 0, h = 0, m = 0, s = 0;
@@ -97,7 +162,8 @@ void NeXuSFile::loadBasicData()
     stime.tm_min = m;
     stime.tm_sec = s;
     startSinceEpoch_ = (int)mktime(&stime);
-    fmt::print("... run started at {} ({} s since epoch).\n", charBuffer, startSinceEpoch_);
+    if (printInfo)
+        fmt::print("... run started at {} ({} s since epoch).\n", charBuffer, startSinceEpoch_);
 
     // Read in end time in Unix time.
     auto &&[endTimeID, endTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "end_time");
@@ -112,33 +178,10 @@ void NeXuSFile::loadBasicData()
     etime.tm_min = m;
     etime.tm_sec = s;
     endSinceEpoch_ = (int)mktime(&etime);
-    fmt::print("... run ended at {} ({} s since epoch).\n", charBuffer, endSinceEpoch_);
-    fmt::print("... literal run duration was {} s.\n", endSinceEpoch_ - startSinceEpoch_);
-
-    // Read in detector spectra information
-    auto &&[detSpecIndices, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
-    detectorSpectrumIndices_.resize(spectraDimension);
-    H5Dread(detSpecIndices.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, detectorSpectrumIndices_.data());
-    fmt::print("... total number of detector spectra is {}.\n", detectorSpectrumIndices_.size());
-    nMonitorSpectra_ = detectorSpectrumIndices_.front() - 1;
-    fmt::print("... inferred number of monitor spectra is {}.\n", nMonitorSpectra_);
-
-    // Read in TOF boundary information.
-    auto &&[tofBoundariesID, tofBoundariesDimension] =
-        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "time_of_flight");
-    tofBoundaries_.resize(tofBoundariesDimension);
-    H5Dread(tofBoundariesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBoundaries_.data());
-
-    // Set up detector histograms and straight counts vectors
-    for (auto spec : detectorSpectrumIndices_)
+    if (printInfo)
     {
-        // For event re-binning
-        detectorHistograms_[spec] = gsl_histogram_alloc(tofBoundaries_.size() - 1);
-        gsl_histogram_set_ranges(detectorHistograms_[spec], tofBoundaries_.data(), tofBoundaries_.size());
-
-        // For histogram manipulation
-        detectorCounts_[spec].resize(tofBoundaries_.size() - 1);
-        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
+        fmt::print("... run ended at {} ({} s since epoch).\n", charBuffer, endSinceEpoch_);
+        fmt::print("... literal run duration was {} s.\n", endSinceEpoch_ - startSinceEpoch_);
     }
 
     // Read in good frames
@@ -146,23 +189,23 @@ void NeXuSFile::loadBasicData()
     auto goodFramesTemp = new int[(long int)goodFramesDimension];
     H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
     nGoodFrames_ = goodFramesTemp[0];
-    fmt::print("... there were {} good frames.\n", nGoodFrames_);
+    if (printInfo)
+        fmt::print("... there were {} good frames.\n", nGoodFrames_);
 
     input.close();
 }
 
-// Template basic paths from the referenceFile
-void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
+// Template a new NeXusFile from that specified
+void NeXuSFile::templateTo(std::string sourceFilename, std::string newFilename)
 {
-    filename_ = outputFile;
-
-    // Open input NeXuS file in read only mode.
-    H5::H5File input = H5::H5File(referenceFile, H5F_ACC_RDONLY);
+    // Open this NeXuS file in read only mode.
+    H5::H5File input = H5::H5File(sourceFilename, H5F_ACC_RDONLY);
 
     // Create new NeXuS file for output.
-    H5::H5File output = H5::H5File(filename_, H5F_ACC_TRUNC);
+    H5::H5File output = H5::H5File(newFilename, H5F_ACC_TRUNC);
 
-    printf("Templating file '%s' to '%s'...\n", referenceFile.c_str(), filename_.c_str());
+    printf("Templating file '%s' to '%s'...\n", sourceFilename.c_str(), newFilename.c_str());
+
     hid_t ocpl_id, lcpl_id;
     ocpl_id = H5Pcreate(H5P_OBJECT_COPY);
     if (ocpl_id < 0)
@@ -184,6 +227,45 @@ void NeXuSFile::templateFile(std::string referenceFile, std::string outputFile)
 
     input.close();
     output.close();
+}
+
+// Prepare spectra storage, including loading TOF boundaries etc.
+void NeXuSFile::prepareSpectraSpace(bool printInfo)
+{
+    // Open input NeXuS file in read only mode.
+    H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
+
+    // Read in detector spectra information
+    auto &&[detSpecIndices, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
+    detectorSpectrumIndices_.resize(spectraDimension);
+    H5Dread(detSpecIndices.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, detectorSpectrumIndices_.data());
+    nMonitorSpectra_ = detectorSpectrumIndices_.front() - 1;
+
+    if (printInfo)
+    {
+        fmt::print("... total number of detector spectra is {}.\n", detectorSpectrumIndices_.size());
+        fmt::print("... inferred number of monitor spectra is {}.\n", nMonitorSpectra_);
+    }
+
+    // Read in TOF boundary information.
+    auto &&[tofBoundariesID, tofBoundariesDimension] =
+        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "time_of_flight");
+    tofBoundaries_.resize(tofBoundariesDimension);
+    H5Dread(tofBoundariesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBoundaries_.data());
+
+    // Set up detector histograms and straight counts vectors
+    for (auto spec : detectorSpectrumIndices_)
+    {
+        // For event re-binning
+        detectorHistograms_[spec] = gsl_histogram_alloc(tofBoundaries_.size() - 1);
+        gsl_histogram_set_ranges(detectorHistograms_[spec], tofBoundaries_.data(), tofBoundaries_.size());
+
+        // For histogram manipulation
+        detectorCounts_[spec].resize(tofBoundaries_.size() - 1);
+        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
+    }
+
+    input.close();
 }
 
 // Load in monitor histograms
@@ -331,7 +413,6 @@ const int NeXuSFile::spectrumForDetector(int detectorId) const { return detector
 const std::map<int, std::vector<int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
 const std::map<unsigned int, std::vector<int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
 std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
-const std::map<unsigned int, std::vector<double>> &NeXuSFile::partitions() const { return partitions_; }
 
 /*
  * Manipulation
