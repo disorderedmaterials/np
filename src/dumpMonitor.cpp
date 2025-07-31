@@ -2,6 +2,7 @@
 #include "processors.h"
 #include <fmt/core.h>
 #include <fstream>
+#include <filesystem>
 
 namespace Processors
 {
@@ -22,7 +23,8 @@ void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorInd
         nxs.loadMonitorCounts();
 
         // Open the output file
-        std::ofstream output(fmt::format("{}.mon.{}", nxsFileName, monitorIndex).c_str());
+        auto filename = std::string(std::filesystem::path(nxsFileName).filename().c_str());
+        std::ofstream output(fmt::format("{}.mon.{}", filename, monitorIndex).c_str());
         output << "# TCB/us   Counts\n";
 
         const auto &counts = nxs.monitorCounts().at(monitorIndex);

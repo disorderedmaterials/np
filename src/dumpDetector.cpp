@@ -1,6 +1,7 @@
 #include "nexusFile.h"
 #include "processors.h"
 #include <fmt/core.h>
+#include <filesystem>
 #include <fstream>
 
 namespace Processors
@@ -24,7 +25,8 @@ void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorI
         const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
 
         // Open the output file
-        std::ofstream output(fmt::format("{}.det.{}", nxsFileName, detectorIndex).c_str());
+        auto filename = std::string(std::filesystem::path(nxsFileName).filename().c_str());
+        std::ofstream output(fmt::format("{}.det.{}", filename, detectorIndex).c_str());
         output << fmt::format("# TCB/us   Counts  [detector index {}, spectrum index = {}]\n", detectorIndex, spectrumId);
         auto bin = 0;
         const auto &counts = nxs.detectorCounts().at(spectrumId);
