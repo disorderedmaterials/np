@@ -34,13 +34,11 @@
         name = "np-shell";
         buildInputs = base_libs pkgs
           ++ (with pkgs; [
-          (pkgs.clang-tools.override {
-            llvmPackages = pkgs.llvmPackages_13;
-          })
           ccache
           ccls
           cmake-format
           cmake-language-server
+          clang-tools
           distcc
           gdb
           valgrind
