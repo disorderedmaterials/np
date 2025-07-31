@@ -30,7 +30,8 @@ int main(int argc, char **argv)
     int targetIndex_;
 
     // Define and parse CLI arguments
-    CLI::App app("NeXuS Processor (np), Copyright (C) 2024-2025 Jared Swift and Tristan Youngs.\n\nNotes:\n- Detector and monitor spectrum indices start at 1.\n");
+    CLI::App app("NeXuS Processor (np), Copyright (C) 2024-2025 Jared Swift and Tristan Youngs.\n\nNotes:\n- Detector and "
+                 "monitor spectrum indices start at 1.\n");
     // -- Window Definition
     app.add_option("-n,--name", windowName_, "Name of the window, used as a prefix to all output files")
         ->group("Window Definition");

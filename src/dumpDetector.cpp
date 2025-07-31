@@ -1,7 +1,7 @@
 #include "nexusFile.h"
 #include "processors.h"
-#include <fmt/core.h>
 #include <filesystem>
+#include <fmt/core.h>
 #include <fstream>
 
 namespace Processors
