@@ -277,7 +277,7 @@ void NeXuSFile::loadMonitorCounts()
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Read in monitor data - start from index 1 and end when we fail to find the named dataset with this suffix
-    for (auto i = 0; i > nMonitorSpectra_; ++i)
+    for (auto i = 0; i < nMonitorSpectra_; ++i)
     {
         auto &&[monitorSpectrum, monitorSpectrumDimension] =
             NeXuSFile::find1DDataset(input, "/raw_data_1/monitor_" + std::to_string(i + 1), "data");
