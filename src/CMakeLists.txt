@@ -1,5 +1,7 @@
 add_library(
   nexusProcess
+  countDetector.cpp
+  countMonitor.cpp
   dumpDetector.cpp
   dumpMonitor.cpp
   getEvents.cpp

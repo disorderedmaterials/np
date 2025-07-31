@@ -13,6 +13,8 @@ namespace Processors
 enum class ProcessingMode
 {
     None,
+    CountDetector,
+    CountMonitor,
     DumpDetector,
     DumpEvents,
     DumpMonitor,
@@ -55,6 +57,10 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
  * Processors
  */
 
+// Count detector histogram
+void countDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex);
+// Count monitor histogram
+void countMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex);
 // Dump all events for the specified detector spectrum, returning seconds since epoch for each
 void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool toStdOut = false);
 // Dump detector histogram

@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     int targetIndex_;
 
     // Define and parse CLI arguments
-    CLI::App app("NeXuS Processor (np), Copyright (C) 2024 Jared Swift and Tristan Youngs.");
+    CLI::App app("NeXuS Processor (np), Copyright (C) 2024-2025 Jared Swift and Tristan Youngs.\n\nNotes:\n- Detector and monitor spectrum indices start at 1.\n");
     // -- Window Definition
     app.add_option("-n,--name", windowName_, "Name of the window, used as a prefix to all output files")
         ->group("Window Definition");
@@ -80,6 +80,34 @@ int main(int argc, char **argv)
                targetIndex_ = id;
            },
            "Print all events for specified detector index")
+        ->group("Processing");
+    app.add_option_function<int>(
+           "--count-detector",
+           [&](int id)
+           {
+               if (processingMode_ != Processors::ProcessingMode::None)
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               processingMode_ = Processors::ProcessingMode::CountDetector;
+               targetIndex_ = id;
+           },
+           "Count events in specified detector histogram")
+        ->group("Processing");
+    app.add_option_function<int>(
+           "--count-monitor",
+           [&](int id)
+           {
+               if (processingMode_ != Processors::ProcessingMode::None)
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               processingMode_ = Processors::ProcessingMode::CountMonitor;
+               targetIndex_ = id;
+           },
+           "Count events in specified monitor histogram")
         ->group("Processing");
     app.add_option_function<int>(
            "--dump-detector",
@@ -162,6 +190,12 @@ int main(int argc, char **argv)
         case (Processors::ProcessingMode::PrintEvents):
             Processors::dumpEventTimesEpoch(inputFiles_, targetIndex_,
                                             processingMode_ == Processors::ProcessingMode::PrintEvents);
+            break;
+        case (Processors::ProcessingMode::CountDetector):
+            Processors::countDetector(inputFiles_, targetIndex_);
+            break;
+        case (Processors::ProcessingMode::CountMonitor):
+            Processors::countMonitor(inputFiles_, targetIndex_);
             break;
         case (Processors::ProcessingMode::DumpDetector):
             Processors::dumpDetector(inputFiles_, targetIndex_);
