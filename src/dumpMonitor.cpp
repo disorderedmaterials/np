@@ -24,8 +24,9 @@ void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorInd
         // Open the output file
         std::ofstream output(fmt::format("{}.mon.{}", nxsFileName, monitorIndex).c_str());
         output << "# TCB/us   Counts\n";
-        auto bin = 0;
+
         const auto &counts = nxs.monitorCounts().at(monitorIndex);
+        auto bin = 0;
         for (auto tof : nxs.tofBoundaries())
         {
             output << fmt::format("{}  {}\n", tof, counts[bin++]);
