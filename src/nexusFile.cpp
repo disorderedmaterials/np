@@ -436,7 +436,7 @@ void NeXuSFile::scaleMonitors(double factor)
 // Scale detectors by specified factor
 void NeXuSFile::scaleDetectors(double factor)
 {
-    auto oldSum = 0, newSum = 0;
+    unsigned long long oldSum = 0, newSum = 0;
     for (auto i : detectorSpectrumIndices_)
     {
         oldSum += gsl_histogram_sum(detectorHistograms_[i]);
