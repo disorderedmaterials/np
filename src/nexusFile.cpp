@@ -308,7 +308,7 @@ void NeXuSFile::loadEventData()
     auto &&[eventIndicesID, eventIndicesDimension] =
         NeXuSFile::find1DDataset(input, "raw_data_1/detector_1_events", "event_id");
     eventIndices_.resize(eventIndicesDimension);
-    H5Dread(eventIndicesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventIndices_.data());
+    H5Dread(eventIndicesID.getId(), H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventIndices_.data());
 
     // Read in events.
     auto &&[eventTimesID, eventTimesDimension] =
@@ -404,7 +404,7 @@ int NeXuSFile::nDetectorFrames() const { return nDetectorFrames_; }
 void NeXuSFile::incrementDetectorFrameCount(int delta) { nDetectorFrames_ += delta; }
 int NeXuSFile::startSinceEpoch() const { return startSinceEpoch_; }
 int NeXuSFile::endSinceEpoch() const { return endSinceEpoch_; }
-const std::vector<int> &NeXuSFile::eventIndices() const { return eventIndices_; }
+const std::vector<long long> &NeXuSFile::eventIndices() const { return eventIndices_; }
 const std::vector<double> &NeXuSFile::eventTimes() const { return eventTimes_; }
 const std::vector<int> &NeXuSFile::eventsPerFrame() const { return eventsPerFrame_; }
 const std::vector<double> &NeXuSFile::frameOffsets() const { return frameOffsets_; }

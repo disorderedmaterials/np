@@ -36,7 +36,7 @@ void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, 
         const auto &frameOffsets = nxs.frameOffsets();
 
         // Loop over frames in the NeXuS file
-        auto eventStart = 0, eventEnd = 0;
+        long long eventStart = 0, eventEnd = 0;
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
         {
             // Set new end event index and get zero for frame
@@ -85,7 +85,7 @@ void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, 
 
                 // Grab the destination datafile for this slice and bin events
                 auto &destinationHistograms = sliceIt->second.detectorHistograms();
-                for (int k = eventStart; k < eventEnd; ++k)
+                for (auto k = eventStart; k < eventEnd; ++k)
                 {
                     auto id = eventIndices[k];
                     if (id > 0)

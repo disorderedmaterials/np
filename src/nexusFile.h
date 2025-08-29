@@ -59,7 +59,7 @@ class NeXuSFile
     int nGoodFrames_{0};
     int startSinceEpoch_{0};
     int endSinceEpoch_{0};
-    std::vector<int> eventIndices_;
+    std::vector<long long> eventIndices_;
     std::vector<double> eventTimes_;
     std::vector<int> eventsPerFrame_;
     std::vector<double> frameOffsets_;
@@ -75,7 +75,7 @@ class NeXuSFile
     void incrementDetectorFrameCount(int delta = 1);
     [[nodiscard]] int startSinceEpoch() const;
     [[nodiscard]] int endSinceEpoch() const;
-    [[nodiscard]] const std::vector<int> &eventIndices() const;
+    [[nodiscard]] const std::vector<long long> &eventIndices() const;
     [[nodiscard]] const std::vector<double> &eventTimes() const;
     [[nodiscard]] const std::vector<int> &eventsPerFrame() const;
     [[nodiscard]] const std::vector<double> &frameOffsets() const;
