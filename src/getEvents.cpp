@@ -1,6 +1,7 @@
 #include "nexusFile.h"
 #include "processors.h"
 #include "window.h"
+#include <ctime>
 #include <fmt/core.h>
 #include <fstream>
 #include <iostream>
@@ -13,6 +14,8 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
     /*
      * Get all events for the specified detector spectrum, returning seconds since epoch for each
      */
+
+    char timeBuffer[20];
 
     fmt::print("Retrieving all events from detector index {}...\n", detectorIndex);
 
@@ -39,8 +42,8 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
             fileOutput.open(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
 
         std::ostream &output = toStdOut ? std::cout : fileOutput;
-        output << fmt::format("# {:20s}  {:20s}  {:20s}  {}\n", "frame_offset(us)", "start_time_offset(s)", "epoch_offset(s)",
-                              "delta(s)");
+        output << fmt::format("# {:20s}  {:20s}  {:20s}  {:20s}  {}\n", "frame_offset(us)", "start_time_offset(s)",
+                              "epoch_offset(s)", "local time", "delta(s)");
 
         // Loop over frames in the NeXuS file
         for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
@@ -56,12 +59,15 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
                     auto eMicroSeconds = eventTimes[k];
                     auto eSeconds = eMicroSeconds * 0.000001;
                     auto eSecondsSinceEpoch = eSeconds + frameZero + nxs.startSinceEpoch();
+                    auto convertedSeconds = time_t(eSecondsSinceEpoch);
+                    strftime(timeBuffer, 20, "%d/%m/%y  %H:%M:%S", std::localtime(&convertedSeconds));
                     if (lastSecondsSinceEpoch)
-                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {}\n", eMicroSeconds, eSeconds + frameZero,
-                                              eSecondsSinceEpoch, eSecondsSinceEpoch - *lastSecondsSinceEpoch);
+                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}  {}\n", eMicroSeconds,
+                                              eSeconds + frameZero, eSecondsSinceEpoch, timeBuffer,
+                                              eSecondsSinceEpoch - *lastSecondsSinceEpoch);
                     else
-                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}\n", eMicroSeconds, eSeconds + frameZero,
-                                              eSecondsSinceEpoch);
+                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}\n", eMicroSeconds, eSeconds + frameZero,
+                                              eSecondsSinceEpoch, timeBuffer);
 
                     lastSecondsSinceEpoch = eSecondsSinceEpoch;
                 }
