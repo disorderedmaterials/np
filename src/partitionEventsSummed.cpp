@@ -75,7 +75,7 @@ void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std:
                 }
 
                 // Increment the frame counter for this slice
-                sliceIt->second.incrementDetectorFrameCount();
+                sliceIt->second.incrementGoodFrames();
             }
 
             // Update start event index

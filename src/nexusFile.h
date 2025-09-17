@@ -58,7 +58,6 @@ class NeXuSFile
     std::vector<int> detectorSpectrumIndices_;
     int nMonitorSpectra_{0};
     int nMonitorFrames_{0};
-    int nDetectorFrames_{0};
     int nGoodFrames_{0};
     int startSinceEpoch_{0};
     int endSinceEpoch_{0};
@@ -73,9 +72,9 @@ class NeXuSFile
 
     public:
     [[nodiscard]] int nGoodFrames() const;
+    void zeroGoodFrames();
+    void incrementGoodFrames(int delta = 1);
     [[nodiscard]] int nMonitorFrames() const;
-    [[nodiscard]] int nDetectorFrames() const;
-    void incrementDetectorFrameCount(int delta = 1);
     [[nodiscard]] int startSinceEpoch() const;
     [[nodiscard]] int endSinceEpoch() const;
     [[nodiscard]] const std::vector<long long> &eventIndices() const;

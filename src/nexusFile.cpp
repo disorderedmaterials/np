@@ -59,7 +59,6 @@ void NeXuSFile::copy(const NeXuSFile &source, bool deepCopyHistograms)
     detectorSpectrumIndices_ = source.detectorSpectrumIndices_;
     nMonitorSpectra_ = source.nMonitorSpectra_;
     nMonitorFrames_ = source.nMonitorFrames_;
-    nDetectorFrames_ = source.nDetectorFrames_;
     nGoodFrames_ = source.nGoodFrames_;
     startSinceEpoch_ = source.startSinceEpoch_;
     endSinceEpoch_ = source.endSinceEpoch_;
@@ -87,7 +86,6 @@ void NeXuSFile::clear()
     detectorSpectrumIndices_.clear();
     nMonitorSpectra_ = 0;
     nMonitorFrames_ = 0;
-    nDetectorFrames_ = 0;
     nGoodFrames_ = 0;
     startSinceEpoch_ = 0;
     endSinceEpoch_ = 0;
@@ -403,8 +401,8 @@ bool NeXuSFile::saveModifiedData()
     printf("111 %li  %li\n", nSpec, nTOFBins);
 
     // Write good frames
-    std::array<int, 1> framesBuffer{0};
-    framesBuffer[0] = nDetectorFrames_;
+    std::array<int, 1> framesBuffer;
+    framesBuffer[0] = nGoodFrames_;
     auto &&[goodFrames, goodFramesDimension] = NeXuSFile::get1DDataset(output, "raw_data_1", "good_frames");
     goodFrames.write(framesBuffer.data(), H5::PredType::STD_I32LE);
     printf("111\n");
@@ -443,9 +441,9 @@ bool NeXuSFile::saveModifiedData()
  */
 
 int NeXuSFile::nGoodFrames() const { return nGoodFrames_; }
+void NeXuSFile::zeroGoodFrames() { nGoodFrames_ = 0; }
+void NeXuSFile::incrementGoodFrames(int delta) { nGoodFrames_ += delta; }
 int NeXuSFile::nMonitorFrames() const { return nMonitorFrames_; }
-int NeXuSFile::nDetectorFrames() const { return nDetectorFrames_; }
-void NeXuSFile::incrementDetectorFrameCount(int delta) { nDetectorFrames_ += delta; }
 int NeXuSFile::startSinceEpoch() const { return startSinceEpoch_; }
 int NeXuSFile::endSinceEpoch() const { return endSinceEpoch_; }
 const std::vector<long long> &NeXuSFile::eventIndices() const { return eventIndices_; }
@@ -524,6 +522,6 @@ void NeXuSFile::scaleDetectors(double factor)
     }
     fmt::print(" ... Old counts was {}, now scaled to {} (ratio = {}).\n", oldSum, newSum, double(oldSum) / double(newSum));
 
-    nDetectorFrames_ *= factor;
-    fmt::print(" ... New number of effective contributing detector frames is {}.\n", nDetectorFrames_);
+    nGoodFrames_ *= factor;
+    fmt::print(" ... New number of effective contributing detector frames is {}.\n", nGoodFrames_);
 }
