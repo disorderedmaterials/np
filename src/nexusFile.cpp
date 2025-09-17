@@ -374,17 +374,20 @@ void NeXuSFile::loadDetectorCounts()
     const auto nSpec = detectorSpectrumIndices_.size();
     const auto nTOFBins = tofBoundaries_.size() - 1;
 
-    std::vector<long int> countsBuffer;
+    // Note to Future Me: While you might think that the buffer into which we will read must match the datatype of that stored
+    // (a 32-bit int) using a std::vector<long int> completely breaks the read and gives nothing but zeroes.
+    std::vector<int> countsBuffer;
     countsBuffer.resize(nSpec * nTOFBins); // Need contiguous memory. This is a pain.
     auto &&[counts, detectorCountsDimension] = NeXuSFile::get1DDataset(input, "raw_data_1/detector_1", "counts");
     printf("LOAD1: %li\n", detectorCountsDimension);
     printf("LOAD2: %li\n", nSpec * nTOFBins);
     H5Dread(counts.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, countsBuffer.data());
+    printf("LOAD3: %li %li %li\n", detectorCounts_.size(), detectorSpectrumIndices_.size(), detectorHistograms_.size());
     for (auto i = 0; i < nSpec; ++i)
     {
-        auto &counts = detectorCounts_[detectorSpectrumIndices_[i]];
+        auto &detCounts = detectorCounts_[detectorSpectrumIndices_[i]];
         for (auto j = 0; j < nTOFBins; ++j)
-            counts[j] = countsBuffer[i * nTOFBins + j];
+            detCounts[j] = countsBuffer[i * nTOFBins + j];
     }
 
     input.close();
@@ -453,8 +456,8 @@ const std::vector<double> &NeXuSFile::frameOffsets() const { return frameOffsets
 const std::vector<double> &NeXuSFile::tofBoundaries() const { return tofBoundaries_; }
 const int NeXuSFile::spectrumForDetector(int detectorId) const { return detectorSpectrumIndices_.at(detectorId - 1); }
 const int NeXuSFile::nDetectors() const { return detectorSpectrumIndices_.size(); }
-const std::map<int, std::vector<int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
-const std::map<unsigned int, std::vector<int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
+const std::map<int, std::vector<long int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
+const std::map<unsigned int, std::vector<long int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
 std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
 
 /*
