@@ -9,6 +9,7 @@ add_library(
   partitionEventsIndividual.cpp
   partitionEventsSummed.cpp
   processCommon.cpp
+  resizeDetectors.cpp
   window.cpp
   nexusFile.h
   processors.h

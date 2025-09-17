@@ -26,8 +26,8 @@ int main(int argc, char **argv)
     double windowDelta_{0.0};
     // Number of slices to partition window in to
     int windowSlices_{1};
-    // Target spectrum for event get (optional)
-    int targetIndex_;
+    // Integer value for processing mode (if required)
+    int processingInt_;
 
     // Define and parse CLI arguments
     CLI::App app("NeXuS Processor (np), Copyright (C) 2024-2025 Jared Swift and Tristan Youngs.\n\nNotes:\n- Detector and "
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
                    throw(CLI::RuntimeError());
                }
                processingMode_ = Processors::ProcessingMode::DumpEvents;
-               targetIndex_ = id;
+               processingInt_ = id;
            },
            "Dump all events for specified detector index")
         ->group("Processing");
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
                    throw(CLI::RuntimeError());
                }
                processingMode_ = Processors::ProcessingMode::PrintEvents;
-               targetIndex_ = id;
+               processingInt_ = id;
            },
            "Print all events for specified detector index")
         ->group("Processing");
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
                    throw(CLI::RuntimeError());
                }
                processingMode_ = Processors::ProcessingMode::CountDetector;
-               targetIndex_ = id;
+               processingInt_ = id;
            },
            "Count events in specified detector histogram")
         ->group("Processing");
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
                    throw(CLI::RuntimeError());
                }
                processingMode_ = Processors::ProcessingMode::CountMonitor;
-               targetIndex_ = id;
+               processingInt_ = id;
            },
            "Count events in specified monitor histogram")
         ->group("Processing");
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
                    throw(CLI::RuntimeError());
                }
                processingMode_ = Processors::ProcessingMode::DumpDetector;
-               targetIndex_ = id;
+               processingInt_ = id;
            },
            "Dump specified detector histogram")
         ->group("Processing");
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
                    throw(CLI::RuntimeError());
                }
                processingMode_ = Processors::ProcessingMode::DumpMonitor;
-               targetIndex_ = id;
+               processingInt_ = id;
            },
            "Dump specified monitor histogram")
         ->group("Processing");
@@ -164,6 +164,20 @@ int main(int argc, char **argv)
            },
            "Output NeXuS files for each window / slice")
         ->group("Processing");
+    app.add_option_function<int>(
+           "--resize-detectors",
+           [&](int id)
+           {
+               if (processingMode_ != Processors::ProcessingMode::None)
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               processingMode_ = Processors::ProcessingMode::ResizeDetectors;
+               processingInt_ = id;
+           },
+           "Dump all events for specified detector index")
+        ->group("Processing");
     // -- Post Processing
     app.add_flag_callback(
            "--scale-monitors", [&]() { Processors::postProcessingMode_ = Processors::PostProcessingMode::ScaleMonitors; },
@@ -189,20 +203,20 @@ int main(int argc, char **argv)
             break;
         case (Processors::ProcessingMode::DumpEvents):
         case (Processors::ProcessingMode::PrintEvents):
-            Processors::dumpEventTimesEpoch(inputFiles_, targetIndex_,
+            Processors::dumpEventTimesEpoch(inputFiles_, processingInt_,
                                             processingMode_ == Processors::ProcessingMode::PrintEvents);
             break;
         case (Processors::ProcessingMode::CountDetector):
-            Processors::countDetector(inputFiles_, targetIndex_);
+            Processors::countDetector(inputFiles_, processingInt_);
             break;
         case (Processors::ProcessingMode::CountMonitor):
-            Processors::countMonitor(inputFiles_, targetIndex_);
+            Processors::countMonitor(inputFiles_, processingInt_);
             break;
         case (Processors::ProcessingMode::DumpDetector):
-            Processors::dumpDetector(inputFiles_, targetIndex_);
+            Processors::dumpDetector(inputFiles_, processingInt_);
             break;
         case (Processors::ProcessingMode::DumpMonitor):
-            Processors::dumpMonitor(inputFiles_, targetIndex_);
+            Processors::dumpMonitor(inputFiles_, processingInt_);
             break;
         case (Processors::ProcessingMode::PartitionEventsIndividual):
         case (Processors::ProcessingMode::PartitionEventsSummed):
@@ -243,6 +257,9 @@ int main(int argc, char **argv)
                 Processors::partitionEventsSummed(inputFiles_, outputDirectory_,
                                                   {windowName_, windowStartTime_ + windowOffset_, windowWidth_}, windowSlices_,
                                                   windowDelta_);
+            break;
+        case (Processors::ProcessingMode::ResizeDetectors):
+            Processors::resizeDetectors(inputFiles_, processingInt_);
             break;
         default:
             throw(std::runtime_error("Unhandled processing mode.\n"));

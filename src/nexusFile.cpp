@@ -109,23 +109,64 @@ void NeXuSFile::clear()
  */
 
 // Return handle and (simple) dimension for named leaf dataset
-std::pair<H5::DataSet, long int> NeXuSFile::find1DDataset(H5::H5File file, H5std_string groupName, H5std_string datasetName)
+std::pair<H5::DataSet, long int> NeXuSFile::get1DDataset(H5::H5File file, H5std_string groupName, H5std_string datasetName)
 {
     if (!file.nameExists(groupName))
+    {
+        fmt::print("ERROR: No group named '{}' exists.\n", groupName);
         return {};
+    }
 
     H5::Group group = file.openGroup(groupName);
     if (!group.nameExists(datasetName))
+    {
+        fmt::print("ERROR: No dataset named '{}' exists in the group '{}' exists.\n", datasetName, groupName);
         return {};
+    }
 
     H5::DataSet dataset = group.openDataSet(datasetName);
     H5::DataSpace space = dataset.getSpace();
-    hsize_t spaceNDims = space.getSimpleExtentNdims();
+    hsize_t spaceNDimensions = space.getSimpleExtentNdims();
 
-    hsize_t *spaceDims = new hsize_t[spaceNDims];
-    space.getSimpleExtentDims(spaceDims);
+    std::vector<hsize_t> spaceDimensions(spaceNDimensions);
+    space.getSimpleExtentDims(spaceDimensions.data());
+    hsize_t nPoints = space.getSimpleExtentNpoints();
 
-    return {dataset, spaceDims[0]};
+    // Create a string of the dimensions
+    std::string dims;
+    for (auto d : spaceDimensions)
+        dims += dims.empty() ? fmt::format("{}", d) : fmt::format(",{}", d);
+
+    fmt::print("Got dataset '{}' in group '{}', rank/dims/N = {}/{}/{}\n", datasetName, groupName, spaceNDimensions, dims,
+               nPoints);
+    return {dataset, spaceDimensions[0]};
+}
+
+// Resize 1D dataset
+void NeXuSFile::resize1DDataset(H5::DataSet dataset, std::vector<hsize_t> dimensions)
+{
+    H5::DataSpace space = dataset.getSpace();
+    hsize_t spaceNDimensions = space.getSimpleExtentNdims();
+    std::vector<hsize_t> spaceDimensions(spaceNDimensions);
+    space.getSimpleExtentDims(spaceDimensions.data());
+
+    // Create strings of the dimensions
+    std::string oldDims, newDims;
+    for (auto d : spaceDimensions)
+        oldDims += oldDims.empty() ? fmt::format("{}", d) : fmt::format(",{}", d);
+    for (auto d : dimensions)
+        newDims += newDims.empty() ? fmt::format("{}", d) : fmt::format(",{}", d);
+
+    hsize_t existingNPoints = space.getSimpleExtentNpoints();
+    fmt::print("Checking dataset size - existing rank/dims = {}/{}, new = {}/{}...\n", spaceNDimensions, oldDims,
+               dimensions.size(), newDims);
+    if (spaceNDimensions == existingNPoints && spaceDimensions == dimensions)
+        fmt::print(" ... Extent has not changed - no change will be made.\n");
+    else
+    {
+        fmt::print(" ... Extent has changed - resizing dataset...\n");
+        space.setExtentSimple(dimensions.size(), dimensions.data(), dimensions.data());
+    }
 }
 
 // Return filename
@@ -142,7 +183,7 @@ void NeXuSFile::loadBasicData(bool printInfo)
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Get the run title
-    auto &&[titleID, titleDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "title");
+    auto &&[titleID, titleDimension] = NeXuSFile::get1DDataset(input, "raw_data_1", "title");
     H5Dread(titleID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, charBuffer);
     if (printInfo)
         fmt::print("... run title was '{}'\n", charBuffer);
@@ -150,7 +191,7 @@ void NeXuSFile::loadBasicData(bool printInfo)
     // Read in start time in Unix time.
     int y = 0, M = 0, d = 0, h = 0, m = 0, s = 0;
 
-    auto &&[startTimeID, startTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "start_time");
+    auto &&[startTimeID, startTimeDimension] = NeXuSFile::get1DDataset(input, "raw_data_1", "start_time");
     H5Dread(startTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, charBuffer);
 
     sscanf(charBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
@@ -166,7 +207,7 @@ void NeXuSFile::loadBasicData(bool printInfo)
         fmt::print("... run started at {} ({} s since epoch).\n", charBuffer, startSinceEpoch_);
 
     // Read in end time in Unix time.
-    auto &&[endTimeID, endTimeDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "end_time");
+    auto &&[endTimeID, endTimeDimension] = NeXuSFile::get1DDataset(input, "raw_data_1", "end_time");
     H5Dread(endTimeID.getId(), memType, H5S_ALL, H5S_ALL, H5P_DEFAULT, charBuffer);
 
     sscanf(charBuffer, "%d-%d-%dT%d:%d:%d", &y, &M, &d, &h, &m, &s);
@@ -185,7 +226,7 @@ void NeXuSFile::loadBasicData(bool printInfo)
     }
 
     // Read in good frames
-    auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
+    auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::get1DDataset(input, "raw_data_1", "good_frames");
     auto goodFramesTemp = new int[(long int)goodFramesDimension];
     H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
     nGoodFrames_ = goodFramesTemp[0];
@@ -236,7 +277,7 @@ void NeXuSFile::prepareSpectraSpace(bool printInfo)
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Read in detector spectra information
-    auto &&[detSpecIndices, spectraDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
+    auto &&[detSpecIndices, spectraDimension] = NeXuSFile::get1DDataset(input, "raw_data_1/detector_1", "spectrum_index");
     detectorSpectrumIndices_.resize(spectraDimension);
     H5Dread(detSpecIndices.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, detectorSpectrumIndices_.data());
     nMonitorSpectra_ = detectorSpectrumIndices_.front() - 1;
@@ -249,21 +290,13 @@ void NeXuSFile::prepareSpectraSpace(bool printInfo)
 
     // Read in TOF boundary information.
     auto &&[tofBoundariesID, tofBoundariesDimension] =
-        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "time_of_flight");
+        NeXuSFile::get1DDataset(input, "raw_data_1/detector_1", "time_of_flight");
     tofBoundaries_.resize(tofBoundariesDimension);
     H5Dread(tofBoundariesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBoundaries_.data());
 
     // Set up detector histograms and straight counts vectors
     for (auto spec : detectorSpectrumIndices_)
-    {
-        // For event re-binning
-        detectorHistograms_[spec] = gsl_histogram_alloc(tofBoundaries_.size() - 1);
-        gsl_histogram_set_ranges(detectorHistograms_[spec], tofBoundaries_.data(), tofBoundaries_.size());
-
-        // For histogram manipulation
-        detectorCounts_[spec].resize(tofBoundaries_.size() - 1);
-        std::fill(detectorCounts_[spec].begin(), detectorCounts_[spec].end(), 0);
-    }
+        appendEmptyDetector(spec);
 
     input.close();
 }
@@ -280,7 +313,7 @@ void NeXuSFile::loadMonitorCounts()
     for (auto i = 1; i <= nMonitorSpectra_; ++i)
     {
         auto &&[monitorSpectrum, monitorSpectrumDimension] =
-            NeXuSFile::find1DDataset(input, "/raw_data_1/monitor_" + std::to_string(i), "data");
+            NeXuSFile::get1DDataset(input, "/raw_data_1/monitor_" + std::to_string(i), "data");
 
         monitorCounts_[i].resize(tofBoundaries_.size());
         H5Dread(monitorSpectrum.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, monitorCounts_[i].data());
@@ -288,7 +321,7 @@ void NeXuSFile::loadMonitorCounts()
 
     // Read in number of good frames - this will reflect our current monitor frame count since we copied those histograms in
     // full
-    auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::find1DDataset(input, "raw_data_1", "good_frames");
+    auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::get1DDataset(input, "raw_data_1", "good_frames");
     auto goodFramesTemp = new int[(long int)goodFramesDimension];
     H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
     nMonitorFrames_ = goodFramesTemp[0];
@@ -305,26 +338,25 @@ void NeXuSFile::loadEventData()
     H5::H5File input = H5::H5File(filename_, H5F_ACC_RDONLY);
 
     // Read in event indices.
-    auto &&[eventIndicesID, eventIndicesDimension] =
-        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1_events", "event_id");
+    auto &&[eventIndicesID, eventIndicesDimension] = NeXuSFile::get1DDataset(input, "raw_data_1/detector_1_events", "event_id");
     eventIndices_.resize(eventIndicesDimension);
     H5Dread(eventIndicesID.getId(), H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventIndices_.data());
 
     // Read in events.
     auto &&[eventTimesID, eventTimesDimension] =
-        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1_events", "event_time_offset");
+        NeXuSFile::get1DDataset(input, "raw_data_1/detector_1_events", "event_time_offset");
     eventTimes_.resize(eventTimesDimension);
     H5Dread(eventTimesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventTimes_.data());
 
     // Read in event counts per frame
     auto &&[eventsPerFrameID, eventsPerFrameDimension] =
-        NeXuSFile::find1DDataset(input, "raw_data_1/framelog/events_log", "value");
+        NeXuSFile::get1DDataset(input, "raw_data_1/framelog/events_log", "value");
     eventsPerFrame_.resize(eventsPerFrameDimension);
     H5Dread(eventsPerFrameID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventsPerFrame_.data());
 
     // Read in frame offsets.
     auto &&[frameOffsetsID, frameOffsetsDimension] =
-        NeXuSFile::find1DDataset(input, "raw_data_1/detector_1_events", "event_time_zero");
+        NeXuSFile::get1DDataset(input, "raw_data_1/detector_1_events", "event_time_zero");
     frameOffsets_.resize(frameOffsetsDimension);
     H5Dread(frameOffsetsID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameOffsets_.data());
 
@@ -344,9 +376,11 @@ void NeXuSFile::loadDetectorCounts()
     const auto nSpec = detectorSpectrumIndices_.size();
     const auto nTOFBins = tofBoundaries_.size() - 1;
 
-    std::vector<int> countsBuffer;
-    countsBuffer.resize(nSpec * nTOFBins); // HDF5 expects contiguous memory. This is a pain.
-    auto &&[counts, detectorCountsDimension] = NeXuSFile::find1DDataset(input, "raw_data_1/detector_1", "counts");
+    std::vector<long int> countsBuffer;
+    countsBuffer.resize(nSpec * nTOFBins); // Need contiguous memory. This is a pain.
+    auto &&[counts, detectorCountsDimension] = NeXuSFile::get1DDataset(input, "raw_data_1/detector_1", "counts");
+    printf("LOAD1: %li\n", detectorCountsDimension);
+    printf("LOAD2: %li\n", nSpec * nTOFBins);
     H5Dread(counts.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, countsBuffer.data());
     for (auto i = 0; i < nSpec; ++i)
     {
@@ -354,6 +388,8 @@ void NeXuSFile::loadDetectorCounts()
         for (auto j = 0; j < nTOFBins; ++j)
             counts[j] = countsBuffer[i * nTOFBins + j];
     }
+
+    input.close();
 }
 
 // Save key modified data back to the file
@@ -362,32 +398,40 @@ bool NeXuSFile::saveModifiedData()
     // Open NeXuS file in read/write mode.
     H5::H5File output = H5::H5File(filename_, H5F_ACC_RDWR);
 
+    const auto nSpec = detectorSpectrumIndices_.size();
+    const auto nTOFBins = tofBoundaries_.size() - 1;
+    printf("111 %li  %li\n", nSpec, nTOFBins);
+
     // Write good frames
     std::array<int, 1> framesBuffer{0};
     framesBuffer[0] = nDetectorFrames_;
-    auto &&[goodFrames, goodFramesDimension] = NeXuSFile::find1DDataset(output, "raw_data_1", "good_frames");
+    auto &&[goodFrames, goodFramesDimension] = NeXuSFile::get1DDataset(output, "raw_data_1", "good_frames");
     goodFrames.write(framesBuffer.data(), H5::PredType::STD_I32LE);
-
+    printf("111\n");
     // Write monitors
     for (auto &&[index, counts] : monitorCounts_)
     {
         auto &&[monitorCounts, monitorCountsDimension] =
-            NeXuSFile::find1DDataset(output, "raw_data_1/monitor_" + std::to_string(index), "data");
+            NeXuSFile::get1DDataset(output, "raw_data_1/monitor_" + std::to_string(index), "data");
         monitorCounts.write(counts.data(), H5::PredType::STD_I32LE);
     }
 
+    // Write spectrum indices
+    auto &&[detSpecIndices, spectraDimension] = NeXuSFile::get1DDataset(output, "raw_data_1/detector_1", "spectrum_index");
+    NeXuSFile::resize1DDataset(detSpecIndices, {detectorSpectrumIndices_.size()});
+    detSpecIndices.write(detectorSpectrumIndices_.data(), H5::PredType::STD_I32LE);
+
     // Write detector counts
-    const auto nSpec = detectorSpectrumIndices_.size();
-    const auto ntofBoundaries = tofBoundaries_.size() - 1;
-
-    auto *countsBuffer = new int[nSpec * ntofBoundaries]; // HDF5 expects contiguous memory. This is a pain.
+    std::vector<long int> countsBuffer;
+    countsBuffer.resize(nSpec * nTOFBins); // Need contiguous memory. This is a pain.
     for (auto i = 0; i < nSpec; ++i)
-        for (auto j = 0; j < ntofBoundaries; ++j)
-            countsBuffer[i * ntofBoundaries + j] = gsl_histogram_get(detectorHistograms_[detectorSpectrumIndices_[i]], j);
-    auto &&[counts, detectorCountsDimension] = NeXuSFile::find1DDataset(output, "raw_data_1/detector_1", "counts");
-    counts.write(countsBuffer, H5::PredType::STD_I32LE);
-
-    delete[](countsBuffer);
+    {
+        for (auto j = 0; j < nTOFBins; ++j)
+            countsBuffer[i * nTOFBins + j] = gsl_histogram_get(detectorHistograms_[detectorSpectrumIndices_[i]], j);
+    }
+    auto &&[counts, detectorCountsDimension] = NeXuSFile::get1DDataset(output, "raw_data_1/detector_1", "counts");
+    NeXuSFile::resize1DDataset(counts, {1, nSpec, nTOFBins});
+    counts.write(countsBuffer.data(), H5::PredType::STD_I32LE);
 
     output.close();
 
@@ -410,6 +454,7 @@ const std::vector<int> &NeXuSFile::eventsPerFrame() const { return eventsPerFram
 const std::vector<double> &NeXuSFile::frameOffsets() const { return frameOffsets_; }
 const std::vector<double> &NeXuSFile::tofBoundaries() const { return tofBoundaries_; }
 const int NeXuSFile::spectrumForDetector(int detectorId) const { return detectorSpectrumIndices_.at(detectorId - 1); }
+const int NeXuSFile::nDetectors() const { return detectorSpectrumIndices_.size(); }
 const std::map<int, std::vector<int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
 const std::map<unsigned int, std::vector<int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
 std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
@@ -417,6 +462,40 @@ std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { retur
 /*
  * Manipulation
  */
+
+// Remove the last detector spectrum, returning the index that was removed
+int NeXuSFile::removeLastDetector()
+{
+    // Get target spectrum index
+    auto specID = detectorSpectrumIndices_.back();
+    detectorCounts_.erase(specID);
+    gsl_histogram_free(detectorHistograms_[specID]);
+    detectorHistograms_.erase(specID);
+    detectorSpectrumIndices_.pop_back();
+
+    return specID;
+}
+
+// Append an empty detector
+int NeXuSFile::appendEmptyDetector(int specID)
+{
+    // Generate and push target spectrum index if we need to
+    if (specID == -1)
+    {
+        specID = detectorSpectrumIndices_.empty() ? 0 : (detectorSpectrumIndices_.back() + 1);
+        detectorSpectrumIndices_.push_back(specID);
+    }
+
+    // For event re-binning
+    detectorHistograms_[specID] = gsl_histogram_alloc(tofBoundaries_.size() - 1);
+    gsl_histogram_set_ranges(detectorHistograms_[specID], tofBoundaries_.data(), tofBoundaries_.size());
+
+    // For histogram manipulation
+    detectorCounts_[specID].resize(tofBoundaries_.size() - 1);
+    std::fill(detectorCounts_[specID].begin(), detectorCounts_[specID].end(), 0);
+
+    return specID;
+}
 
 // Scale monitors by specified factor
 void NeXuSFile::scaleMonitors(double factor)

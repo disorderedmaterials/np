@@ -3,6 +3,7 @@
 #include <H5Cpp.h>
 #include <gsl/gsl_histogram.h>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -27,8 +28,10 @@ class NeXuSFile
     std::string filename_;
 
     private:
-    // Return handle and (simple) dimension for named leaf dataset
-    static std::pair<H5::DataSet, long int> find1DDataset(H5::H5File file, H5std_string terminal, H5std_string datasetName);
+    // Return handle and (simple) dimension for named leaf dataset, resizing if requested
+    static std::pair<H5::DataSet, long int> get1DDataset(H5::H5File file, H5std_string terminal, H5std_string datasetName);
+    // Resize 1D dataset
+    static void resize1DDataset(H5::DataSet dataset, std::vector<hsize_t> dimensions);
 
     public:
     // Return filename
@@ -81,6 +84,7 @@ class NeXuSFile
     [[nodiscard]] const std::vector<double> &frameOffsets() const;
     [[nodiscard]] const std::vector<double> &tofBoundaries() const;
     [[nodiscard]] const int spectrumForDetector(int detectorId) const;
+    [[nodiscard]] const int nDetectors() const;
     [[nodiscard]] const std::map<int, std::vector<int>> &monitorCounts() const;
     [[nodiscard]] const std::map<unsigned int, std::vector<int>> &detectorCounts() const;
     std::map<unsigned int, gsl_histogram *> &detectorHistograms();
@@ -89,6 +93,10 @@ class NeXuSFile
      * Manipulation
      */
     public:
+    // Remove the last detector spectrum, returning the index that was removed
+    int removeLastDetector();
+    // Append an empty detector
+    int appendEmptyDetector(int specID = -1);
     // Scale monitors by specified factor
     void scaleMonitors(double factor);
     // Scale detectors by specified factor

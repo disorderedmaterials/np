@@ -20,7 +20,8 @@ enum class ProcessingMode
     DumpMonitor,
     PartitionEventsIndividual,
     PartitionEventsSummed,
-    PrintEvents
+    PrintEvents,
+    ResizeDetectors
 };
 
 // Processing Direction
@@ -73,4 +74,6 @@ void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, 
 // Partition events into summed windows / slices
 void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
                            const Window &windowDefinition, int nSlices, double windowDelta);
+// Resize detector array
+void resizeDetectors(const std::vector<std::string> &inputNeXusFiles, int newNDetectors);
 }; // namespace Processors
