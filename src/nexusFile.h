@@ -1,7 +1,7 @@
 #pragma once
 
+#include "histogram.h"
 #include <H5Cpp.h>
-#include <gsl/gsl_histogram.h>
 #include <map>
 #include <optional>
 #include <string>
@@ -68,7 +68,7 @@ class NeXuSFile
     std::vector<double> tofBoundaries_;
     std::map<int, std::vector<long int>> monitorCounts_;
     std::map<unsigned int, std::vector<long int>> detectorCounts_;
-    std::map<unsigned int, gsl_histogram *> detectorHistograms_;
+    std::map<unsigned int, IntegerHistogram> detectorHistograms_;
 
     public:
     [[nodiscard]] int nGoodFrames() const;
@@ -86,7 +86,7 @@ class NeXuSFile
     [[nodiscard]] const int nDetectors() const;
     [[nodiscard]] const std::map<int, std::vector<long int>> &monitorCounts() const;
     [[nodiscard]] const std::map<unsigned int, std::vector<long int>> &detectorCounts() const;
-    std::map<unsigned int, gsl_histogram *> &detectorHistograms();
+    std::map<unsigned int, IntegerHistogram> &detectorHistograms();
 
     /*
      * Manipulation

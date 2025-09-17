@@ -69,14 +69,7 @@ void NeXuSFile::copy(const NeXuSFile &source, bool deepCopyHistograms)
     tofBoundaries_ = source.tofBoundaries_;
     monitorCounts_ = source.monitorCounts_;
     detectorCounts_ = source.detectorCounts_;
-    if (deepCopyHistograms)
-    {
-        detectorHistograms_.clear();
-        for (auto &[specId, histogram] : detectorHistograms_)
-            detectorHistograms_[specId] = gsl_histogram_clone(histogram);
-    }
-    else
-        detectorHistograms_ = source.detectorHistograms_;
+    detectorHistograms_ = source.detectorHistograms_;
 }
 
 // Clear all data and arrays
@@ -96,9 +89,6 @@ void NeXuSFile::clear()
     tofBoundaries_.clear();
     monitorCounts_.clear();
     detectorCounts_.clear();
-    // Free GSL histograms
-    for (auto &[specId, histogram] : detectorHistograms_)
-        gsl_histogram_free(histogram);
     detectorHistograms_.clear();
 }
 
@@ -427,8 +417,9 @@ bool NeXuSFile::saveModifiedData()
     countsBuffer.resize(nSpec * nTOFBins); // Need contiguous memory. This is a pain.
     for (auto i = 0; i < nSpec; ++i)
     {
+        auto specID = detectorSpectrumIndices_[i];
         for (auto j = 0; j < nTOFBins; ++j)
-            countsBuffer[i * nTOFBins + j] = gsl_histogram_get(detectorHistograms_[detectorSpectrumIndices_[i]], j);
+            countsBuffer[i * nTOFBins + j] = detectorHistograms_[specID].value(j);
     }
     auto &&[counts, detectorCountsDimension] = NeXuSFile::get1DDataset(output, "raw_data_1/detector_1", "counts");
     NeXuSFile::resize1DDataset(counts, {1, nSpec, nTOFBins});
@@ -458,7 +449,7 @@ const int NeXuSFile::spectrumForDetector(int detectorId) const { return detector
 const int NeXuSFile::nDetectors() const { return detectorSpectrumIndices_.size(); }
 const std::map<int, std::vector<long int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
 const std::map<unsigned int, std::vector<long int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
-std::map<unsigned int, gsl_histogram *> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
+std::map<unsigned int, IntegerHistogram> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
 
 /*
  * Manipulation
@@ -470,7 +461,6 @@ int NeXuSFile::removeLastDetector()
     // Get target spectrum index
     auto specID = detectorSpectrumIndices_.back();
     detectorCounts_.erase(specID);
-    gsl_histogram_free(detectorHistograms_[specID]);
     detectorHistograms_.erase(specID);
     detectorSpectrumIndices_.pop_back();
 
@@ -488,8 +478,7 @@ int NeXuSFile::appendEmptyDetector(int specID)
     }
 
     // For event re-binning
-    detectorHistograms_[specID] = gsl_histogram_alloc(tofBoundaries_.size() - 1);
-    gsl_histogram_set_ranges(detectorHistograms_[specID], tofBoundaries_.data(), tofBoundaries_.size());
+    detectorHistograms_[specID].initialise(tofBoundaries_);
 
     // For histogram manipulation
     detectorCounts_[specID].resize(tofBoundaries_.size() - 1);
@@ -504,9 +493,7 @@ void NeXuSFile::scaleMonitors(double factor)
     for (auto &&[index, counts] : monitorCounts_)
     {
         for (auto &bin : counts)
-        {
             bin *= factor;
-        }
     }
 
     nMonitorFrames_ *= factor;
@@ -519,9 +506,9 @@ void NeXuSFile::scaleDetectors(double factor)
     unsigned long long oldSum = 0, newSum = 0;
     for (auto i : detectorSpectrumIndices_)
     {
-        oldSum += gsl_histogram_sum(detectorHistograms_[i]);
-        gsl_histogram_scale(detectorHistograms_[i], factor);
-        newSum += gsl_histogram_sum(detectorHistograms_[i]);
+        oldSum += detectorHistograms_[i].sum();
+        detectorHistograms_[i].scale(factor);
+        newSum += detectorHistograms_[i].sum();
     }
     fmt::print(" ... Old counts was {}, now scaled to {} (ratio = {}).\n", oldSum, newSum, double(oldSum) / double(newSum));
 

@@ -5,12 +5,14 @@ add_library(
   dumpDetector.cpp
   dumpMonitor.cpp
   getEvents.cpp
+  histogram.cpp
   nexusFile.cpp
   partitionEventsIndividual.cpp
   partitionEventsSummed.cpp
   processCommon.cpp
   resizeDetectors.cpp
   window.cpp
+  histogram.h
   nexusFile.h
   processors.h
   window.h)

@@ -71,7 +71,7 @@ void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std:
                 {
                     auto id = eventIndices[k];
                     if (id > 0)
-                        gsl_histogram_accumulate(destinationHistograms[id], eventTimes[k], 1.0);
+                        destinationHistograms[id].bin(eventTimes[k]);
                 }
 
                 // Increment the frame counter for this slice
