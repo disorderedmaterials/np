@@ -22,9 +22,7 @@ void countDetector(const std::vector<std::string> &inputNeXusFiles, int detector
         nxs.loadDetectorCounts();
 
         const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
-        const auto &counts = nxs.detectorCounts().at(spectrumId);
-        auto sum = std::accumulate(counts.begin(), counts.end(), 0);
-        fmt::print("{}\n", sum);
+        fmt::print("{}\n", nxs.detectorHistograms().at(spectrumId).sum());
     }
 }
 

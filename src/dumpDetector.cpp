@@ -29,10 +29,10 @@ void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorI
         std::ofstream output(fmt::format("{}.det.{}", filename, detectorIndex).c_str());
         output << fmt::format("# TCB/us   Counts  [detector index {}, spectrum index = {}]\n", detectorIndex, spectrumId);
         auto bin = 0;
-        const auto &counts = nxs.detectorCounts().at(spectrumId);
+        const auto &histo = nxs.detectorHistograms().at(spectrumId);
         for (auto tof : nxs.tofBoundaries())
         {
-            output << fmt::format("{}  {}\n", tof, counts[bin++]);
+            output << fmt::format("{}  {}\n", tof, histo.value(bin++));
         }
         output.close();
     }

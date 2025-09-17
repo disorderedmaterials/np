@@ -68,7 +68,6 @@ void NeXuSFile::copy(const NeXuSFile &source, bool deepCopyHistograms)
     frameOffsets_ = source.frameOffsets_;
     tofBoundaries_ = source.tofBoundaries_;
     monitorCounts_ = source.monitorCounts_;
-    detectorCounts_ = source.detectorCounts_;
     detectorHistograms_ = source.detectorHistograms_;
 }
 
@@ -88,7 +87,6 @@ void NeXuSFile::clear()
     frameOffsets_.clear();
     tofBoundaries_.clear();
     monitorCounts_.clear();
-    detectorCounts_.clear();
     detectorHistograms_.clear();
 }
 
@@ -369,15 +367,12 @@ void NeXuSFile::loadDetectorCounts()
     std::vector<int> countsBuffer;
     countsBuffer.resize(nSpec * nTOFBins); // Need contiguous memory. This is a pain.
     auto &&[counts, detectorCountsDimension] = NeXuSFile::get1DDataset(input, "raw_data_1/detector_1", "counts");
-    printf("LOAD1: %li\n", detectorCountsDimension);
-    printf("LOAD2: %li\n", nSpec * nTOFBins);
     H5Dread(counts.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, countsBuffer.data());
-    printf("LOAD3: %li %li %li\n", detectorCounts_.size(), detectorSpectrumIndices_.size(), detectorHistograms_.size());
     for (auto i = 0; i < nSpec; ++i)
     {
-        auto &detCounts = detectorCounts_[detectorSpectrumIndices_[i]];
+        auto &histo = detectorHistograms_[detectorSpectrumIndices_[i]];
         for (auto j = 0; j < nTOFBins; ++j)
-            detCounts[j] = countsBuffer[i * nTOFBins + j];
+            histo.add(j, countsBuffer[i * nTOFBins + j]);
     }
 
     input.close();
@@ -391,14 +386,13 @@ bool NeXuSFile::saveModifiedData()
 
     const auto nSpec = detectorSpectrumIndices_.size();
     const auto nTOFBins = tofBoundaries_.size() - 1;
-    printf("111 %li  %li\n", nSpec, nTOFBins);
 
     // Write good frames
     std::array<int, 1> framesBuffer;
     framesBuffer[0] = nGoodFrames_;
     auto &&[goodFrames, goodFramesDimension] = NeXuSFile::get1DDataset(output, "raw_data_1", "good_frames");
     goodFrames.write(framesBuffer.data(), H5::PredType::STD_I32LE);
-    printf("111\n");
+
     // Write monitors
     for (auto &&[index, counts] : monitorCounts_)
     {
@@ -448,7 +442,6 @@ const std::vector<double> &NeXuSFile::tofBoundaries() const { return tofBoundari
 const int NeXuSFile::spectrumForDetector(int detectorId) const { return detectorSpectrumIndices_.at(detectorId - 1); }
 const int NeXuSFile::nDetectors() const { return detectorSpectrumIndices_.size(); }
 const std::map<int, std::vector<long int>> &NeXuSFile::monitorCounts() const { return monitorCounts_; }
-const std::map<unsigned int, std::vector<long int>> &NeXuSFile::detectorCounts() const { return detectorCounts_; }
 std::map<unsigned int, IntegerHistogram> &NeXuSFile::detectorHistograms() { return detectorHistograms_; }
 
 /*
@@ -460,7 +453,6 @@ int NeXuSFile::removeLastDetector()
 {
     // Get target spectrum index
     auto specID = detectorSpectrumIndices_.back();
-    detectorCounts_.erase(specID);
     detectorHistograms_.erase(specID);
     detectorSpectrumIndices_.pop_back();
 
@@ -477,12 +469,8 @@ int NeXuSFile::appendEmptyDetector(int specID)
         detectorSpectrumIndices_.push_back(specID);
     }
 
-    // For event re-binning
+    // Initialise the histogram
     detectorHistograms_[specID].initialise(tofBoundaries_);
-
-    // For histogram manipulation
-    detectorCounts_[specID].resize(tofBoundaries_.size() - 1);
-    std::fill(detectorCounts_[specID].begin(), detectorCounts_[specID].end(), 0);
 
     return specID;
 }
