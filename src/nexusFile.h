@@ -55,18 +55,39 @@ class NeXuSFile
      * Data
      */
     private:
-    std::vector<int> detectorSpectrumIndices_;
+    /*
+     * Detector spectrum indices (detector_1/spectrum_index)
+     * These are detector, not monitor, indices, with indices running from M+1 -> N+M+1 where M is the
+     * number of monitors and N is the number of detectors. If there were no detectors the range would
+     * therefore be 1 -> N, for NIMROD's 9 monitors the first detector is 10, etc. The ordering of the
+     * indices (which is normally continuous?) reflects the order of data in the detector_1/counts
+     * array, while the indices themselves are used as keys for per-detector lookup in the
+     * detectorHistograms_ map.
+     */
+    std::vector<unsigned int> detectorSpectrumIndices_;
+    // Number of monitor spectra, determined from the first index in detectorSpectrumIndices_
     int nMonitorSpectra_{0};
+    // Number of frames contributing to monitor counts
     int nMonitorFrames_{0};
+    // Number of frames contributing to detector counts
     int nGoodFrames_{0};
+    // Start time in seconds since epoch (raw_data_1/start_time)
     int startSinceEpoch_{0};
+    // End time in seconds since epoch (raw_data_1/end_time)
     int endSinceEpoch_{0};
+    // Event indices (detector_1_events/event_id) - detector indices (M+1 -> N+M+1) of events
     std::vector<long long> eventIndices_;
+    // Event times (detector_1_events/event_time_offset) - times, in us relative to frame start, of events
     std::vector<double> eventTimes_;
+    // Number of events per frame (framelog/events_log/value)
     std::vector<int> eventsPerFrame_;
+    // Frame start times (detector_1_events/event_time_zero) - seconds, relative to start time since epoch
     std::vector<double> frameOffsets_;
+    // Time-of-flight bin boundaries in detector histograms (detector_1/time_of_flight) - us
     std::vector<double> tofBoundaries_;
-    std::map<int, std::vector<long int>> monitorCounts_;
+    // Monitor counts (TOF bins), mapped by monitor index (monitor_M/data)
+    std::map<unsigned int, std::vector<long int>> monitorCounts_;
+    // Detector counts (TOF bins), mapped by detector index (M+1 -> N+M+1) (detector_1/counts)
     std::map<unsigned int, IntegerHistogram> detectorHistograms_;
 
     public:
@@ -83,7 +104,7 @@ class NeXuSFile
     [[nodiscard]] const std::vector<double> &tofBoundaries() const;
     [[nodiscard]] const int spectrumForDetector(int detectorId) const;
     [[nodiscard]] const int nDetectors() const;
-    [[nodiscard]] const std::map<int, std::vector<long int>> &monitorCounts() const;
+    [[nodiscard]] const std::map<unsigned int, std::vector<long int>> &monitorCounts() const;
     [[nodiscard]] const std::map<unsigned int, std::vector<long int>> &detectorCounts() const;
     std::map<unsigned int, IntegerHistogram> &detectorHistograms();
 
