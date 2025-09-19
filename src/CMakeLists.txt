@@ -4,6 +4,7 @@ add_library(
   countMonitor.cpp
   dumpDetector.cpp
   dumpMonitor.cpp
+  eventParser.cpp
   getEvents.cpp
   histogram.cpp
   nexusFile.cpp
@@ -12,6 +13,7 @@ add_library(
   processCommon.cpp
   resizeDetectors.cpp
   window.cpp
+  eventParser.h
   histogram.h
   nexusFile.h
   processors.h
