@@ -151,7 +151,8 @@ void NeXuSFile::resize1DDataset(H5::DataSet dataset, std::vector<hsize_t> dimens
     else
     {
         fmt::print(" ... Extent has changed - resizing dataset...\n");
-        space.setExtentSimple(dimensions.size(), dimensions.data(), dimensions.data());
+        // space.setExtentSimple(dimensions.size(), dimensions.data(), dimensions.data());
+        H5Dset_extent(dataset.getId(), dimensions.data());
     }
 }
 
@@ -401,10 +402,12 @@ bool NeXuSFile::saveModifiedData()
         monitorCounts.write(counts.data(), H5::PredType::STD_I32LE);
     }
 
-    // Write spectrum indices
+    // Write spectrum indices - we have to pass in any adjusted DataSpace otherwise we end up with the same sized array as
+    // before.
     auto &&[detSpecIndices, spectraDimension] = NeXuSFile::get1DDataset(output, "raw_data_1/detector_1", "spectrum_index");
     NeXuSFile::resize1DDataset(detSpecIndices, {detectorSpectrumIndices_.size()});
-    detSpecIndices.write(detectorSpectrumIndices_.data(), H5::PredType::STD_I32LE);
+    detSpecIndices.write(detectorSpectrumIndices_.data(), H5::PredType::STD_I32LE, detSpecIndices.getSpace(),
+                         detSpecIndices.getSpace());
 
     // Write detector counts
     // Note to Future Me: Similar to the note above, using a long int here for the countsBuffer corrupts the resulting
@@ -418,9 +421,12 @@ bool NeXuSFile::saveModifiedData()
         for (auto j = 0; j < nTOFBins; ++j)
             countsBuffer[i * nTOFBins + j] = detectorHistograms_[specID].value(j);
     }
+
+    // Get and resize the counts dataset - we have to pass in any adjusted DataSpace otherwise we end up with the same
+    // sized array as before.
     auto &&[counts, detectorCountsDimension] = NeXuSFile::get1DDataset(output, "raw_data_1/detector_1", "counts");
     NeXuSFile::resize1DDataset(counts, {1, nSpec, nTOFBins});
-    counts.write(countsBuffer.data(), H5::PredType::STD_I32LE);
+    counts.write(countsBuffer.data(), H5::PredType::STD_I32LE, counts.getSpace(), counts.getSpace());
 
     output.close();
 
