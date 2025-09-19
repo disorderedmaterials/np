@@ -407,7 +407,10 @@ bool NeXuSFile::saveModifiedData()
     detSpecIndices.write(detectorSpectrumIndices_.data(), H5::PredType::STD_I32LE);
 
     // Write detector counts
-    std::vector<long int> countsBuffer;
+    // Note to Future Me: Similar to the note above, using a long int here for the countsBuffer corrupts the resulting
+    // data in the file. Presumably this has something to so with the DataSpace type / extent in memory vs how it is
+    // to be stored in the HDF5 file, but honestly who cares at this point.
+    std::vector<int> countsBuffer;
     countsBuffer.resize(nSpec * nTOFBins); // Need contiguous memory. This is a pain.
     for (auto i = 0; i < nSpec; ++i)
     {
