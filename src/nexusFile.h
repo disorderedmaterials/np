@@ -27,7 +27,7 @@ class NeXuSFile
     // Filename
     std::string filename_;
 
-    private:
+    public:
     // Return handle and (simple) dimension for named leaf dataset, resizing if requested
     static std::pair<H5::DataSet, long int> get1DDataset(H5::H5File file, H5std_string terminal, H5std_string datasetName);
     // Resize 1D dataset

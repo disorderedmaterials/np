@@ -224,8 +224,8 @@ void NeXuSFile::loadBasicData(bool printInfo)
 
     // Read in good frames
     auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::get1DDataset(input, "raw_data_1", "good_frames");
-    auto goodFramesTemp = new int[(long int)goodFramesDimension];
-    H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp);
+    std::array<int, 1> goodFramesTemp;
+    H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp.data());
     nGoodFrames_ = goodFramesTemp[0];
     if (printInfo)
         fmt::print("... there were {} good frames.\n", nGoodFrames_);

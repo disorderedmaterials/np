@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include "eventChunker.h"
 
 namespace Processors
 {
@@ -25,6 +26,7 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
         // Open the NeXuS file ready for use
         NeXuSFile nxs(nxsFileName);
         nxs.prepareSpectraSpace();
+        EventChunker eventChunker(nxs);
         nxs.loadEventData();
 
         std::optional<double> lastSecondsSinceEpoch;
@@ -45,37 +47,42 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
         output << fmt::format("# {:20s}  {:20s}  {:20s}  {:20s}  {}\n", "frame_offset(us)", "start_time_offset(s)",
                               "epoch_offset(s)", "local time", "delta(s)");
 
-        // Loop over frames in the NeXuS file
-        for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
+        auto &frameData = eventChunker.frameData();
+        while (eventChunker.getNextFrameData())
         {
-            // Set new end event index and get zero for frame
-            eventEnd += eventsPerFrame[frameIndex];
-            auto frameZero = frameOffsets[frameIndex];
 
-            for (auto k = eventStart; k < eventEnd; ++k)
-            {
-                if (eventIndices[k] == spectrumId)
-                {
-                    auto eMicroSeconds = eventTimes[k];
-                    auto eSeconds = eMicroSeconds * 0.000001;
-                    auto eSecondsSinceEpoch = eSeconds + frameZero + nxs.startSinceEpoch();
-                    auto convertedSeconds = time_t(eSecondsSinceEpoch);
-                    strftime(timeBuffer, 20, "%d/%m/%y  %H:%M:%S", std::localtime(&convertedSeconds));
-                    if (lastSecondsSinceEpoch)
-                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}  {}\n", eMicroSeconds,
-                                              eSeconds + frameZero, eSecondsSinceEpoch, timeBuffer,
-                                              eSecondsSinceEpoch - *lastSecondsSinceEpoch);
-                    else
-                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}\n", eMicroSeconds, eSeconds + frameZero,
-                                              eSecondsSinceEpoch, timeBuffer);
-
-                    lastSecondsSinceEpoch = eSecondsSinceEpoch;
-                }
-            }
-
-            // Update start event index
-            eventStart = eventEnd;
         }
+        // // Loop over frames in the NeXuS file
+        // for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
+        // {
+        //     // Set new end event index and get zero for frame
+        //     eventEnd += eventsPerFrame[frameIndex];
+        //     auto frameZero = frameOffsets[frameIndex];
+        //
+        //     for (auto k = eventStart; k < eventEnd; ++k)
+        //     {
+        //         if (eventIndices[k] == spectrumId)
+        //         {
+        //             auto eMicroSeconds = eventTimes[k];
+        //             auto eSeconds = eMicroSeconds * 0.000001;
+        //             auto eSecondsSinceEpoch = eSeconds + frameZero + nxs.startSinceEpoch();
+        //             auto convertedSeconds = time_t(eSecondsSinceEpoch);
+        //             strftime(timeBuffer, 20, "%d/%m/%y  %H:%M:%S", std::localtime(&convertedSeconds));
+        //             if (lastSecondsSinceEpoch)
+        //                 output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}  {}\n", eMicroSeconds,
+        //                                       eSeconds + frameZero, eSecondsSinceEpoch, timeBuffer,
+        //                                       eSecondsSinceEpoch - *lastSecondsSinceEpoch);
+        //             else
+        //                 output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}\n", eMicroSeconds, eSeconds + frameZero,
+        //                                       eSecondsSinceEpoch, timeBuffer);
+        //
+        //             lastSecondsSinceEpoch = eSecondsSinceEpoch;
+        //         }
+        //     }
+        //
+        //     // Update start event index
+        //     eventStart = eventEnd;
+        // }
 
         if (!toStdOut)
             fileOutput.close();
