@@ -34,6 +34,10 @@ class NeXuSFile
     static void resize1DDataset(H5::DataSet dataset, std::vector<hsize_t> dimensions);
 
     public:
+    // Whether verbose output is enabled
+    static bool verbose;
+
+    public:
     // Return filename
     std::string filename() const;
     // Load basic information from the NeXuS file

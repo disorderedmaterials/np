@@ -187,6 +187,10 @@ int main(int argc, char **argv)
            "--scale-detectors", [&]() { Processors::postProcessingMode_ = Processors::PostProcessingMode::ScaleDetectors; },
            "Scale detector counts in final output to match the number of frames used for monitor counts")
         ->group("Post-Processing");
+    // -- Other Options
+    app.add_flag_callback(
+           "-v,--verbose", [&]() { NeXuSFile::verbose = true; }, "Enable verbose output")
+        ->group("Other Options");
 
     CLI11_PARSE(app, argc, argv);
 

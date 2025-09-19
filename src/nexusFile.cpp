@@ -5,6 +5,9 @@
 #include <fmt/core.h>
 #include <iostream>
 
+// Whether verbose output is enabled
+bool NeXuSFile::verbose = false;
+
 // Basic paths required when copying / creating a NeXuS file
 std::vector<std::string> neXuSBasicPaths_ = {"/raw_data_1/title",
                                              "/raw_data_1/user_1/name",
@@ -123,8 +126,9 @@ std::pair<H5::DataSet, long int> NeXuSFile::get1DDataset(H5::H5File file, H5std_
     for (auto d : spaceDimensions)
         dims += dims.empty() ? fmt::format("{}", d) : fmt::format(",{}", d);
 
-    fmt::print("Got dataset '{}' in group '{}', rank/dims/N = {}/{}/{}\n", datasetName, groupName, spaceNDimensions, dims,
-               nPoints);
+    if (verbose)
+        fmt::print("Got dataset '{}' in group '{}', rank/dims/N = {}/{}/{}\n", datasetName, groupName, spaceNDimensions, dims,
+                   nPoints);
     return {dataset, spaceDimensions[0]};
 }
 
@@ -144,13 +148,19 @@ void NeXuSFile::resize1DDataset(H5::DataSet dataset, std::vector<hsize_t> dimens
         newDims += newDims.empty() ? fmt::format("{}", d) : fmt::format(",{}", d);
 
     hsize_t existingNPoints = space.getSimpleExtentNpoints();
-    fmt::print("Checking dataset size - existing rank/dims = {}/{}, new = {}/{}...\n", spaceNDimensions, oldDims,
-               dimensions.size(), newDims);
+    if (verbose)
+        fmt::print("Checking dataset size - existing rank/dims = {}/{}, new = {}/{}...\n", spaceNDimensions, oldDims,
+                   dimensions.size(), newDims);
     if (spaceNDimensions == existingNPoints && spaceDimensions == dimensions)
-        fmt::print(" ... Extent has not changed - no change will be made.\n");
+    {
+        if (verbose)
+            fmt::print(" ... Extent has not changed - no change will be made.\n");
+    }
+
     else
     {
-        fmt::print(" ... Extent has changed - resizing dataset...\n");
+        if (verbose)
+            fmt::print(" ... Extent has changed - resizing dataset...\n");
         // space.setExtentSimple(dimensions.size(), dimensions.data(), dimensions.data());
         H5Dset_extent(dataset.getId(), dimensions.data());
     }
@@ -232,7 +242,8 @@ void NeXuSFile::templateTo(std::string sourceFilename, std::string newFilename)
     // Create new NeXuS file for output.
     H5::H5File output = H5::H5File(newFilename, H5F_ACC_TRUNC);
 
-    printf("Templating file '%s' to '%s'...\n", sourceFilename.c_str(), newFilename.c_str());
+    if (verbose)
+        printf("Templating file '%s' to '%s'...\n", sourceFilename.c_str(), newFilename.c_str());
 
     hid_t ocpl_id, lcpl_id;
     ocpl_id = H5Pcreate(H5P_OBJECT_COPY);
