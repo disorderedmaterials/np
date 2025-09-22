@@ -6,7 +6,9 @@
 struct FrameData
 {
     // Index of this frame
-    int frameIndex;
+    int index;
+    // Time zero of the frame, in seconds
+    double timeZero;
     // Event detector indices (detector_1_events/event_id) - (M+1 -> N+M+1)
     std::vector<int> detectorIndices;
     // Event times (detector_1_events/event_time_offset) in us relative to frame start
@@ -33,6 +35,8 @@ class EventChunker
     std::vector<int> frameFirstIndices_;
     // Number of events per frame (framelog/events_log/value)
     std::vector<int> eventsPerFrame_;
+    // Frame start times (detector_1_events/event_time_zero) - seconds, relative to start time since epoch
+    std::vector<double> frameZero_;
     // Total number of frames
     int totalFrames_{0};
     // Frame chunk size

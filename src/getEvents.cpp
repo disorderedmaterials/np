@@ -31,10 +31,10 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
 
         std::optional<double> lastSecondsSinceEpoch;
         auto eventStart = 0, eventEnd = 0;
-        const auto &eventsPerFrame = nxs.eventsPerFrame();
-        const auto &eventIndices = nxs.eventIndices();
-        const auto &eventTimes = nxs.eventTimes();
-        const auto &frameOffsets = nxs.frameOffsets();
+        // const auto &eventsPerFrame = nxs.eventsPerFrame();
+        // const auto &eventIndices = nxs.eventIndices();
+        // const auto &eventTimes = nxs.eventTimes();
+        // const auto &frameOffsets = nxs.frameOffsets();
         const auto spectrumId = nxs.spectrumForDetector(detectorIndex);
         fmt::print("NeXuS file spectrum ID for detector index {} is {}.\n", detectorIndex, spectrumId);
 
@@ -47,10 +47,36 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
         output << fmt::format("# {:20s}  {:20s}  {:20s}  {:20s}  {}\n", "frame_offset(us)", "start_time_offset(s)",
                               "epoch_offset(s)", "local time", "delta(s)");
 
-        auto &frameData = eventChunker.frameData();
         while (eventChunker.getNextFrameData())
         {
-            printf("IN THE LOOP\n");
+            auto &frameData = eventChunker.frameData();
+            for (const auto &frame : frameData)
+            {
+                const auto &eventIndices = frame.detectorIndices;
+                const auto &eventTimes = frame.times;
+
+                // Loop over events in this frame
+                for (auto i = 0; i < eventIndices.size(); ++i)
+                {
+                    // printf("i = %i\n", i);
+                    if (eventIndices[i] != spectrumId)
+                        continue;
+
+                    auto eSeconds = eventTimes[i] * 0.000001;
+                    auto eSecondsSinceEpoch = eSeconds + frame.timeZero + nxs.startSinceEpoch();
+                    auto convertedSeconds = time_t(eSecondsSinceEpoch);
+                    strftime(timeBuffer, 20, "%d/%m/%y  %H:%M:%S", std::localtime(&convertedSeconds));
+                    if (lastSecondsSinceEpoch)
+                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}  {}\n", eventTimes[i],
+                                              eSeconds + frame.timeZero, eSecondsSinceEpoch, timeBuffer,
+                                              eSecondsSinceEpoch - *lastSecondsSinceEpoch);
+                    else
+                        output << fmt::format("{:20.6f}  {:20.10f}  {:20.5f}  {:20s}\n", eventTimes[i], eSeconds + frame.timeZero,
+                                              eSecondsSinceEpoch, timeBuffer);
+        
+                    lastSecondsSinceEpoch = eSecondsSinceEpoch;
+                }
+            }
         }
         // // Loop over frames in the NeXuS file
         // for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
