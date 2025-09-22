@@ -1,3 +1,4 @@
+#include "frameChunker.h"
 #include "nexusFile.h"
 #include "processors.h"
 #include "window.h"
@@ -28,77 +29,80 @@ void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, 
         // Open the NeXuS file and get its event data
         NeXuSFile nxs(nxsFileName, true);
         nxs.prepareSpectraSpace();
-        nxs.loadEventData();
 
-        const auto &eventsPerFrame = nxs.eventsPerFrame();
-        const auto &eventIndices = nxs.eventIndices();
-        const auto &eventTimes = nxs.eventTimes();
-        const auto &frameOffsets = nxs.frameOffsets();
-
-        // Loop over frames in the NeXuS file
-        long long eventStart = 0, eventEnd = 0;
-        for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)
+        // Read in chunked frames
+        FrameChunker frameChunker(nxs);
+        auto tenPercentsDone = -1;
+        while (frameChunker.getNextFrameData())
         {
-            // Set new end event index and get zero for frame
-            eventEnd += eventsPerFrame[frameIndex];
-            auto frameZero = frameOffsets[frameIndex] + nxs.startSinceEpoch();
-
-            // If the current slice end time is less than the frame zero, iterate the slices.
-            while (sliceIt != slices.end() && sliceIt->first.endTime() < frameZero)
+            auto &frameData = frameChunker.frameData();
+            auto currentTenPercents = int(100 * (frameData.front().index / double(nxs.nGoodFrames()))) / 10;
+            if (currentTenPercents > tenPercentsDone)
             {
-                sliceIt++;
-
-                // If we have run out of slices propagate the set forward.
-                if (sliceIt == slices.end())
-                {
-                    // Save current data
-                    postProcess(slices);
-                    saveSlices(slices);
-
-                    // Empty current slices
-                    slices.clear();
-                    sliceIt = slices.end();
-                }
+                tenPercentsDone = currentTenPercents;
+                fmt::print("Processing frame / event data... {}%\n", tenPercentsDone * 10);
             }
 
-            // Do we need to generate new window / slices?
-            if (slices.empty())
+            for (const auto &frame : frameData)
             {
-                // Set new window start time
-                while (window.endTime() < frameZero)
+                const auto &eventIndices = frame.detectorIndices;
+                const auto &eventTimes = frame.times;
+                auto frameZero = frame.timeZero + nxs.startSinceEpoch();
+
+                // If the current slice end time is less than the frame zero, iterate the slices.
+                while (sliceIt != slices.end() && sliceIt->first.endTime() < frameZero)
                 {
-                    window.shiftStartTime(windowDelta);
-                    printf("Propagated window forwards... new start time is %16.2f\n", sliceIt->first.startTime());
+                    sliceIt++;
+
+                    // If we have run out of slices propagate the set forward.
+                    if (sliceIt == slices.end())
+                    {
+                        // Save current data
+                        postProcess(slices);
+                        saveSlices(slices);
+
+                        // Empty current slices
+                        slices.clear();
+                        sliceIt = slices.end();
+                    }
                 }
 
-                // Create the new slices
-                slices = prepareSlices(window, nSlices, inputNeXusFiles[0], outputFilePath);
-                sliceIt = slices.begin();
-            }
-
-            // If this frame zero is greater than or equal to the start time of the current window slice we can process events
-            if (frameZero >= sliceIt->first.startTime())
-            {
-                // Sanity check!
-                if (frameZero > sliceIt->first.endTime())
-                    throw(std::runtime_error("Somebody's done something wrong here....\n"));
-
-                // Grab the destination datafile for this slice and bin events
-                auto &destinationHistograms = sliceIt->second.detectorHistograms();
-                for (auto k = eventStart; k < eventEnd; ++k)
+                // Do we need to generate new window / slices?
+                if (slices.empty())
                 {
-                    auto id = eventIndices[k];
-                    if (id > 0)
-                        destinationHistograms[id].bin(eventTimes[k]);
+                    // Set new window start time
+                    while (window.endTime() < frameZero)
+                    {
+                        window.shiftStartTime(windowDelta);
+                        printf("Propagated window forwards... new start time is %16.2f\n", sliceIt->first.startTime());
+                    }
+
+                    // Create the new slices
+                    slices = prepareSlices(window, nSlices, inputNeXusFiles[0], outputFilePath);
+                    sliceIt = slices.begin();
                 }
 
-                // Increment the frame counter for this slice
-                sliceIt->second.incrementGoodFrames();
-            }
+                // If this frame zero is greater than or equal to the start time of the current window slice we can process
+                // events
+                if (frameZero >= sliceIt->first.startTime())
+                {
+                    // Sanity check!
+                    if (frameZero > sliceIt->first.endTime())
+                        throw(std::runtime_error("Somebody's done something wrong here....\n"));
 
-            // Update start event index
-            eventStart = eventEnd;
+                    // Grab the destination histograms for this slice and bin events
+                    auto &destinationHistograms = sliceIt->second.detectorHistograms();
+                    for (auto i = 0; i < eventIndices.size(); ++i)
+                        if (eventIndices[i] > 0)
+                            destinationHistograms[eventIndices[i]].bin(eventTimes[i]);
+
+                    // Increment the frame counter for this slice
+                    sliceIt->second.incrementGoodFrames();
+                }
+            }
         }
+
+        fmt::print("Processing frame / event data... Done!\n");
     }
 
     // Perform post-processing on any slices we still have and save

@@ -48,8 +48,6 @@ class NeXuSFile
     void prepareSpectraSpace(bool printInfo = false);
     // Load in monitor histograms
     void loadMonitorCounts();
-    // Load event data
-    void loadEventData();
     // Load detector counts from the file
     void loadDetectorCounts();
     // Save key modified data back to the file
@@ -79,14 +77,6 @@ class NeXuSFile
     int startSinceEpoch_{0};
     // End time in seconds since epoch (raw_data_1/end_time)
     int endSinceEpoch_{0};
-    // Event indices (detector_1_events/event_id) - detector indices (M+1 -> N+M+1) of events
-    std::vector<long long> eventIndices_;
-    // Event times (detector_1_events/event_time_offset) - times, in us relative to frame start, of events
-    std::vector<double> eventTimes_;
-    // Number of events per frame (framelog/events_log/value)
-    std::vector<int> eventsPerFrame_;
-    // Frame start times (detector_1_events/event_time_zero) - seconds, relative to start time since epoch
-    std::vector<double> frameOffsets_;
     // Time-of-flight bin boundaries in detector histograms (detector_1/time_of_flight) - us
     std::vector<double> tofBoundaries_;
     // Monitor counts (TOF bins), mapped by monitor index (monitor_M/data)
@@ -101,10 +91,6 @@ class NeXuSFile
     [[nodiscard]] int nMonitorFrames() const;
     [[nodiscard]] int startSinceEpoch() const;
     [[nodiscard]] int endSinceEpoch() const;
-    [[nodiscard]] const std::vector<long long> &eventIndices() const;
-    [[nodiscard]] const std::vector<double> &eventTimes() const;
-    [[nodiscard]] const std::vector<int> &eventsPerFrame() const;
-    [[nodiscard]] const std::vector<double> &frameOffsets() const;
     [[nodiscard]] const std::vector<double> &tofBoundaries() const;
     [[nodiscard]] const int spectrumForDetector(int detectorId) const;
     [[nodiscard]] const int nDetectors() const;
