@@ -33,16 +33,18 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
         fmt::print("NeXuS file spectrum ID for detector index {} is {}.\n", detectorIndex, spectrumId);
 
         std::ofstream fileOutput;
-
         if (!toStdOut)
             fileOutput.open(fmt::format("{}.events.{}", nxsFileName, detectorIndex).c_str());
-
         std::ostream &output = toStdOut ? std::cout : fileOutput;
+
+        // Prepare the frame chunker
+        FrameChunker frameChunker(nxs);
+
+        // Write header
         output << fmt::format("# {:20s}  {:20s}  {:20s}  {:20s}  {}\n", "frame_offset(us)", "start_time_offset(s)",
                               "epoch_offset(s)", "local time", "delta(s)");
 
         // Read in chunked frames
-        FrameChunker frameChunker(nxs);
         while (frameChunker.getNextFrameData())
         {
             auto &frameData = frameChunker.frameData();
