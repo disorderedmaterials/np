@@ -27,13 +27,13 @@ FrameChunker::FrameChunker(NeXuSFile &source) : neXuSFile_(source)
     auto &&[totalCountsID, totalCountsDimension] =
         NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/detector_1_events", "total_counts");
     std::array<long long, 1> totalCountsBuffer;
-    H5Dread(totalCountsID.getId(), H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, totalCountsBuffer.data());
+    H5Dread(totalCountsID.getId(), H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, totalCountsBuffer.data());
     totalEvents_ = totalCountsBuffer[0];
 
     // Read in good frames
     auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::get1DDataset(fileHandle_, "raw_data_1", "good_frames");
     std::array<int, 1> goodFramesTemp;
-    H5Dread(goodFramesID.getId(), H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp.data());
+    H5Dread(goodFramesID.getId(), H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp.data());
     totalFrames_ = goodFramesTemp[0];
 
     // Read in frame offsets.
