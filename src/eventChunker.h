@@ -5,14 +5,12 @@
 
 struct FrameData
 {
-    // Event data:
-    // Detector index(detector_1_events/event_id) - detector indices (M+1 -> N+M+1) of events
-    // Event time (detector_1_events/event_time_offset) - times, in us relative to frame start, of events
-    using EventData = std::tuple<long long, double>;
-
     // Index of this frame
     int frameIndex;
-    std::vector<EventData> events;
+    // Event detector indices (detector_1_events/event_id) - (M+1 -> N+M+1)
+    std::vector<int> detectorIndices;
+    // Event times (detector_1_events/event_time_offset) in us relative to frame start
+    std::vector<double> times;
 };
 
 class EventChunker

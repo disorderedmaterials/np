@@ -27,7 +27,7 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
         NeXuSFile nxs(nxsFileName);
         nxs.prepareSpectraSpace();
         EventChunker eventChunker(nxs);
-        nxs.loadEventData();
+        // nxs.loadEventData();
 
         std::optional<double> lastSecondsSinceEpoch;
         auto eventStart = 0, eventEnd = 0;
@@ -50,7 +50,7 @@ void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int de
         auto &frameData = eventChunker.frameData();
         while (eventChunker.getNextFrameData())
         {
-
+            printf("IN THE LOOP\n");
         }
         // // Loop over frames in the NeXuS file
         // for (auto frameIndex = 0; frameIndex < nxs.eventsPerFrame().size(); ++frameIndex)

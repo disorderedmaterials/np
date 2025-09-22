@@ -26,7 +26,7 @@ EventChunker::EventChunker(NeXuSFile &source) : neXuSFile_(source)
     // Get total number of events
     auto &&[totalCountsID, totalCountsDimension] = NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/detector_1_events", "total_counts");
     std::array<long long, 1> totalCountsBuffer;
-    H5Dread(totalCountsID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, totalCountsBuffer.data());
+    H5Dread(totalCountsID.getId(), H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, totalCountsBuffer.data());
     totalEvents_ = totalCountsBuffer[0];
 
     // Read in good frames
@@ -70,16 +70,43 @@ bool EventChunker::getNextFrameData()
     // If our next frame index is out of range, return false as we are done
     if (nextFrameIndex_ >= totalFrames_)
         return false;
-
     // Clear current data
     frameData_.clear();
-
+    // Get dataset handles
+    auto &&[indicesDataset, indicesDimension] = NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/detector_1_events", "event_id");
+    auto &&[timesDatasetD, timesDimension] = NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/detector_1_events", "event_time_offset");
     // Read in events for the current frame
     auto nextFrameLimit = std::min(nextFrameIndex_ + frameChunkSize_, totalFrames_);
+    for (auto i = nextFrameIndex_; i < nextFrameLimit; ++i)
+    {
+        fmt::print("Reading frame {}...\n", i);
+        // Push a new frame data
+        auto &frame = frameData_.emplace_back();
+        frame.frameIndex = i;
 
+        // Set vector sizes
+        frame.detectorIndices.resize(eventsPerFrame_[i]);
+        frame.times.resize(eventsPerFrame_[i]);
+
+        // Select and read in only events for this frame
+        H5::DataSpace space = indicesDataset.getSpace();
+        space.selectNone();
+        std::array<hsize_t, 1> start = {(hsize_t)frameFirstIndices_[i] }, stride = {1}, count  = { (hsize_t)eventsPerFrame_[i]}, block = {1};
+        space.selectHyperslab(H5S_SELECT_SET, start.data(), stride.data(), count.data(), block.data());
+        H5Dread(indicesDataset.getId(), H5T_STD_I32LE, H5S_ALL, space.getId(), H5P_DEFAULT, frame.detectorIndices.data());
+        MEMSPACE???
+        for (auto idx : frame.detectorIndices)
+            fmt::print("{}\n", idx);
+
+        //
+        //     // Read in events.
+
+        //     eventTimes_.resize(eventTimesDimension);
+        //     H5Dread(eventTimesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventTimes_.data());
+    }
 
     return true;
 }
 
 // Return current frame data
-std::vector<FrameData> &frameData();
+std::vector<FrameData> &EventChunker::frameData() { return frameData_; }

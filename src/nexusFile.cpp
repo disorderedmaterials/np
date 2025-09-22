@@ -416,7 +416,7 @@ bool NeXuSFile::saveModifiedData()
     // Write spectrum indices - we have to pass in any adjusted DataSpace otherwise we end up with the same sized array as
     // before.
     auto &&[detSpecIndices, spectraDimension] = NeXuSFile::get1DDataset(output, "raw_data_1/detector_1", "spectrum_index");
-    NeXuSFile::resize1DDataset(detSpecIndices, {detectorSpectrumIndices_.size()});
+    resize1DDataset(detSpecIndices, {detectorSpectrumIndices_.size()});
     detSpecIndices.write(detectorSpectrumIndices_.data(), H5::PredType::STD_I32LE, detSpecIndices.getSpace(),
                          detSpecIndices.getSpace());
 
@@ -436,7 +436,7 @@ bool NeXuSFile::saveModifiedData()
     // Get and resize the counts dataset - we have to pass in any adjusted DataSpace otherwise we end up with the same
     // sized array as before.
     auto &&[counts, detectorCountsDimension] = NeXuSFile::get1DDataset(output, "raw_data_1/detector_1", "counts");
-    NeXuSFile::resize1DDataset(counts, {1, nSpec, nTOFBins});
+    resize1DDataset(counts, {1, nSpec, nTOFBins});
     counts.write(countsBuffer.data(), H5::PredType::STD_I32LE, counts.getSpace(), counts.getSpace());
 
     output.close();
