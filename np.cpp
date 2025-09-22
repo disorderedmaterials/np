@@ -125,6 +125,20 @@ int main(int argc, char **argv)
            "Dump specified detector histogram")
         ->group("Processing");
     app.add_option_function<int>(
+           "--dump-detector-from-events",
+           [&](int id)
+           {
+               if (processingMode_ != Processors::ProcessingMode::None)
+               {
+                   fmt::print("Error: Multiple processing modes given.\n");
+                   throw(CLI::RuntimeError());
+               }
+               processingMode_ = Processors::ProcessingMode::DumpDetectorFromEvents;
+               processingInt_ = id;
+           },
+           "Dump specified detector histogram after constructing it from event data")
+        ->group("Processing");
+    app.add_option_function<int>(
            "--dump-monitor",
            [&](int id)
            {
@@ -218,6 +232,9 @@ int main(int argc, char **argv)
             break;
         case (Processors::ProcessingMode::DumpDetector):
             Processors::dumpDetector(inputFiles_, processingInt_);
+            break;
+        case (Processors::ProcessingMode::DumpDetectorFromEvents):
+            Processors::dumpDetectorFromEvents(inputFiles_, processingInt_);
             break;
         case (Processors::ProcessingMode::DumpMonitor):
             Processors::dumpMonitor(inputFiles_, processingInt_);

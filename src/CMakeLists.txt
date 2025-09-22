@@ -3,6 +3,7 @@ add_library(
   countDetector.cpp
   countMonitor.cpp
   dumpDetector.cpp
+  dumpDetectorFromEvents.cpp
   dumpMonitor.cpp
   frameChunker.cpp
   getEvents.cpp

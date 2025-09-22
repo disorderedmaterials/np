@@ -16,6 +16,7 @@ enum class ProcessingMode
     CountDetector,
     CountMonitor,
     DumpDetector,
+    DumpDetectorFromEvents,
     DumpEvents,
     DumpMonitor,
     PartitionEventsIndividual,
@@ -66,6 +67,8 @@ void countMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIn
 void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool toStdOut = false);
 // Dump detector histogram
 void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex);
+// Dump detector histogram after constructing it from event data
+void dumpDetectorFromEvents(const std::vector<std::string> &inputNeXusFiles, int detectorIndex);
 // Dump monitor histogram
 void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex);
 // Partition events into individual windows / slices
