@@ -290,7 +290,7 @@ void NeXuSFile::prepareSpectraSpace(bool printInfo)
     auto &&[tofBoundariesID, tofBoundariesDimension] =
         NeXuSFile::get1DDataset(input, "raw_data_1/detector_1", "time_of_flight");
     tofBoundaries_.resize(tofBoundariesDimension);
-    H5Dread(tofBoundariesID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBoundaries_.data());
+    H5Dread(tofBoundariesID.getId(), H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, tofBoundaries_.data());
 
     // Set up detector histograms and straight counts vectors
     for (auto spec : detectorSpectrumIndices_)

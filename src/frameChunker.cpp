@@ -40,7 +40,7 @@ FrameChunker::FrameChunker(NeXuSFile &source) : neXuSFile_(source)
     auto &&[frameZeroID, frameZerosDimension] =
         NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/detector_1_events", "event_time_zero");
     frameZero_.resize(frameZerosDimension);
-    H5Dread(frameZeroID.getId(), H5T_IEEE_F64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameZero_.data());
+    H5Dread(frameZeroID.getId(), H5T_NATIVE_LDOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameZero_.data());
 
     fmt::print("There are {} total events.\n", totalEvents_);
 }
@@ -94,7 +94,7 @@ bool FrameChunker::getNextFrameData()
         // Read the partial data
         H5Dread(indicesDataset.getId(), H5T_STD_I32LE, memSpace, indicesSpace.getId(), H5P_DEFAULT,
                 frame.detectorIndices.data());
-        H5Dread(timesDataset.getId(), H5T_IEEE_F64LE, memSpace, timesSpace.getId(), H5P_DEFAULT, frame.times.data());
+        H5Dread(timesDataset.getId(), H5T_NATIVE_DOUBLE, memSpace, timesSpace.getId(), H5P_DEFAULT, frame.times.data());
     }
 
     // Set frame index for next call

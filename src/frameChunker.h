@@ -36,7 +36,7 @@ class FrameChunker
     // Number of events per frame (framelog/events_log/value)
     std::vector<int> eventsPerFrame_;
     // Frame start times (detector_1_events/event_time_zero) - seconds, relative to start time since epoch
-    std::vector<double> frameZero_;
+    std::vector<long double> frameZero_;
     // Total number of frames
     int totalFrames_{0};
     // Frame chunk size
