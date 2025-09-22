@@ -15,11 +15,11 @@ struct FrameData
     std::vector<double> times;
 };
 
-class EventChunker
+class FrameChunker
 {
     public:
-    EventChunker(NeXuSFile &source);
-    ~EventChunker() = default;
+    FrameChunker(NeXuSFile &source);
+    ~FrameChunker() = default;
 
     /*
      * File and Basic Info
