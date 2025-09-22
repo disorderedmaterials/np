@@ -15,25 +15,25 @@ FrameChunker::FrameChunker(NeXuSFile &source) : neXuSFile_(source)
     auto &&[eventsPerFrameID, eventsPerFrameDimension] =
         NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/framelog/events_log", "value");
     eventsPerFrame_.resize(eventsPerFrameDimension);
-    H5Dread(eventsPerFrameID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventsPerFrame_.data());
+    H5Dread(eventsPerFrameID.getId(), H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, eventsPerFrame_.data());
 
     // Get first event indices per frame
     auto &&[frameFirstIndices, frameFirstIndicesDimension] =
         NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/detector_1_events", "event_index");
     frameFirstIndices_.resize(frameFirstIndicesDimension);
-    H5Dread(frameFirstIndices.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameFirstIndices_.data());
+    H5Dread(frameFirstIndices.getId(), H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, frameFirstIndices_.data());
 
     // Get total number of events
     auto &&[totalCountsID, totalCountsDimension] =
         NeXuSFile::get1DDataset(fileHandle_, "raw_data_1/detector_1_events", "total_counts");
     std::array<long long, 1> totalCountsBuffer;
-    H5Dread(totalCountsID.getId(), H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, totalCountsBuffer.data());
+    H5Dread(totalCountsID.getId(), H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, totalCountsBuffer.data());
     totalEvents_ = totalCountsBuffer[0];
 
     // Read in good frames
     auto &&[goodFramesID, goodFramesDimension] = NeXuSFile::get1DDataset(fileHandle_, "raw_data_1", "good_frames");
     std::array<int, 1> goodFramesTemp;
-    H5Dread(goodFramesID.getId(), H5T_STD_I32LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp.data());
+    H5Dread(goodFramesID.getId(), H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, goodFramesTemp.data());
     totalFrames_ = goodFramesTemp[0];
 
     // Read in frame offsets.
