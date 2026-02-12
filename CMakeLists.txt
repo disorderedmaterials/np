@@ -1,7 +1,26 @@
 cmake_minimum_required(VERSION 3.10)
-project(np)
-include(CMakePrintHelpers)
 
+# Use Conan for dependency provision?
+option(CONAN "Use conan to find dependencies" ON)
+if(CONAN)
+  # Fetch and include conan_provider.cmake if it doesn't exist
+  if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/conan_provider.cmake")
+    message(STATUS "Downloading conan_provider.cmake from https://github.com/conan-io/cmake-conan")
+    file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/refs/heads/develop2/conan_provider.cmake"
+         "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/conan_provider.cmake"
+    )
+  endif()
+
+  # Add local dirs to cmake Module search path
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+
+  list(APPEND CMAKE_PROJECT_TOP_LEVEL_INCLUDES "cmake/Modules/conan_provider.cmake")
+endif(CONAN)
+
+project(np LANGUAGES CXX)
+
+include(CMakePrintHelpers)
 
 set(DESCRIPTION "NeXuS Processor")
 set(AUTHOR "Jared Swift and Tristan Youngs")
@@ -18,13 +37,7 @@ include(ExternalProject)
 
 set(CMAKE_MODULE_PATH "${HDF5_DIR}/share/cmake/;${CMAKE_MODULE_PATH}")
 
-# Include Conan Packages
-option(CONAN "Use conan to find dependencies" ON)
-if(CONAN)
-  include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-  conan_basic_setup(TARGETS)
-  include_directories(${CONAN_INCLUDE_DIRS_FMT})
-else(CONAN)
+if(NOT CONAN)
   find_package(fmt REQUIRED)
   find_package(CLI11 REQUIRED)
 endif(CONAN)

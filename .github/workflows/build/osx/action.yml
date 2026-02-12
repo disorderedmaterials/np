@@ -15,7 +15,7 @@ runs:
   - name: Install Python Dependencies
     shell: bash
     run: |
-      pip3 install --user conan==1.* --break-system-packages
+      pip3 install --user conan
 
   - name: Download HDF5 Artifacts
     shell: bash
@@ -31,6 +31,7 @@ runs:
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
       mkdir build && cd build
 
+      conan profile detect
       conan install ../
       cmake ../ -G Ninja -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR}
       ninja

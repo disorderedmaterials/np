@@ -19,7 +19,7 @@ runs:
 
   - name: Install Python Dependencies
     shell: bash
-    run: pip3 install conan==1.*
+    run: pip3 install conan
 
   - name: Install MinGW
     shell: bash
@@ -32,7 +32,7 @@ runs:
     shell: bash
     run: |
       export PATH="$(python3 -m site --user-base)/bin:$PATH"
-      conan profile new default --detect
+      conan profile detect
       conan profile update settings.compiler="gcc" default
       conan profile update settings.compiler.version=11 default
       conan profile update settings.compiler.libcxx=libstdc++11 default

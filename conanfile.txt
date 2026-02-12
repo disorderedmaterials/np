@@ -3,7 +3,7 @@ cli11/1.9.1
 fmt/8.1.1
 
 [generators]
-cmake
+CMakeToolchain
 
 [options]
-fmt:header_only=True
+fmt/*:header_only=True
