@@ -19,7 +19,7 @@ runs:
 
   - name: Install Python Dependencies
     shell: bash
-    run: pip3 install conan==1.*
+    run: pip3 install conan
 
   - name: Install MinGW
     shell: bash

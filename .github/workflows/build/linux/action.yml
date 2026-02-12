@@ -18,7 +18,7 @@ runs:
   - name: Install Python Dependencies
     shell: bash
     run: |
-      pip3 install --user conan==1.*
+      pip3 install --user conan
 
   - name: Download HDF5 Artifacts
     shell: bash
