@@ -44,6 +44,7 @@ runs:
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
       GSL_DIR="/tmp/gsl"
       mkdir build && cd build
+      conan profile detect
       conan install ../
       cmake ../ -G Ninja -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR} -DLOCAL_STATIC_GSL:bool=true -DGSL_DIR:path=${GSL_DIR}
       ninja

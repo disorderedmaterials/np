@@ -31,6 +31,7 @@ runs:
       HDF5_DIR="$(pwd)/${{ env.hdf5tag }}"
       mkdir build && cd build
 
+      conan profile detect
       conan install ../
       cmake ../ -G Ninja -DLOCAL_STATIC_HDF5:bool=true -DHDF5_DIR:path=${HDF5_DIR}
       ninja
