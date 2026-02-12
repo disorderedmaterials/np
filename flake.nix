@@ -1,8 +1,8 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
-    future.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     outdated.url = "github:NixOS/nixpkgs/nixos-21.05";
+    future.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
   outputs =
     { self, nixpkgs, future, outdated, flake-utils, bundlers }:
@@ -34,13 +34,11 @@
         name = "np-shell";
         buildInputs = base_libs pkgs
           ++ (with pkgs; [
-          (pkgs.clang-tools.override {
-            llvmPackages = pkgs.llvmPackages_13;
-          })
           ccache
           ccls
           cmake-format
           cmake-language-server
+          clang-tools
           distcc
           gdb
           valgrind

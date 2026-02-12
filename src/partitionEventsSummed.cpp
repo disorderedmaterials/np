@@ -1,0 +1,97 @@
+#include "frameChunker.h"
+#include "nexusFile.h"
+#include "processors.h"
+#include "window.h"
+#include <fmt/core.h>
+#include <stdexcept>
+
+namespace Processors
+{
+// Partition events into summed windows / slices
+void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                           const Window &windowDefinition, int nSlices, double windowDelta)
+{
+    /*
+     * From our main windowDefinition we will continually propagate it forwards in time (by the window delta) splitting it into
+     * nSlices and until we go over the end time of the current file.
+     */
+
+    fmt::print("Partitioning events in summed windows/slices...\n");
+
+    // Generate a new set of window "slices" and associated output NeXuS files to sum data into
+    auto slices = prepareSlices(windowDefinition, nSlices, inputNeXusFiles[0], outputFilePath);
+
+    // Initialise the slice iterator and window slice / NeXuSFile references
+    auto sliceIt = slices.begin();
+
+    // Loop over input NeXuS files
+    for (auto &nxsFileName : inputNeXusFiles)
+    {
+        // Open the NeXuS file and get its event data
+        NeXuSFile nxs(nxsFileName, true);
+
+        // Read in chunked frames
+        FrameChunker frameChunker(nxs);
+        auto tenPercentsDone = -1;
+        while (frameChunker.getNextFrameData())
+        {
+            auto &frameData = frameChunker.frameData();
+            auto currentTenPercents = int(100 * (frameData.front().index / double(nxs.nGoodFrames()))) / 10;
+            if (currentTenPercents > tenPercentsDone)
+            {
+                tenPercentsDone = currentTenPercents;
+                fmt::print("Processing frame / event data... {}%\n", tenPercentsDone * 10);
+            }
+
+            for (const auto &frame : frameData)
+            {
+                const auto &eventIndices = frame.detectorIndices;
+                const auto &eventTimes = frame.times;
+                auto frameZero = frame.timeZero + nxs.startSinceEpoch();
+
+                // If the current slice end time is less than the frame zero, iterate the slices.
+                while (sliceIt->first.endTime() < frameZero)
+                {
+                    sliceIt++;
+
+                    // If we have run out of slices propagate the set forward.
+                    if (sliceIt == slices.end())
+                    {
+                        sliceIt = slices.begin();
+                        for (auto &&[slice, _unused] : slices)
+                            slice.shiftStartTime(windowDelta);
+                        printf("Propagated window forwards... new start time is %16.2f\n", sliceIt->first.startTime());
+                    }
+                }
+
+                // If this frame zero is greater than or equal to the start time of the current window slice we can process
+                // events
+                if (frameZero >= sliceIt->first.startTime())
+                {
+                    // Sanity check!
+                    if (frameZero > sliceIt->first.endTime())
+                        throw(std::runtime_error("Somebody's done something wrong here....\n"));
+
+                    // Grab the destination histograms for this slice and bin events
+                    auto &destinationHistograms = sliceIt->second.detectorHistograms();
+                    for (auto i = 0; i < eventIndices.size(); ++i)
+                        if (eventIndices[i] > 0)
+                            destinationHistograms[eventIndices[i]].bin(eventTimes[i]);
+
+                    // Increment the frame counter for this slice
+                    sliceIt->second.incrementGoodFrames();
+                }
+            }
+        }
+
+        fmt::print("Processing frame / event data... Done!\n");
+    }
+
+    // Perform post-processing
+    postProcess(slices);
+
+    // Save slices
+    saveSlices(slices);
+}
+
+} // namespace Processors

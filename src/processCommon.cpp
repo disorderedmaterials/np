@@ -28,6 +28,9 @@ std::vector<std::pair<Window, NeXuSFile>> prepareSlices(const Window &window, in
         fmt::print("Individual slice duration is {} seconds.\n", sliceDuration);
     }
 
+    // Open the source NeXuS file
+    NeXuSFile sourceNxs(templatingSourceFilename);
+
     for (auto i = 0; i < nSlices; ++i)
     {
         std::stringstream outputFileName;
@@ -39,9 +42,15 @@ std::vector<std::pair<Window, NeXuSFile>> prepareSlices(const Window &window, in
         std::stringstream sliceName;
         sliceName << window.id() << i + 1;
 
-        auto &[newWin, nexus] = slices.emplace_back(Window(sliceName.str(), sliceStartTime, sliceDuration), NeXuSFile());
+        // Template the NeXuS file
+        NeXuSFile::templateTo(templatingSourceFilename, outputFileName.str());
 
-        nexus.templateFile(templatingSourceFilename, outputFileName.str());
+        auto &[newWin, nexus] =
+            slices.emplace_back(Window(sliceName.str(), sliceStartTime, sliceDuration), NeXuSFile(outputFileName.str()));
+        nexus.loadBasicData();
+        nexus.prepareSpectraSpace();
+        nexus.loadMonitorCounts();
+        nexus.zeroGoodFrames();
 
         sliceStartTime += sliceDuration;
     }
@@ -56,18 +65,18 @@ void postProcess(std::vector<std::pair<Window, NeXuSFile>> &slices)
     for (auto &&[slice, outputNeXuSFile] : slices)
     {
         fmt::print("Output '{}' ({} -> {}) has {} detector frames and {} monitor frames.\n", std::string(slice.id()).c_str(),
-                   slice.startTime(), slice.endTime(), outputNeXuSFile.nDetectorFrames(), outputNeXuSFile.nMonitorFrames());
+                   slice.startTime(), slice.endTime(), outputNeXuSFile.nGoodFrames(), outputNeXuSFile.nMonitorFrames());
         switch (postProcessingMode_)
         {
             case (Processors::PostProcessingMode::None):
                 break;
             case (Processors::PostProcessingMode::ScaleMonitors):
-                factor = (double)outputNeXuSFile.nDetectorFrames() / (double)outputNeXuSFile.nMonitorFrames();
+                factor = (double)outputNeXuSFile.nGoodFrames() / (double)outputNeXuSFile.nMonitorFrames();
                 fmt::print(" --> Scaling monitors by processed detector-to-monitor frame ratio ({}).\n", factor);
                 outputNeXuSFile.scaleMonitors(factor);
                 break;
             case (Processors::PostProcessingMode::ScaleDetectors):
-                factor = (double)outputNeXuSFile.nMonitorFrames() / (double)outputNeXuSFile.nDetectorFrames();
+                factor = (double)outputNeXuSFile.nMonitorFrames() / (double)outputNeXuSFile.nGoodFrames();
                 fmt::print(" --> Scaling detectors by processed monitor-to-detector frame ratio ({}).\n", factor);
                 outputNeXuSFile.scaleDetectors(factor);
                 break;

@@ -44,6 +44,7 @@ if(LOCAL_STATIC_GSL)
 else(LOCAL_STATIC_GSL)
   find_package(GSL REQUIRED)
   list(APPEND LINK_LIBS "${GSL_LIBRARIES}")
+  include_directories("${GSL_INCLUDE_DIRS}")
 endif(LOCAL_STATIC_GSL)
 
 option(
@@ -140,8 +141,7 @@ if(BUILD_HDF)
   endif(BUILD_SZIP)
 else(BUILD_HDF)
   if(LOCAL_STATIC_HDF5)
-    list(APPEND LINK_LIBS "${HDF5_DIR}/lib/libhdf5_cpp.a"
-          "${HDF5_DIR}/lib/libhdf5.a"
+    list(APPEND LINK_LIBS "${HDF5_DIR}/lib/libhdf5.a"
           "${HDF5_DIR}/lib/libszip-static.a")
     if(WIN32)
       list(APPEND LINK_LIBS "${HDF5_DIR}/lib/libzlibstatic.a")

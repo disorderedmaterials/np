@@ -13,8 +13,16 @@ namespace Processors
 enum class ProcessingMode
 {
     None,
-    Individual,
-    Summed
+    CountDetector,
+    CountMonitor,
+    DumpDetector,
+    DumpDetectorFromEvents,
+    DumpEvents,
+    DumpMonitor,
+    PartitionEventsIndividual,
+    PartitionEventsSummed,
+    PrintEvents,
+    ResizeDetectors
 };
 
 // Processing Direction
@@ -51,13 +59,24 @@ void saveSlices(std::vector<std::pair<Window, NeXuSFile>> &slices);
  * Processors
  */
 
-// Get Events
-std::map<int, std::vector<double>> getEvents(const std::vector<std::string> &inputNeXusFiles, int detectorId,
-                                             bool firstOnly = false);
-// Perform individual processing
-void processIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                       const Window &windowDefinition, int nSlices, double windowDelta);
-// Perform summed processing
-void processSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
-                   const Window &windowDefinition, int nSlices, double windowDelta);
+// Count detector histogram
+void countDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex);
+// Count monitor histogram
+void countMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex);
+// Dump all events for the specified detector spectrum, returning seconds since epoch for each
+void dumpEventTimesEpoch(const std::vector<std::string> &inputNeXusFiles, int detectorIndex, bool toStdOut = false);
+// Dump detector histogram
+void dumpDetector(const std::vector<std::string> &inputNeXusFiles, int detectorIndex);
+// Dump detector histogram after constructing it from event data
+void dumpDetectorFromEvents(const std::vector<std::string> &inputNeXusFiles, int detectorIndex);
+// Dump monitor histogram
+void dumpMonitor(const std::vector<std::string> &inputNeXusFiles, int monitorIndex);
+// Partition events into individual windows / slices
+void partitionEventsIndividual(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                               const Window &windowDefinition, int nSlices, double windowDelta);
+// Partition events into summed windows / slices
+void partitionEventsSummed(const std::vector<std::string> &inputNeXusFiles, std::string_view outputFilePath,
+                           const Window &windowDefinition, int nSlices, double windowDelta);
+// Resize detector array
+void resizeDetectors(const std::vector<std::string> &inputNeXusFiles, int newNDetectors);
 }; // namespace Processors
